@@ -33,7 +33,7 @@ function App() {
 
   return (
     <I18nProvider>
-      <div className="bg-black min-h-screen text-white selection:bg-[#1FC058] selection:text-black">
+      <div className="bg-black min-h-screen text-white selection:bg-[#1FC058] selection:text-black overflow-x-hidden">
         <Navbar />
         <main>
           <Hero />

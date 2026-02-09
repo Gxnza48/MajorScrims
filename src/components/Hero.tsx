@@ -36,14 +36,15 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
+                        className="flex justify-center"
                     >
                         <a
                             href="https://discord.com/invite/majorscrims"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative bg-[#1FC058] text-black font-bold text-[17px] px-4 py-[0.35em] pl-8 h-[2.8em] rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#105624] group max-w-fit mx-auto transition-transform hover:scale-105 active:scale-95"
+                            className="relative bg-[#1FC058] text-black font-bold text-[15px] md:text-[17px] px-3 md:px-4 py-[0.35em] pl-6 md:pl-8 h-[2.8em] rounded-[0.9em] flex items-center overflow-hidden cursor-pointer shadow-[inset_0_0_1.6em_-0.6em_#105624] group transition-transform hover:scale-105 active:scale-95"
                         >
-                            <span className="mr-12 tracking-wide uppercase">{t.hero.cta}</span>
+                            <span className="mr-8 md:mr-12 tracking-wide uppercase whitespace-nowrap">{t.hero.cta}</span>
                             <div
                                 className="absolute right-[0.3em] bg-black h-[2.2em] w-[2.2em] rounded-[0.7em] flex items-center justify-center transition-all duration-300 group-hover:w-[calc(100%-0.6em)] shadow-[0.1em_0.1em_0.6em_0.2em_#105624]"
                             >

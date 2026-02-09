@@ -35,10 +35,10 @@ export function ScrollToTop() {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={scrollToTop}
-                    className="fixed bottom-8 right-8 z-50 p-3 bg-[#1FC058] text-black rounded-full shadow-[0_0_20px_rgba(31,192,88,0.4)] hover:shadow-[0_0_30px_rgba(31,192,88,0.6)] transition-shadow"
+                    className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-40 p-2.5 md:p-3 bg-[#1FC058] text-black rounded-full shadow-[0_0_20px_rgba(31,192,88,0.4)] hover:shadow-[0_0_30px_rgba(31,192,88,0.6)] transition-shadow"
                     aria-label="Scroll to top"
                 >
-                    <ArrowUp size={24} strokeWidth={3} />
+                    <ArrowUp size={20} strokeWidth={3} className="md:w-6 md:h-6" />
                 </motion.button>
             )}
         </AnimatePresence>

@@ -41,12 +41,12 @@ export function ProPlayers() {
                             whileHover={{ y: -10 }}
                             className="group relative"
                         >
-                            <div className="relative rounded-xl overflow-hidden aspect-[3/4] border border-white/5 bg-white/5 transition-all duration-300 group-hover:border-[#1FC058]/50 group-hover:shadow-[0_0_20px_rgba(31,192,88,0.2)]">
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
+                            <div className="relative rounded-xl overflow-hidden aspect-[3/4] border border-white/10 bg-black/50 backdrop-blur-sm transition-all duration-300 group-hover:border-[#1FC058]/50 group-hover:shadow-[0_0_20px_rgba(31,192,88,0.2)]">
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
                                 <img
                                     src={player.img}
                                     alt={player.name}
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
                                 />
 
                                 <div className="absolute bottom-0 left-0 w-full p-4 z-20">
