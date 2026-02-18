@@ -1,3 +1,5 @@
+"use client";
+
 import { useI18n } from "../i18n";
 import { Twitter, Instagram } from "lucide-react"; // Note: Lucide might not have Discord icon, checking alternatives or using Disc/MessageCircle. Usually generic icons are safe.
 // Actually Lucide usually has generic icons. I will use a custom SVG for Discord if needed or a generic one. Simple generic icons are fine.
