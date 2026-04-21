@@ -10,6 +10,7 @@ type Translations = {
         about: string;
         players: string;
         tournaments: string;
+        leaderboard: string;
         community: string;
         join: string;
     };
@@ -76,6 +77,15 @@ type Translations = {
         performance: string;
         ranking: string;
     };
+    login: {
+        welcome: string;
+        subtitle: string;
+        cta: string;
+        terms: string;
+        and: string;
+        privacy: string;
+        agree: string;
+    };
 };
 
 const translations: Record<Language, Translations> = {
@@ -85,6 +95,7 @@ const translations: Record<Language, Translations> = {
             about: 'Sobre',
             players: 'Pro Players',
             tournaments: 'Torneios',
+            leaderboard: 'Leaderboard',
             community: 'Comunidade',
             join: 'Discord',
         },
@@ -150,7 +161,16 @@ const translations: Record<Language, Translations> = {
             positionsUp: 'posições acima',
             performance: 'Performance Global',
             ranking: 'Ranking Regional',
-        }
+        },
+        login: {
+            welcome: 'Bem-vindo de volta',
+            subtitle: 'Entre para acessar seu dashboard e estatísticas',
+            cta: 'Continuar com Discord',
+            terms: 'Termos de Serviço',
+            and: 'e',
+            privacy: 'Política de Privacidade',
+            agree: 'Ao continuar, você concorda com nossos',
+        },
     },
     es: {
         nav: {
@@ -158,6 +178,7 @@ const translations: Record<Language, Translations> = {
             about: 'Sobre',
             players: 'Pro Players',
             tournaments: 'Torneos',
+            leaderboard: 'Leaderboard',
             community: 'Comunidad',
             join: 'Discord',
         },
@@ -223,7 +244,16 @@ const translations: Record<Language, Translations> = {
             positionsUp: 'posiciones arriba',
             performance: 'Performance Global',
             ranking: 'Ranking Regional',
-        }
+        },
+        login: {
+            welcome: 'Bienvenido de nuevo',
+            subtitle: 'Inicia sesión para acceder a tu panel y estadísticas',
+            cta: 'Continuar con Discord',
+            terms: 'Términos de Servicio',
+            and: 'y',
+            privacy: 'Política de Privacidad',
+            agree: 'Al continuar, aceptas nuestros',
+        },
     },
 };
 

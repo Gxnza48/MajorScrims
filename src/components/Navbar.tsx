@@ -47,6 +47,10 @@ export function Navbar() {
                                 {t.nav.tournaments}
                                 <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
                             </Link>
+                            <Link href="/leaderboard" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
+                                {t.nav.leaderboard}
+                                <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
+                            </Link>
                             <a href="/#features" className="text-[13px] font-semibold text-gray-400 hover:text-white transition-all hover:tracking-wider">{t.nav.community}</a>
                         </div>
 
@@ -109,6 +113,7 @@ export function Navbar() {
                                 <a href="/#about" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.about}</a>
                                 <a href="/#players" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.players}</a>
                                 <Link href="/tournaments" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.tournaments}</Link>
+                                <Link href="/leaderboard" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.leaderboard}</Link>
                                 <a href="/#features" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.community}</a>
                             </div>
 
