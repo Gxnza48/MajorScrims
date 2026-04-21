@@ -133,7 +133,7 @@ export function Leaderboard() {
         <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 20 }}>
           <img src="/images/logo_full.png" alt="Major Scrims" style={{ width: 64, height: 64, objectFit: "contain", flexShrink: 0, mixBlendMode: "lighten" }} />
           <div>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#09c93e", letterSpacing: ".22em", textTransform: "uppercase", marginBottom: 4 }}>// leaderboard</div>
+            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#09c93e", letterSpacing: ".22em", textTransform: "uppercase", marginBottom: 4 }}>{"// leaderboard"}</div>
             <h1 style={{ fontSize: "clamp(24px,4.5vw,42px)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#fff", lineHeight: 1, margin: 0 }}>
               MAJOR <span style={{ color: "#0dff51" }}>SCRIMS</span>
             </h1>
@@ -207,11 +207,11 @@ export function Leaderboard() {
           </div>
         ) : error ? (
           <div style={{ padding: "56px 24px", textAlign: "center", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#e05050", letterSpacing: ".12em", border: "1px solid rgba(220,60,60,.2)", borderRadius: 2 }}>
-            // ERRO AO CARREGAR DADOS<br /><br />{error}
+            {"// ERRO AO CARREGAR DADOS"}<br /><br />{error}
           </div>
         ) : list.length === 0 ? (
           <div style={{ padding: "56px 24px", textAlign: "center", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#5a7a62", letterSpacing: ".12em", border: "1px solid rgba(13,255,81,0.13)", borderRadius: 2 }}>
-            // NENHUM JOGADOR ENCONTRADO
+            {"// NENHUM JOGADOR ENCONTRADO"}
           </div>
         ) : (
           <div style={{ border: "1px solid rgba(13,255,81,0.13)", borderRadius: 2, overflow: "auto" }}>

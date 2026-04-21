@@ -1,15 +1,19 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { StatsCard } from "@/components/StatsCard";
 import { useI18n } from "@/i18n";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { User, Shield, Zap, Target, TrendingUp, Info } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardPage() {
     const { data: session, status } = useSession();
+    const router = useRouter();
     const { t } = useI18n();
 
     const [playerData, setPlayerData] = useState<any>(null);
@@ -18,7 +22,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (status === "unauthenticated") {
-            redirect("/login");
+            router.push("/login");
         } else if (status === "authenticated") {
             // Fetch stats from MongoDB linked to this Discord session
             fetch("/api/player")
@@ -44,7 +48,7 @@ export default function DashboardPage() {
                     setIsLoading(false);
                 });
         }
-    }, [status]);
+    }, [status, router]);
 
     if (status === "loading" || isLoading) {
         return <div className="min-h-screen bg-black flex items-center justify-center">
@@ -88,7 +92,13 @@ export default function DashboardPage() {
                             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-white/10 overflow-hidden shadow-2xl transition-transform duration-700 group-hover:scale-105">
                                 {session.user?.image ? (
-                                    <img src={session.user.image} alt={session.user.name || "User"} className="w-full h-full object-cover" />
+                                    <Image 
+                                        src={session.user.image} 
+                                        alt={session.user.name || "User"} 
+                                        width={160} 
+                                        height={160} 
+                                        className="w-full h-full object-cover" 
+                                    />
                                 ) : (
                                     <div className="w-full h-full bg-white/5 flex items-center justify-center text-primary">
                                         <User size={64} />
