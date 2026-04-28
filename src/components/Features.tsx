@@ -43,7 +43,7 @@ export function Features() {
                         className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 shadow-2xl"
                     >
                         <Sparkles size={14} className="text-primary animate-pulse" />
-                        <span className="text-white/80 text-[11px] font-bold uppercase tracking-[0.25em]">Premium Experience</span>
+                        <span className="text-white/80 text-[11px] font-bold uppercase tracking-[0.25em]">{t.features.badge}</span>
                     </motion.div>
                     
                     <motion.h2 
@@ -63,7 +63,7 @@ export function Features() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-lg md:text-xl text-gray-400/90 max-w-2xl font-medium leading-relaxed"
                     >
-                        Built for champions. Experience the gold standard in competitive gaming infrastructure with unparalleled precision and clarity.
+                        {t.features.subtitle}
                     </motion.p>
                 </div>
 

@@ -37,6 +37,8 @@ type Translations = {
     };
     features: {
         title: string;
+        badge: string;
+        subtitle: string;
         scrims: string;
         scrimsDesc: string;
         customs: string;
@@ -66,6 +68,8 @@ type Translations = {
         exampleData: string;
         totalMatches: string;
         totalKills: string;
+        totalWins: string;
+        top3: string;
         winRate: string;
         kdRatio: string;
         avgPlacement: string;
@@ -76,6 +80,15 @@ type Translations = {
         positionsUp: string;
         performance: string;
         ranking: string;
+        linked: string;
+        noData: string;
+        liveData: string;
+        needsSync: string;
+        matchHistory: string;
+        accountLinked: string;
+        accountLinkedDesc: string;
+        accountNotFound: string;
+        accountNotFoundDesc: string;
     };
     login: {
         welcome: string;
@@ -122,6 +135,8 @@ const translations: Record<Language, Translations> = {
         },
         features: {
             title: 'Por que a Major?',
+            badge: 'Experiência Premium',
+            subtitle: 'Feita para campeões. Viva o padrão ouro em infraestrutura de jogos competitivos com precisão e clareza incomparáveis.',
             scrims: 'Scrims Organizadas',
             scrimsDesc: 'Lobbies balanceados e horários fixos para maximizar seu treino.',
             customs: 'Customs Diárias',
@@ -151,6 +166,8 @@ const translations: Record<Language, Translations> = {
             exampleData: 'DADOS EXEMPLO',
             totalMatches: 'Partidas Totais',
             totalKills: 'Abates Totais',
+            totalWins: 'Vitórias Totais',
+            top3: 'Vezes no TOP 3',
             winRate: 'Taxa de Vitória',
             kdRatio: 'Ratio K/D',
             avgPlacement: 'Colocação Média',
@@ -161,6 +178,15 @@ const translations: Record<Language, Translations> = {
             positionsUp: 'posições acima',
             performance: 'Performance Global',
             ranking: 'Ranking Regional',
+            linked: '(Vinculado)',
+            noData: '(Sem Dados)',
+            liveData: 'Dados ao Vivo',
+            needsSync: 'Precisa Sincronizar',
+            matchHistory: 'Histórico de partidas em breve',
+            accountLinked: 'Conta Vinculada',
+            accountLinkedDesc: 'Seu Discord agora está sincronizado com a Major Scrims. Seu desempenho será atualizado aqui automaticamente após cada temporada.',
+            accountNotFound: 'Conta Não Encontrada',
+            accountNotFoundDesc: 'Sua conta Discord vinculada ainda não possui registros válidos no banco de dados oficial. Jogue scrims para ativar a coleta de estatísticas ou entre em contato com os moderadores do torneio se isso for um erro.',
         },
         login: {
             welcome: 'Bem-vindo de volta',
@@ -205,6 +231,8 @@ const translations: Record<Language, Translations> = {
         },
         features: {
             title: '¿Por qué Major?',
+            badge: 'Experiencia Premium',
+            subtitle: 'Hecho para campeones. Vive el estándar de oro en infraestructura de gaming competitivo con precisión y claridad incomparables.',
             scrims: 'Scrims Organizadas',
             scrimsDesc: 'Lobbies balanceados y horarios fijos para maximizar tu entrenamiento.',
             customs: 'Customs Diarias',
@@ -234,6 +262,8 @@ const translations: Record<Language, Translations> = {
             exampleData: 'DATOS DE EJEMPLO',
             totalMatches: 'Partidas Totales',
             totalKills: 'Bajas Totales',
+            totalWins: 'Victorias Totales',
+            top3: 'Veces en el TOP 3',
             winRate: 'Tasa de Victoria',
             kdRatio: 'Ratio K/D',
             avgPlacement: 'Posición Media',
@@ -244,6 +274,15 @@ const translations: Record<Language, Translations> = {
             positionsUp: 'posiciones arriba',
             performance: 'Performance Global',
             ranking: 'Ranking Regional',
+            linked: '(Vinculado)',
+            noData: '(Sin Datos)',
+            liveData: 'Datos en Vivo',
+            needsSync: 'Necesita Sincronizar',
+            matchHistory: 'Historial de partidas próximamente',
+            accountLinked: 'Cuenta Vinculada',
+            accountLinkedDesc: 'Tu Discord ahora está sincronizado con Major Scrims. Tu rendimiento se actualizará aquí automáticamente después de cada temporada.',
+            accountNotFound: 'Cuenta No Encontrada',
+            accountNotFoundDesc: 'Tu cuenta de Discord vinculada aún no posee registros válidos en la base de datos oficial. Juega scrims para activar la recolección de estadísticas o ponte en contacto con los moderadores del torneo si esto es un error.',
         },
         login: {
             welcome: 'Bienvenido de nuevo',

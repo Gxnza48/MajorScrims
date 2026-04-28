@@ -126,7 +126,7 @@ export default function DashboardPage() {
                                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border-primary/20 mb-4"
                             >
                                 <Zap size={14} className="text-primary fill-primary" />
-                                <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em]">{t.dashboard.performance} {playerData ? "(Linked)" : "(No Data)"}</span>
+                                <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em]">{t.dashboard.performance} {playerData ? t.dashboard.linked : t.dashboard.noData}</span>
                             </motion.div>
                             <h1 className="text-4xl md:text-6xl font-heading font-black text-white mb-4 tracking-tight uppercase">
                                 {t.dashboard.welcome} <span className="text-primary text-glow">{session.user?.name}</span>
@@ -157,10 +157,10 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-2 font-heading">
-                                Cuenta No Encontrada
+                                {t.dashboard.accountNotFound}
                             </h3>
                             <p className="text-gray-400 text-sm md:text-base font-medium leading-relaxed max-w-2xl">
-                                Tu cuenta de Discord vinculada (<span className="text-white font-bold">{session.user?.name}</span>) todavía no posee registros válidos en la base de datos oficial. Juega scrims para activar la recolección de estadísticas o ponte en contacto con los moderadores del torneo si esto es un error.
+                                {t.dashboard.accountNotFoundDesc} (<span className="text-white font-bold">{session.user?.name}</span>)
                             </p>
                         </div>
                     </motion.div>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                             <div className="px-4 py-1.5 rounded-xl glass border-white/5 flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${playerData ? "bg-primary animate-pulse" : "bg-red-500"}`} />
                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                    {playerData ? "Live Data" : "Needs Sync"}
+                                    {playerData ? t.dashboard.liveData : t.dashboard.needsSync}
                                 </span>
                             </div>
                         </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                                 value={stats.kills}
                             />
                             <StatsCard
-                                title="Victorias Totales"
+                                title={t.dashboard.totalWins}
                                 value={stats.wins}
                             />
                             <StatsCard
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                                 value={stats.kd}
                             />
                             <StatsCard
-                                title="Veces en el TOP 3"
+                                title={t.dashboard.top3}
                                 value={stats.top3}
                             />
                             <StatsCard
@@ -236,7 +236,7 @@ export default function DashboardPage() {
 
                             <div className="mt-10 pt-8 border-t border-white/5">
                                 <p className="text-xs text-gray-400 text-center uppercase tracking-widest">
-                                    Match history coming soon
+                                    {t.dashboard.matchHistory}
                                 </p>
                             </div>
                         </div>
@@ -259,9 +259,9 @@ export default function DashboardPage() {
                         <div className="glass border-primary/10 rounded-[40px] p-10 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16" />
                             <Shield className="text-primary mb-6" size={32} />
-                            <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4">Account Linked</h4>
+                            <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4">{t.dashboard.accountLinked}</h4>
                             <p className="text-sm text-gray-400 font-medium leading-relaxed">
-                                Your Discord is now synchronized with Major Scrims. Your performance will automatically update here after each season.
+                                {t.dashboard.accountLinkedDesc}
                             </p>
                         </div>
                     </div>
