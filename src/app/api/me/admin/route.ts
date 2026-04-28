@@ -15,9 +15,15 @@ export async function GET() {
             : [];
 
         const isAdmin = adminDiscordIds.includes(session.user.id);
-
-        return NextResponse.json({ isAdmin, userId: session.user.id });
-    } catch {
-        return NextResponse.json({ isAdmin: false });
+        
+        return NextResponse.json({ 
+            isAdmin, 
+            userId: session.user.id,
+            hasSession: true,
+            envCount: adminDiscordIds.length,
+            debugEnv: process.env.ADMIN_DISCORD_IDS ? "SET" : "NOT_SET"
+        });
+    } catch (error) {
+        return NextResponse.json({ isAdmin: false, error: (error as Error).message });
     }
 }
