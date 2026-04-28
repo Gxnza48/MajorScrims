@@ -1,6 +1,7 @@
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {

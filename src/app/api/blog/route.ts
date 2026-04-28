@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 import mongoose from "mongoose";
 import { BlogPost } from "@/lib/models/BlogPost";
 
