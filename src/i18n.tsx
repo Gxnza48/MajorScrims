@@ -99,6 +99,57 @@ type Translations = {
         privacy: string;
         agree: string;
     };
+    blog: {
+        title: string;
+        subtitle: string;
+        noPosts: string;
+        readMore: string;
+        back: string;
+    };
+    admin: {
+        backToDashboard: string;
+        blogManagement: string;
+        newPost: string;
+        noPosts: string;
+        edit: string;
+        delete: string;
+        backToPosts: string;
+        newTitle: string;
+        writeDescription: string;
+        publishing: string;
+        publishBtn: string;
+        errorTitle: string;
+        errorContent: string;
+        titleLabel: string;
+        contentLabel: string;
+        titlePlaceholder: string;
+        contentPlaceholder: string;
+    };
+    common: {
+        signOut: string;
+        ourStory: string;
+        activeMembers: string;
+        dynamicActivity: string;
+        leadership: string;
+        professionalPractice: string;
+        joinSquad: string;
+    };
+    leaderboard: {
+        loading: string;
+        error: string;
+        search: string;
+        foundPlural: string;
+        foundSingular: string;
+        noResults: string;
+        updates: string;
+        cargos: string;
+        rank: string;
+        name: string;
+        role: string;
+        xp: string;
+        kills: string;
+        games: string;
+    };
 };
 
 const translations: Record<Language, Translations> = {
@@ -197,6 +248,57 @@ const translations: Record<Language, Translations> = {
             privacy: 'Política de Privacidade',
             agree: 'Ao continuar, você concorda com nossos',
         },
+        blog: {
+            title: 'Blog',
+            subtitle: 'Notícias, anúncios e atualizações oficiais do campeonato.',
+            noPosts: 'Em breve novos artigos',
+            readMore: 'Ler mais',
+            back: 'Voltar ao Blog',
+        },
+        admin: {
+            backToDashboard: 'Voltar ao Dashboard',
+            blogManagement: 'Gestão de Blog',
+            newPost: 'Novo Artigo',
+            noPosts: 'Não há posts ainda. Crie o primeiro.',
+            edit: 'Editar',
+            delete: 'Excluir',
+            backToPosts: 'Voltar aos Posts',
+            newTitle: 'Novo Artigo',
+            writeDescription: 'Escreva em espanhol. A tradução ao português é gerada automaticamente.',
+            publishing: 'Traduzindo e salvando...',
+            publishBtn: 'Publicar Artigo',
+            errorTitle: 'Por favor preencha o título e o conteúdo.',
+            errorContent: 'Erro ao salvar o post.',
+            titleLabel: 'Título',
+            contentLabel: 'Conteúdo',
+            titlePlaceholder: 'Ex: Novo Torneio Anunciado...',
+            contentPlaceholder: 'Escreva seu artigo aqui...',
+        },
+        common: {
+            signOut: 'Sair',
+            ourStory: 'Nossa História',
+            activeMembers: 'Membros Ativos',
+            dynamicActivity: 'Atividade Dinâmica',
+            leadership: 'Liderança',
+            professionalPractice: 'Prática Profissional',
+            joinSquad: 'Junte-se ao Squad',
+        },
+        leaderboard: {
+            loading: 'CARREGANDO DADOS',
+            error: 'ERRO AO CARREGAR DADOS',
+            search: 'Buscar jogador...',
+            foundPlural: 'jogadores encontrados',
+            foundSingular: 'jogador encontrado',
+            noResults: 'Nenhum resultado',
+            updates: 'jogadores · atualizações: 03h AM (GMT-3)',
+            cargos: 'Cargos',
+            rank: 'RANK',
+            name: 'NOME EPIC',
+            role: 'CARGO',
+            xp: 'XP',
+            kills: 'KILLS',
+            games: 'GAMES',
+        },
     },
     es: {
         nav: {
@@ -292,6 +394,57 @@ const translations: Record<Language, Translations> = {
             and: 'y',
             privacy: 'Política de Privacidad',
             agree: 'Al continuar, aceptas nuestros',
+        },
+        blog: {
+            title: 'Blog',
+            subtitle: 'Noticias, anuncios y actualizaciones oficiales del campeonato.',
+            noPosts: 'Próximamente nuevos artículos',
+            readMore: 'Leer más',
+            back: 'Volver al Blog',
+        },
+        admin: {
+            backToDashboard: 'Volver al Dashboard',
+            blogManagement: 'Gestión de Blog',
+            newPost: 'Nuevo Artículo',
+            noPosts: 'No hay posts todavía. Crea el primero.',
+            edit: 'Editar',
+            delete: 'Eliminar',
+            backToPosts: 'Volver a los Posts',
+            newTitle: 'Nuevo Artículo',
+            writeDescription: 'Escribe en español. La traducción al portugués se genera automáticamente.',
+            publishing: 'Traduciendo y guardando...',
+            publishBtn: 'Publicar Artículo',
+            errorTitle: 'Por favor completa el título y el contenido.',
+            errorContent: 'Error al guardar el post.',
+            titleLabel: 'Título',
+            contentLabel: 'Contenido',
+            titlePlaceholder: 'Ej: Nuevo Torneo Anunciado...',
+            contentPlaceholder: 'Escribe tu artículo aquí...',
+        },
+        common: {
+            signOut: 'Cerrar Sesión',
+            ourStory: 'Nuestra Historia',
+            activeMembers: 'Miembros Activos',
+            dynamicActivity: 'Actividad Dinámica',
+            leadership: 'Liderazgo',
+            professionalPractice: 'Práctica Profesional',
+            joinSquad: 'Únete al Squad',
+        },
+        leaderboard: {
+            loading: 'CARGANDO DATOS',
+            error: 'ERROR AL CARGAR DATOS',
+            search: 'Buscar jugador...',
+            foundPlural: 'jugadores encontrados',
+            foundSingular: 'jugador encontrado',
+            noResults: 'Sin resultados',
+            updates: 'jugadores · actualizaciones: 03h AM (GMT-3)',
+            cargos: 'Rangos',
+            rank: 'RANGO',
+            name: 'NOMBRE EPIC',
+            role: 'RANGO',
+            xp: 'XP',
+            kills: 'BAJAS',
+            games: 'PARTIDAS',
         },
     },
 };

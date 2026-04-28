@@ -6,8 +6,10 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/i18n";
 
 export default function NewBlogPostPage() {
+    const { t } = useI18n();
     const { data: session, status } = useSession();
     const router = useRouter();
 
@@ -25,7 +27,7 @@ export default function NewBlogPostPage() {
 
     const handleSave = async () => {
         if (!titleES || !contentES) {
-            setErrorMsg("Por favor completa el título y el contenido.");
+            setErrorMsg(t.admin.errorTitle);
             return;
         }
 
@@ -46,7 +48,7 @@ export default function NewBlogPostPage() {
             if (data.success) {
                 router.push("/dashboard/blog");
             } else {
-                setErrorMsg(data.error || "Error al guardar el post.");
+                setErrorMsg(data.error || t.admin.errorContent);
             }
         } catch (err) {
             setErrorMsg("Error de red.");
@@ -66,12 +68,12 @@ export default function NewBlogPostPage() {
                 <div className="flex items-center justify-between mb-12">
                     <div>
                         <Link href="/dashboard/blog" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mb-4">
-                            <ArrowLeft size={16} /> Volver a los Posts
+                            <ArrowLeft size={16} /> {t.admin.backToPosts}
                         </Link>
                         <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tight">
-                            Nuevo <span className="text-primary text-glow">Artículo</span>
+                            {t.admin.newTitle.split(" ")[0]} <span className="text-primary text-glow">{t.admin.newTitle.split(" ").slice(1).join(" ")}</span>
                         </h1>
-                        <p className="text-gray-500 text-sm mt-3">Escribe en español. La traducción al portugués se genera automáticamente.</p>
+                        <p className="text-gray-500 text-sm mt-3">{t.admin.writeDescription}</p>
                     </div>
                     
                     <motion.button 
@@ -82,7 +84,7 @@ export default function NewBlogPostPage() {
                         className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-black px-8 py-3.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(31,192,88,0.3)] hover:shadow-[0_0_30px_rgba(31,192,88,0.5)]"
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                        {isSaving ? "Traduciendo y guardando..." : "Publicar Artículo"}
+                        {isSaving ? t.admin.publishing : t.admin.publishBtn}
                     </motion.button>
                 </div>
 
@@ -94,23 +96,23 @@ export default function NewBlogPostPage() {
 
                 <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 md:p-10 backdrop-blur-md flex flex-col gap-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Título</label>
+                        <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.titleLabel}</label>
                         <input 
                             type="text"
                             value={titleES}
                             onChange={(e) => setTitleES(e.target.value)}
                             className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors text-lg"
-                            placeholder="Ej: Nuevo Torneo Anunciado..."
+                            placeholder={t.admin.titlePlaceholder}
                         />
                     </div>
 
                     <div className="flex-grow flex flex-col">
-                        <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Contenido</label>
+                        <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.contentLabel}</label>
                         <textarea 
                             value={contentES}
                             onChange={(e) => setContentES(e.target.value)}
                             className="w-full h-96 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors resize-none"
-                            placeholder="Escribe tu artículo aquí..."
+                            placeholder={t.admin.contentPlaceholder}
                         />
                     </div>
                 </div>

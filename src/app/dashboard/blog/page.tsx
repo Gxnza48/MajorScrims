@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/i18n";
 
 export default function BlogAdminPage() {
+    const { t } = useI18n();
     const { data: session, status } = useSession();
     const router = useRouter();
     const [posts, setPosts] = useState<any[]>([]);
@@ -43,10 +45,10 @@ export default function BlogAdminPage() {
                 <div className="flex items-center justify-between mb-12">
                     <div>
                         <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mb-4">
-                            <ArrowLeft size={16} /> Volver al Dashboard
+                            <ArrowLeft size={16} /> {t.admin.backToDashboard}
                         </Link>
                         <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tight">
-                            Gestión de <span className="text-primary text-glow">Blog</span>
+                            {t.admin.blogManagement.split(" ")[0]} <span className="text-primary text-glow">{t.admin.blogManagement.split(" ").slice(1).join(" ")}</span>
                         </h1>
                     </div>
                     
@@ -57,7 +59,7 @@ export default function BlogAdminPage() {
                             className="bg-primary hover:bg-primary/90 text-black px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(31,192,88,0.3)] hover:shadow-[0_0_30px_rgba(31,192,88,0.5)]"
                         >
                             <Plus size={20} />
-                            Nuevo Artículo
+                            {t.admin.newPost}
                         </motion.button>
                     </Link>
                 </div>
@@ -65,7 +67,7 @@ export default function BlogAdminPage() {
                 <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-10 backdrop-blur-md">
                     {posts.length === 0 ? (
                         <div className="text-center py-20">
-                            <p className="text-gray-500 font-medium text-lg">No hay posts todavía. Crea el primero.</p>
+                            <p className="text-gray-500 font-medium text-lg">{t.admin.noPosts}</p>
                         </div>
                     ) : (
                         <div className="grid gap-4">

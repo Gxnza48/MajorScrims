@@ -43,7 +43,7 @@ export function Hero() {
                             <img src="/images/flags/br.png" alt="Brazil" className="w-5 h-auto rounded-sm relative z-10" />
                             <div className="absolute inset-0 bg-primary/40 blur-sm rounded-sm animate-pulse"></div>
                         </div>
-                        <span className="text-primary text-[11px] font-black tracking-[0.2em] uppercase">Professional Practice</span>
+                        <span className="text-primary text-[11px] font-black tracking-[0.2em] uppercase">{t.common.professionalPractice}</span>
                     </motion.div>
 
                     <motion.div

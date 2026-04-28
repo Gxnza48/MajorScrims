@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Calendar, User, ArrowRight } from "lucide-react";
 
 export default function BlogCatalogPage() {
+    const { t } = useI18n();
     const { language } = useI18n();
     const [posts, setPosts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -57,9 +58,7 @@ export default function BlogCatalogPage() {
                         transition={{ delay: 0.2 }}
                         className="text-gray-400 max-w-2xl mx-auto text-lg"
                     >
-                        {language === 'es' 
-                            ? 'Noticias, anuncios y actualizaciones oficiales del campeonato.'
-                            : 'Notícias, anúncios e atualizações oficiais do campeonato.'}
+                        {t.blog.subtitle}
                     </motion.p>
                 </div>
 
@@ -70,7 +69,7 @@ export default function BlogCatalogPage() {
                 ) : posts.length === 0 ? (
                     <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl backdrop-blur-md">
                         <p className="text-gray-400 text-lg uppercase tracking-widest font-bold">
-                            {language === 'es' ? 'Próximamente nuevos artículos' : 'Em breve novos artigos'}
+                            {t.blog.noPosts}
                         </p>
                     </div>
                 ) : (
@@ -108,7 +107,7 @@ export default function BlogCatalogPage() {
                                         </div>
 
                                         <div className="mt-auto relative z-10 flex items-center gap-2 text-sm font-black text-primary uppercase tracking-widest group-hover:gap-4 transition-all">
-                                            {language === 'es' ? 'Leer más' : 'Ler mais'} <ArrowRight size={16} />
+                                            {t.blog.readMore} <ArrowRight size={16} />
                                         </div>
                                     </motion.article>
                                 </Link>

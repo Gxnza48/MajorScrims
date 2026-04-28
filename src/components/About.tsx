@@ -25,7 +25,7 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
     );
 }
 
-function TiltLogo({ mouseX, mouseY }: { mouseX: MotionValue<number>; mouseY: MotionValue<number> }) {
+function TiltLogo({ mouseX, mouseY, t }: { mouseX: MotionValue<number>; mouseY: MotionValue<number>; t: any }) {
     const springConfig = { damping: 25, stiffness: 250 };
     const xSpring = useSpring(mouseX, springConfig);
     const ySpring = useSpring(mouseY, springConfig);
@@ -44,7 +44,7 @@ function TiltLogo({ mouseX, mouseY }: { mouseX: MotionValue<number>; mouseY: Mot
             >
                 <img 
                     src="/images/hero_text_logo.png" 
-                    alt="Major Scrims Logo" 
+                    alt={t.about.title} 
                     className="w-[85%] drop-shadow-[0_0_40px_rgba(13,255,81,0.25)] transition-transform duration-300"
                     style={{ transform: "translateZ(80px)" }} 
                 />
@@ -97,7 +97,7 @@ export function About() {
                             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 mb-8"
                         >
                             <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(13,255,81,0.5)]"></span>
-                            <span className="text-white/70 text-[10px] font-black uppercase tracking-[0.3em]">Our Story</span>
+                            <span className="text-white/70 text-[10px] font-black uppercase tracking-[0.3em]">{t.common.ourStory}</span>
                         </motion.div>
 
                         <h2 className="text-5xl md:text-6xl font-heading font-black mb-8 text-white leading-[1.1]">
@@ -121,7 +121,7 @@ export function About() {
                                     <h3 className="text-5xl font-black text-white tracking-tight flex items-center gap-1 group-hover:text-primary transition-colors duration-300">
                                         <AnimatedCounter value={46} suffix="k+" />
                                     </h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] group-hover:text-gray-300 transition-colors">Active Members</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] group-hover:text-gray-300 transition-colors">{t.common.activeMembers}</p>
                                 </div>
                                 {/* Animated background glow */}
                                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -139,7 +139,7 @@ export function About() {
                                     <h3 className="text-5xl font-black text-white tracking-tight flex items-center gap-1 group-hover:text-blue-400 transition-colors duration-300">
                                         24/7
                                     </h3>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] group-hover:text-gray-300 transition-colors">Dynamic Activity</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] group-hover:text-gray-300 transition-colors">{t.common.dynamicActivity}</p>
                                 </div>
                                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             </motion.div>
@@ -148,7 +148,7 @@ export function About() {
                         <div className="pt-10 border-t border-white/5">
                             <div className="flex items-center gap-3 mb-8">
                                 <ShieldCheck className="text-primary/70" size={18} />
-                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Leadership</h4>
+                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">{t.common.leadership}</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Blxckoutz */}
@@ -201,7 +201,7 @@ export function About() {
                         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                         className="lg:w-2/5 relative flex items-center justify-center p-8"
                     >
-                        <TiltLogo mouseX={mouseX} mouseY={mouseY} />
+                        <TiltLogo mouseX={mouseX} mouseY={mouseY} t={t} />
                     </motion.div>
                 </div>
             </div>

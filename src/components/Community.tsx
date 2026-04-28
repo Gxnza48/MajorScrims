@@ -52,7 +52,7 @@ export function Community() {
                                 className="inline-block px-4 py-1.5 rounded-full glass border-primary/20 mb-8"
                             >
                                 <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em]">
-                                    Join the Squad
+                                    {t.common.joinSquad}
                                 </span>
                             </motion.div>
 

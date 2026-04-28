@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useI18n } from "../i18n";
 
 /* ── Types ────────────────────────────────────────────────────── */
 interface Player {
@@ -56,9 +57,10 @@ function rankColor(r: number) {
 
 /* ── Component ────────────────────────────────────────────────── */
 export function Leaderboard() {
+  const { t } = useI18n();
   const [all, setAll] = useState<Player[]>([]);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Carregando...");
+  const [status, setStatus] = useState(t.leaderboard.loading);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(50);
@@ -91,12 +93,12 @@ export function Leaderboard() {
         const players = Array.isArray(data.players) ? data.players : [];
         setAll(players);
         
-        setStatus(players.length + " jogadores · updates: 03h AM (GMT-3)");
+        setStatus(players.length + " " + (players.length === 1 ? t.leaderboard.foundSingular : t.leaderboard.foundPlural) + " · updates: 03h AM (GMT-3)");
         setLoading(false);
       } catch (e: any) {
         console.error("Error loading leaderboard:", e);
         setError(e.message);
-        setStatus("Erro ao carregar");
+        setStatus(t.leaderboard.error);
         setLoading(false);
       }
     }
@@ -138,7 +140,7 @@ export function Leaderboard() {
               MAJOR <span style={{ color: "#0dff51" }}>SCRIMS</span>
             </h1>
             <div style={{ marginTop: 6, fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#5a7a62", letterSpacing: ".1em" }}>
-              SEASON 1 &nbsp;·&nbsp; RANKING INDIVIDUAL
+              SEASON 1 &nbsp;·&nbsp; {t.nav.leaderboard}
             </div>
           </div>
         </div>
@@ -161,7 +163,7 @@ export function Leaderboard() {
             </svg>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#5a7a62", letterSpacing: ".2em", textTransform: "uppercase", marginBottom: 2 }}>Comunidade oficial</div>
+            <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, color: "#5a7a62", letterSpacing: ".2em", textTransform: "uppercase", marginBottom: 2 }}>{t.common.joinSquad}</div>
             <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#fff" }}>
               DISCORD <span style={{ color: "#0dff51" }}>MAJOR SCRIMS</span>
             </div>
@@ -177,18 +179,18 @@ export function Leaderboard() {
             </svg>
             <input
               type="text"
-              placeholder="Buscar jogador..."
               value={query}
               onChange={e => setQuery(e.target.value)}
               style={{ width: "100%", background: "#0e0e0e", border: "1px solid rgba(13,255,81,0.32)", borderRadius: 2, padding: "11px 14px 11px 40px",
                 fontFamily: "'Rajdhani', sans-serif", fontSize: 16, fontWeight: 500, color: "#e2f0e6", letterSpacing: ".04em", outline: "none" }}
+               placeholder={t.leaderboard.search}
             />
           </div>
           {q && (
             <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 11, color: "#5a7a62", marginTop: 5, marginLeft: 2, letterSpacing: ".08em" }}>
               {list.length > 0
-                ? <><span style={{ color: "#09c93e" }}>{list.length}</span> jogador{list.length !== 1 ? "es" : ""} encontrado{list.length !== 1 ? "s" : ""}</>
-                : "Nenhum resultado"}
+                ? <><span style={{ color: "#09c93e" }}>{list.length}</span> {list.length === 1 ? t.leaderboard.foundSingular : t.leaderboard.foundPlural}</>
+                : t.leaderboard.noResults}
             </div>
           )}
         </div>
@@ -202,23 +204,23 @@ export function Leaderboard() {
         {/* Table / State */}
         {loading ? (
           <div style={{ padding: "56px 24px", textAlign: "center", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#5a7a62", letterSpacing: ".12em", border: "1px solid rgba(13,255,81,0.13)", borderRadius: 2 }}>
-            CARREGANDO DADOS
+            {t.leaderboard.loading}
             <div style={{ display: "block", width: 22, height: 22, border: "2px solid rgba(13,255,81,0.32)", borderTopColor: "#0dff51", borderRadius: "50%", margin: "14px auto 0", animation: "ldSpin .75s linear infinite" }} />
           </div>
         ) : error ? (
           <div style={{ padding: "56px 24px", textAlign: "center", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#e05050", letterSpacing: ".12em", border: "1px solid rgba(220,60,60,.2)", borderRadius: 2 }}>
-            {"// ERRO AO CARREGAR DADOS"}<br /><br />{error}
+            {"// " + t.leaderboard.error}<br /><br />{error}
           </div>
         ) : list.length === 0 ? (
           <div style={{ padding: "56px 24px", textAlign: "center", fontFamily: "'Share Tech Mono', monospace", fontSize: 12, color: "#5a7a62", letterSpacing: ".12em", border: "1px solid rgba(13,255,81,0.13)", borderRadius: 2 }}>
-            {"// NENHUM JOGADOR ENCONTRADO"}
+            {"// " + t.leaderboard.noResults}
           </div>
         ) : (
           <div style={{ border: "1px solid rgba(13,255,81,0.13)", borderRadius: 2, overflow: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
               <thead>
                 <tr style={{ background: "#0e0e0e", borderBottom: "1px solid rgba(13,255,81,0.32)" }}>
-                  {["RANK", "EPIC NAME", "CARGO", "XP", "KILLS", "GAMES"].map((h, i) => (
+                    { [t.leaderboard.rank, "EPIC NAME", t.leaderboard.role, t.leaderboard.xp, t.leaderboard.kills, t.leaderboard.games].map((h, i) => (
                     <th key={h} style={{ padding: "11px 14px", textAlign: i === 0 || i >= 3 ? "center" : "left", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, fontWeight: 400, letterSpacing: ".14em", textTransform: "uppercase", color: "#09c93e", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -262,7 +264,7 @@ export function Leaderboard() {
         {/* Legend */}
         {!loading && !error && (
           <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 7 }}>
-            <div style={{ width: "100%", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#5a7a62", letterSpacing: ".16em", textTransform: "uppercase", marginBottom: 1 }}>Cargos</div>
+            <div style={{ width: "100%", fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: "#5a7a62", letterSpacing: ".16em", textTransform: "uppercase", marginBottom: 1 }}>{t.leaderboard.cargos}</div>
             {TIERS.map(t => (
               <span key={t.cls} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px 2px 4px", borderRadius: 2, fontSize: 11, fontWeight: 700, letterSpacing: ".07em", border: `1px solid ${t.border}`, background: `${t.color}18`, color: t.color }}>
                 <img src={t.icon} alt={t.label} style={{ width: 14, height: 14, objectFit: "contain" }} />

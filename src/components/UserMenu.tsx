@@ -3,8 +3,10 @@
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n";
 
 export function UserMenu() {
+    const { t } = useI18n();
     const { data: session } = useSession();
     const [isAdmin, setIsAdmin] = useState(false);
 
@@ -39,7 +41,7 @@ export function UserMenu() {
             <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                title="Sign Out"
+                title={t.common.signOut}
             >
                 <LogOut size={20} />
             </button>

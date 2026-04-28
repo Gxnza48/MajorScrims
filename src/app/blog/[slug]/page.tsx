@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
-    const { language } = useI18n();
+    const { t, language } = useI18n();
     const router = useRouter();
     const [post, setPost] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                     transition={{ duration: 0.6 }}
                 >
                     <Link href="/blog" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-12 uppercase tracking-widest text-xs font-bold">
-                        <ArrowLeft size={16} /> {language === 'es' ? 'Volver al Blog' : 'Voltar ao Blog'}
+                        <ArrowLeft size={16} /> {t.blog.back}
                     </Link>
 
                     <div className="flex items-center gap-6 text-sm font-bold text-gray-400 uppercase tracking-widest mb-8 border-b border-white/5 pb-8">
