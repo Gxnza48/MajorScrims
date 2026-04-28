@@ -7,7 +7,7 @@ export function Community() {
     const { t } = useI18n();
 
     return (
-        <section className="py-24 bg-black relative overflow-hidden">
+        <section id="community" className="py-24 bg-black relative overflow-hidden">
             {/* Ambient Background Effects */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full -ml-64 pointer-events-none" />
             <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[400px] h-[400px] bg-primary/5 blur-[100px] rounded-full -mr-48 pointer-events-none" />

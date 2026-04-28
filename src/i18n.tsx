@@ -18,6 +18,8 @@ type Translations = {
         title: string;
         subtitle: string;
         cta: string;
+        explore: string;
+        discord: string;
     };
     about: {
         title: string;
@@ -167,6 +169,8 @@ const translations: Record<Language, Translations> = {
             title: 'MAJOR SCRIMS',
             subtitle: 'Elite Fortnite Scrims & Customs – Servidores Brasil',
             cta: 'Entrar no Discord',
+            explore: 'Explorar Funcionalidades',
+            discord: 'Entrar no Discord',
         },
         about: {
             title: 'Sobre a Major',
@@ -189,7 +193,7 @@ const translations: Record<Language, Translations> = {
             badge: 'Experiência Premium',
             subtitle: 'Feita para campeões. Viva o padrão ouro em infraestrutura de jogos competitivos com precisão e clareza incomparáveis.',
             scrims: 'Scrims Organizadas',
-            scrimsDesc: 'Lobbies balanceados e horários fixos para maximizar seu treino.',
+            scrimsDesc: 'Lobbies balanceados e horários ficos para maximizar seu treino.',
             customs: 'Customs Diárias',
             customsDesc: 'Partidas personalizadas todos os dias com formatos competitivos.',
             rules: 'Regras Competitivas',
@@ -312,8 +316,10 @@ const translations: Record<Language, Translations> = {
         },
         hero: {
             title: 'MAJOR SCRIMS',
-            subtitle: 'Scrims y Customs de Elite de Fortnite – Servidores de Brasil',
+            subtitle: 'Mejora tus habilidades y compite con los mejores en el servidor de entrenamiento número 1 de LATAM.',
             cta: 'Unirse a Discord',
+            explore: 'Explorar Funciones',
+            discord: 'Entrar al Discord',
         },
         about: {
             title: 'Sobre Major',

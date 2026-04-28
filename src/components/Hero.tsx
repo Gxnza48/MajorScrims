@@ -72,27 +72,35 @@ export function Hero() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8, duration: 0.8 }}
-                        className="flex justify-center"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-6"
                     >
+                        {/* Primary Button: Explore */}
+                        <a
+                            href="#features"
+                            className="group relative inline-flex items-center justify-center w-full sm:w-auto"
+                        >
+                            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-primary/20 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                            <div className="relative flex items-center bg-primary text-black font-black text-xs md:text-sm px-10 py-5 rounded-2xl transition-all duration-300 group-hover:bg-[#15D166] group-hover:scale-105 active:scale-95 shadow-[0_10px_30px_-10px_rgba(31,192,88,0.5)] overflow-hidden w-full sm:w-auto">
+                                <span className="relative z-10 tracking-[0.15em] uppercase">{t.hero.explore}</span>
+                                <div className="ml-4 p-1.5 bg-black/10 rounded-lg group-hover:translate-x-1 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" className="text-black">
+                                        <path fill="currentColor" d="M12 16l-6-6h12z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </a>
+
+                        {/* Secondary Button: Discord */}
                         <a
                             href="https://discord.com/invite/majorscrims"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group relative inline-flex items-center justify-center"
+                            className="group relative inline-flex items-center justify-center w-full sm:w-auto"
                         >
-                            {/* Glow effect behind button */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-primary/20 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-
-                            <div className="relative flex items-center bg-primary text-black font-black text-xs md:text-sm px-10 py-5 rounded-2xl transition-all duration-300 group-hover:bg-[#15D166] group-hover:scale-105 active:scale-95 shadow-[0_10px_30px_-10px_rgba(31,192,88,0.5)] overflow-hidden">
-                                <span className="relative z-10 tracking-[0.15em] uppercase">{t.hero.cta}</span>
-                                <div className="ml-4 p-1.5 bg-black/10 rounded-lg group-hover:translate-x-1 transition-transform">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        width="18"
-                                        height="18"
-                                        className="text-black"
-                                    >
+                            <div className="relative flex items-center bg-white/5 backdrop-blur-md text-white border border-white/10 font-bold text-xs md:text-sm px-8 py-[18px] rounded-2xl transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95 w-full sm:w-auto">
+                                <span className="tracking-[0.1em] uppercase">{t.hero.discord}</span>
+                                <div className="ml-3 p-1 bg-white/5 rounded-md group-hover:translate-x-1 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" className="text-white/70">
                                         <path fill="currentColor" d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z"></path>
                                     </svg>
                                 </div>

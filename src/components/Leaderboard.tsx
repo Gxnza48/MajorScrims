@@ -113,7 +113,7 @@ export function Leaderboard() {
   const visibleList = list.slice(0, visibleCount);
 
   return (
-    <div style={{ background: "#000", color: "#e2f0e6", fontFamily: "'Rajdhani', sans-serif", minHeight: "100vh", paddingTop: 80 }}>
+    <div id="leaderboard" style={{ background: "#000", color: "#e2f0e6", fontFamily: "'Rajdhani', sans-serif", minHeight: "100vh", paddingTop: 80 }}>
       {/* Corner decorations */}
       {(["tl", "tr", "bl", "br"] as const).map((pos) => (
         <div key={pos} style={{
