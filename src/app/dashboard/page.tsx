@@ -7,7 +7,8 @@ import { StatsCard } from "@/components/StatsCard";
 import { useI18n } from "@/i18n";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Zap, Target, TrendingUp, Info } from "lucide-react";
+import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit } from "lucide-react";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     const [playerData, setPlayerData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [playerFound, setPlayerFound] = useState<boolean>(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -47,6 +49,12 @@ export default function DashboardPage() {
                     console.error("Failed to fetch player stats", err);
                     setIsLoading(false);
                 });
+
+            // Check admin status
+            fetch("/api/me/admin")
+                .then(res => res.json())
+                .then(data => setIsAdmin(data.isAdmin === true))
+                .catch(() => {});
         }
     }, [status, router]);
 
@@ -232,6 +240,20 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Admin Blog Card */}
+                        {isAdmin && (
+                            <Link href="/dashboard/blog" className="block">
+                                <div className="glass border-primary/20 rounded-[40px] p-10 relative overflow-hidden group hover:border-primary/40 transition-all duration-300 cursor-pointer">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-colors" />
+                                    <FileEdit className="text-primary mb-6" size={32} />
+                                    <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4 group-hover:text-primary transition-colors">Blog Admin</h4>
+                                    <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                                        Gestionar artículos, noticias y anuncios del blog de Major Scrims.
+                                    </p>
+                                </div>
+                            </Link>
+                        )}
 
                         {/* Decorative tip card */}
                         <div className="glass border-primary/10 rounded-[40px] p-10 relative overflow-hidden group">

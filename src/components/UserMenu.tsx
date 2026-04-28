@@ -2,9 +2,20 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function UserMenu() {
     const { data: session } = useSession();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        if (session?.user) {
+            fetch("/api/me/admin")
+                .then(res => res.json())
+                .then(data => setIsAdmin(data.isAdmin === true))
+                .catch(() => {});
+        }
+    }, [session]);
 
     if (!session?.user) return null;
 
@@ -20,7 +31,9 @@ export function UserMenu() {
                 )}
                 <div className="hidden md:block text-right">
                     <p className="text-sm font-medium text-white">{session.user.name}</p>
-                    <p className="text-xs text-gray-500">Member</p>
+                    <p className={`text-xs font-bold ${isAdmin ? "text-primary" : "text-gray-500"}`}>
+                        {isAdmin ? "Admin" : "Member"}
+                    </p>
                 </div>
             </div>
             <button

@@ -1,7 +1,8 @@
-
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import clientPromise from "@/lib/mongodb";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {

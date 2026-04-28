@@ -43,6 +43,10 @@ export function Navbar() {
                         <div className="flex items-center gap-6">
                             <a href="/#about" className="text-[13px] font-semibold text-gray-400 hover:text-white transition-all hover:tracking-wider">{t.nav.about}</a>
                             <a href="/#players" className="text-[13px] font-semibold text-gray-400 hover:text-white transition-all hover:tracking-wider">{t.nav.players}</a>
+                            <Link href="/blog" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
+                                Blog
+                                <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
+                            </Link>
                             <Link href="/tournaments" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
                                 {t.nav.tournaments}
                                 <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
@@ -112,6 +116,7 @@ export function Navbar() {
                             <div className="flex flex-col gap-4">
                                 <a href="/#about" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.about}</a>
                                 <a href="/#players" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.players}</a>
+                                <Link href="/blog" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">Blog</Link>
                                 <Link href="/tournaments" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.tournaments}</Link>
                                 <Link href="/leaderboard" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.leaderboard}</Link>
                                 <a href="/#features" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.community}</a>

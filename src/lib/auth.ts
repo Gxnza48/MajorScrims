@@ -16,16 +16,18 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async session({ session, token }) {
             if (session.user) {
-                // @ts-ignore
-                session.user.id = token.sub;
-                // @ts-ignore
-                session.accessToken = token.accessToken;
+                session.user.id = (token.discordId as string) || token.sub || "";
+                session.accessToken = token.accessToken as string;
             }
             return session;
         },
-        async jwt({ token, account }) {
+        async jwt({ token, account, profile }) {
             if (account) {
                 token.accessToken = account.access_token;
+            }
+            if (profile) {
+                // profile.id is the actual Discord User ID from the OAuth response
+                token.discordId = (profile as any).id;
             }
             return token;
         },
