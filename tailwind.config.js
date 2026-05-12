@@ -10,8 +10,8 @@ module.exports = {
                 body: ['Inter', 'sans-serif'],
             },
             colors: {
-                primary: '#1FC058',
-                'primary-dark': '#105624',
+                primary: '#22D962',
+                'primary-dark': '#17A045',
             },
         },
     },

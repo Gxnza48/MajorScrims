@@ -126,6 +126,32 @@ type Translations = {
         contentLabel: string;
         titlePlaceholder: string;
         contentPlaceholder: string;
+        templateLabel: string;
+        templateText: string;
+        templateTextImgText: string;
+        templateImgText: string;
+        templateTextImg: string;
+        templateTextVidText: string;
+        addBlock: string;
+        blockText: string;
+        blockImage: string;
+        blockVideo: string;
+        imageUrl: string;
+        videoUrl: string;
+        caption: string;
+        imageUrlPlaceholder: string;
+        videoUrlPlaceholder: string;
+        playersManagement: string;
+        addPlayer: string;
+        playerName: string;
+        playerImage: string;
+        playerRole: string;
+        savePlayer: string;
+        cancelEdit: string;
+        noPlayers: string;
+        editPlayer: string;
+        deletePlayer: string;
+        playerImgHelp: string;
     };
     common: {
         signOut: string;
@@ -151,6 +177,13 @@ type Translations = {
         xp: string;
         kills: string;
         games: string;
+    };
+    brands: {
+        title: string;
+        subtitle: string;
+        twitchDesc: string;
+        fortniteDesc: string;
+        partner: string;
     };
 };
 
@@ -277,6 +310,32 @@ const translations: Record<Language, Translations> = {
             contentLabel: 'Conteúdo',
             titlePlaceholder: 'Ex: Novo Torneio Anunciado...',
             contentPlaceholder: 'Escreva seu artigo aqui...',
+            templateLabel: 'Template de Layout',
+            templateText: 'Só Texto',
+            templateTextImgText: 'Texto → Imagem → Texto',
+            templateImgText: 'Imagem → Texto',
+            templateTextImg: 'Texto → Imagem',
+            templateTextVidText: 'Texto → Vídeo → Texto',
+            addBlock: '+ Adicionar Bloco',
+            blockText: 'Texto',
+            blockImage: 'Imagem',
+            blockVideo: 'Vídeo',
+            imageUrl: 'URL da Imagem',
+            videoUrl: 'URL do Vídeo',
+            caption: 'Legenda (opcional)',
+            imageUrlPlaceholder: 'https://exemplo.com/imagem.jpg',
+            videoUrlPlaceholder: 'https://youtube.com/watch?v=... ou URL direto',
+            playersManagement: 'Gestão de Players',
+            addPlayer: 'Adicionar Player',
+            playerName: 'Nome do Player',
+            playerImage: 'URL da Foto',
+            playerRole: 'Cargo / Role',
+            savePlayer: 'Salvar Player',
+            cancelEdit: 'Cancelar',
+            noPlayers: 'Sem players cadastrados.',
+            editPlayer: 'Editar',
+            deletePlayer: 'Remover',
+            playerImgHelp: 'Use uma URL pública de imagem (ex: imgur, imgbb) ou um caminho local /images/...',
         },
         common: {
             signOut: 'Sair',
@@ -302,6 +361,13 @@ const translations: Record<Language, Translations> = {
             xp: 'XP',
             kills: 'KILLS',
             games: 'GAMES',
+        },
+        brands: {
+            title: 'Marcas Parceiras',
+            subtitle: 'Grandes marcas com quem já trabalhamos dentro do nosso Discord.',
+            twitchDesc: 'Colaborações e transmissões ao vivo no servidor oficial da Major Scrims.',
+            fortniteDesc: 'Parceria estratégica com a Epic Games para treinos e torneios competitivos.',
+            partner: 'Parceiro Oficial',
         },
     },
     es: {
@@ -426,6 +492,32 @@ const translations: Record<Language, Translations> = {
             contentLabel: 'Contenido',
             titlePlaceholder: 'Ej: Nuevo Torneo Anunciado...',
             contentPlaceholder: 'Escribe tu artículo aquí...',
+            templateLabel: 'Template de Layout',
+            templateText: 'Solo Texto',
+            templateTextImgText: 'Texto → Imagen → Texto',
+            templateImgText: 'Imagen → Texto',
+            templateTextImg: 'Texto → Imagen',
+            templateTextVidText: 'Texto → Video → Texto',
+            addBlock: '+ Añadir Bloque',
+            blockText: 'Texto',
+            blockImage: 'Imagen',
+            blockVideo: 'Video',
+            imageUrl: 'URL de Imagen',
+            videoUrl: 'URL de Video',
+            caption: 'Pie de foto (opcional)',
+            imageUrlPlaceholder: 'https://ejemplo.com/imagen.jpg',
+            videoUrlPlaceholder: 'https://youtube.com/watch?v=... o URL directo',
+            playersManagement: 'Gestión de Players',
+            addPlayer: 'Añadir Player',
+            playerName: 'Nombre del Player',
+            playerImage: 'URL de la Foto',
+            playerRole: 'Cargo / Role',
+            savePlayer: 'Guardar Player',
+            cancelEdit: 'Cancelar',
+            noPlayers: 'Sin players registrados.',
+            editPlayer: 'Editar',
+            deletePlayer: 'Eliminar',
+            playerImgHelp: 'Usa una URL pública de imagen (ej: imgur, imgbb) o una ruta local /images/...',
         },
         common: {
             signOut: 'Cerrar Sesión',
@@ -451,6 +543,13 @@ const translations: Record<Language, Translations> = {
             xp: 'XP',
             kills: 'BAJAS',
             games: 'PARTIDAS',
+        },
+        brands: {
+            title: 'Marcas Socias',
+            subtitle: 'Grandes marcas con las que ya trabajamos dentro de nuestro Discord.',
+            twitchDesc: 'Colaboraciones y transmisiones en vivo en el servidor oficial de Major Scrims.',
+            fortniteDesc: 'Asociación estratégica con Epic Games para entrenamientos y torneos competitivos.',
+            partner: 'Socio Oficial',
         },
     },
 };

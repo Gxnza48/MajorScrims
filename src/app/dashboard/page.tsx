@@ -7,7 +7,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { useI18n } from "@/i18n";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit } from "lucide-react";
+import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit, Users } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -241,18 +241,30 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* Admin Blog Card */}
+                        {/* Admin Cards */}
                         {isAdmin && (
-                            <Link href="/dashboard/blog" className="block">
-                                <div className="glass border-primary/20 rounded-[40px] p-10 relative overflow-hidden group hover:border-primary/40 transition-all duration-300 cursor-pointer">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-colors" />
-                                    <FileEdit className="text-primary mb-6" size={32} />
-                                    <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4 group-hover:text-primary transition-colors">Blog Admin</h4>
-                                    <p className="text-sm text-gray-400 font-medium leading-relaxed">
-                                        Gestionar artículos, noticias y anuncios del blog de Major Scrims.
-                                    </p>
-                                </div>
-                            </Link>
+                            <>
+                                <Link href="/dashboard/blog" className="block">
+                                    <div className="glass border-primary/20 rounded-[40px] p-10 relative overflow-hidden group hover:border-primary/40 transition-all duration-300 cursor-pointer">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-colors" />
+                                        <FileEdit className="text-primary mb-6" size={32} />
+                                        <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4 group-hover:text-primary transition-colors">Blog Admin</h4>
+                                        <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                                            Gestionar artículos, noticias y anuncios del blog de Major Scrims.
+                                        </p>
+                                    </div>
+                                </Link>
+                                <Link href="/dashboard/players" className="block">
+                                    <div className="glass border-primary/20 rounded-[40px] p-10 relative overflow-hidden group hover:border-primary/40 transition-all duration-300 cursor-pointer">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-colors" />
+                                        <Users className="text-primary mb-6" size={32} />
+                                        <h4 className="text-lg font-heading font-black text-white uppercase tracking-widest mb-4 group-hover:text-primary transition-colors">Players Admin</h4>
+                                        <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                                            Gestionar fotos y datos de los pro players de Major Scrims.
+                                        </p>
+                                    </div>
+                                </Link>
+                            </>
                         )}
 
                         {/* Decorative tip card */}

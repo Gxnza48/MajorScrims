@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 :root {
-    --color-primary: #1FC058;
-    --color-primary-dark: #105624;
+    --color-primary: #22D962;
+    --color-primary-dark: #17A045;
     --color-bg: #050505;
     --color-surface: #0a0a0a;
     --font-heading: 'Outfit', sans-serif;
@@ -38,19 +38,19 @@
 
 @layer utilities {
     .text-glow {
-        text-shadow: 0 0 20px rgba(31, 192, 88, 0.5);
+        text-shadow: 0 0 24px rgba(34, 217, 98, 0.65);
     }
 
     .box-glow {
-        box-shadow: 0 0 20px rgba(31, 192, 88, 0.15);
+        box-shadow: 0 0 24px rgba(34, 217, 98, 0.25);
     }
 
     .box-glow-primary {
-        box-shadow: 0 0 30px rgba(31, 192, 88, 0.3);
+        box-shadow: 0 0 36px rgba(34, 217, 98, 0.45);
     }
 
     .text-gradient {
-        background: linear-gradient(to right, #ffffff, #1FC058);
+        background: linear-gradient(to right, #ffffff, #22D962);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }

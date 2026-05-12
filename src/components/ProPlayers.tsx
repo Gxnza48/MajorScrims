@@ -2,25 +2,44 @@
 
 import { useI18n } from "../i18n";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
-const players = [
-    { name: "k1nG", img: "/images/pro-players/k1nG.png", role: "proplayer" },
-    { name: "Phzin", img: "/images/pro-players/Phzin.png", role: "proplayer" },
-    { name: "Fazer", img: "/images/pro-players/Fazer.png", role: "proplayer" },
-    { name: "Cadu", img: "/images/pro-players/Cadu.png", role: "proplayer" },
-    { name: "Gabzera", img: "/images/pro-players/Gabzera.png", role: "proplayer" },
-    { name: "Tisco", img: "/images/pro-players/Tisco.png", role: "proplayer" },
+interface Player {
+    _id?: string;
+    name: string;
+    img: string;
+    role: string;
+    order: number;
+}
+
+const FALLBACK_PLAYERS: Player[] = [
+    { name: "k1nG", img: "/images/pro-players/k1nG.png", role: "proplayer", order: 0 },
+    { name: "Phzin", img: "/images/pro-players/Phzin.png", role: "proplayer", order: 1 },
+    { name: "Fazer", img: "/images/pro-players/Fazer.png", role: "proplayer", order: 2 },
+    { name: "Cadu", img: "/images/pro-players/Cadu.png", role: "proplayer", order: 3 },
+    { name: "Gabzera", img: "/images/pro-players/Gabzera.png", role: "proplayer", order: 4 },
+    { name: "Tisco", img: "/images/pro-players/Tisco.png", role: "proplayer", order: 5 },
 ];
 
 export function ProPlayers() {
     const { t } = useI18n();
+    const [players, setPlayers] = useState<Player[]>(FALLBACK_PLAYERS);
 
-    // Duplicate list for seamless marquee effect
+    useEffect(() => {
+        fetch("/api/players")
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.players?.length > 0) {
+                    setPlayers(data.players);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const marqueePlayers = [...players, ...players, ...players];
 
     return (
         <section id="players" className="py-32 bg-black relative overflow-hidden">
-            {/* Background Decorative Element */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
             <div className="container mx-auto px-6 mb-20">
@@ -45,21 +64,13 @@ export function ProPlayers() {
                 </motion.div>
             </div>
 
-            {/* Infinite Marquee Container */}
             <div className="relative flex overflow-hidden group/marquee">
-                {/* Fade Edges */}
                 <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black to-transparent z-30 pointer-events-none" />
                 <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black to-transparent z-30 pointer-events-none" />
 
                 <motion.div
-                    animate={{
-                        x: [0, "-33.333%"]
-                    }}
-                    transition={{
-                        duration: 40, // Slower for smoother perception
-                        repeat: Infinity,
-                        ease: "linear",
-                    }}
+                    animate={{ x: [0, "-33.333%"] }}
+                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
                     className="flex gap-4 sm:gap-8 px-4 sm:px-8 will-change-transform"
                     style={{ width: "fit-content" }}
                 >
@@ -69,7 +80,6 @@ export function ProPlayers() {
                             className="flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] group relative"
                         >
                             <div className="relative rounded-[32px] overflow-hidden aspect-[3/4] border border-white/10 bg-[#0a0a0a] transition-all duration-300 group-hover:border-primary/50">
-                                {/* Character Gradient Overlay - Optimized */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
 
                                 <img
@@ -87,7 +97,6 @@ export function ProPlayers() {
                                     </div>
                                 </div>
 
-                                {/* Hover interactive element - Simplified */}
                                 <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
                                         <div className="w-2 h-2 rounded-full bg-primary" />
