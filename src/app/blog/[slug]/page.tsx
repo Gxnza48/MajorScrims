@@ -15,8 +15,14 @@ function getYouTubeEmbedUrl(url: string): string | null {
 
 function BlockRenderer({ block }: { block: IContentBlock }) {
     if (block.type === "text") {
-        return (
-            <div className="prose-p:text-gray-300 prose-p:leading-relaxed text-gray-300 leading-relaxed" style={{ whiteSpace: "pre-wrap" }}>
+        const isHtml = block.content.trim().startsWith("<");
+        return isHtml ? (
+            <div
+                className="blog-rich-content"
+                dangerouslySetInnerHTML={{ __html: block.content }}
+            />
+        ) : (
+            <div className="text-gray-300 leading-relaxed" style={{ whiteSpace: "pre-wrap" }}>
                 {block.content}
             </div>
         );
@@ -140,6 +146,8 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                                     <BlockRenderer key={idx} block={block} />
                                 ))}
                             </div>
+                        ) : legacyContent?.trim().startsWith("<") ? (
+                            <div className="blog-rich-content" dangerouslySetInnerHTML={{ __html: legacyContent }} />
                         ) : (
                             <div style={{ whiteSpace: "pre-wrap" }} className="text-gray-300 leading-relaxed">
                                 {legacyContent}

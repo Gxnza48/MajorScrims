@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Save, Loader2, Type, Image as ImageIcon, Video, ChevronUp, ChevronDown, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/i18n";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 type BlockType = "text" | "image" | "video";
 
@@ -256,10 +257,10 @@ export default function NewBlogPostPage() {
 
                                     {/* Block content */}
                                     {block.type === "text" ? (
-                                        <textarea
+                                        <RichTextEditor
+                                            key={block.id}
                                             value={block.content}
-                                            onChange={e => updateBlock(block.id, "content", e.target.value)}
-                                            className="w-full min-h-[160px] bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors resize-y text-sm leading-relaxed"
+                                            onChange={html => updateBlock(block.id, "content", html)}
                                             placeholder={t.admin.contentPlaceholder}
                                         />
                                     ) : (
