@@ -68,19 +68,11 @@ export function Brands() {
                             />
 
                             <div className="flex items-start gap-6 relative z-10">
-                                <div
-                                    className="w-16 h-16 flex-shrink-0 p-2.5 rounded-2xl flex items-center justify-center"
-                                    style={{
-                                        backgroundColor: `rgba(${brand.rgb}, 0.12)`,
-                                        border: `1px solid rgba(${brand.rgb}, 0.3)`,
-                                    }}
-                                >
-                                    <img
-                                        src={brand.logo}
-                                        alt={brand.name}
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
+                                <img
+                                    src={brand.logo}
+                                    alt={brand.name}
+                                    className="w-16 h-16 flex-shrink-0 object-contain rounded-2xl"
+                                />
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-3 mb-2 flex-wrap">
