@@ -3,23 +3,11 @@
 import { useI18n } from "../i18n";
 import { motion } from "framer-motion";
 
-const TwitchLogo = () => (
-    <svg viewBox="0 0 24 28" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        <path d="M2.149 0L0.537 4.119V22.966H5.633V25.885H8.552L11.465 22.966H15.949L21.919 16.996V0H2.149ZM19.77 15.896L16.398 19.267H10.904L7.991 22.18V19.267H3.506V2.148H19.77V15.896ZM16.398 8.168V14.797H14.25V8.168H16.398ZM10.901 8.168V14.797H8.753V8.168H10.901Z" />
-    </svg>
-);
-
-const FortniteLogo = () => (
-    <svg viewBox="0 0 60 70" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        <path d="M5 0H55L60 10V55L30 70L0 55V10L5 0ZM10 12V52L30 62L50 52V12H10ZM15 18H45V28H32V35H44V45H32V58H15V18Z" />
-    </svg>
-);
-
 const brands = [
     {
         key: "twitch" as const,
         name: "Twitch",
-        Icon: TwitchLogo,
+        logo: "https://m.media-amazon.com/images/I/21kRx-CJsUL.png",
         color: "#9146FF",
         rgb: "145, 70, 255",
         bg: "from-[#9146FF]/20 to-[#6441a5]/10",
@@ -29,7 +17,7 @@ const brands = [
     {
         key: "fortnite" as const,
         name: "Fortnite",
-        Icon: FortniteLogo,
+        logo: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Fortnite_F_lettermark_logo.png",
         color: "#00C7E4",
         rgb: "0, 199, 228",
         bg: "from-[#00C7E4]/20 to-[#0099b8]/10",
@@ -81,14 +69,17 @@ export function Brands() {
 
                             <div className="flex items-start gap-6 relative z-10">
                                 <div
-                                    className="w-16 h-16 flex-shrink-0 p-3 rounded-2xl"
+                                    className="w-16 h-16 flex-shrink-0 p-2.5 rounded-2xl flex items-center justify-center"
                                     style={{
-                                        backgroundColor: `rgba(${brand.rgb}, 0.15)`,
-                                        color: brand.color,
+                                        backgroundColor: `rgba(${brand.rgb}, 0.12)`,
                                         border: `1px solid rgba(${brand.rgb}, 0.3)`,
                                     }}
                                 >
-                                    <brand.Icon />
+                                    <img
+                                        src={brand.logo}
+                                        alt={brand.name}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
