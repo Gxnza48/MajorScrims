@@ -26,6 +26,7 @@ interface Props {
 
 export function RichTextEditor({ value, onChange, placeholder }: Props) {
     const editor = useEditor({
+        immediatelyRender: false,
         extensions: [StarterKit, TextStyle, Color],
         content: value,
         onUpdate: ({ editor }) => onChange(editor.getHTML()),
