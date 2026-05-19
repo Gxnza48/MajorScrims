@@ -115,20 +115,27 @@ export function Leaderboard() {
   return (
     <div id="leaderboard" style={{ background: "#000", color: "#e2f0e6", fontFamily: "'Rajdhani', sans-serif", minHeight: "100vh", paddingTop: 80 }}>
       {/* Corner decorations */}
-      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-        <div key={pos} style={{
-          position: "fixed", width: 52, height: 52, pointerEvents: "none", zIndex: 100,
-          top: pos.startsWith("t") ? 14 : undefined,
-          bottom: pos.startsWith("b") ? 14 : undefined,
-          left: ["tl", "bl"].includes(pos) ? 14 : undefined,
-          right: ["tr", "br"].includes(pos) ? 14 : undefined,
-        }}>
-          <div style={{ position: "absolute", width: 2, height: 36, background: "#09c93e", top: 0, left: 0,
-            transform: pos === "tr" ? "scaleX(-1)" : pos === "bl" ? "scaleY(-1)" : pos === "br" ? "scale(-1)" : undefined }} />
-          <div style={{ position: "absolute", width: 36, height: 2, background: "#09c93e", top: 0, left: 0,
-            transform: pos === "tr" ? "scaleX(-1)" : pos === "bl" ? "scaleY(-1)" : pos === "br" ? "scale(-1)" : undefined }} />
-        </div>
-      ))}
+      {(["tl", "tr", "bl", "br"] as const).map((pos) => {
+        const isTop = pos[0] === "t";
+        const isLeft = pos[1] === "l";
+        // Anchor both bars to the corner of the 52x52 box nearest the viewport
+        // edge, so the L-bracket hugs the actual corner in all 4 positions.
+        const vEdge = isTop ? { top: 0 } : { bottom: 0 };
+        const hEdge = isLeft ? { left: 0 } : { right: 0 };
+        const anchor = { ...vEdge, ...hEdge };
+        return (
+          <div key={pos} style={{
+            position: "fixed", width: 52, height: 52, pointerEvents: "none", zIndex: 100,
+            top: isTop ? 14 : undefined,
+            bottom: !isTop ? 14 : undefined,
+            left: isLeft ? 14 : undefined,
+            right: !isLeft ? 14 : undefined,
+          }}>
+            <div style={{ position: "absolute", width: 2, height: 36, background: "#09c93e", ...anchor }} />
+            <div style={{ position: "absolute", width: 36, height: 2, background: "#09c93e", ...anchor }} />
+          </div>
+        );
+      })}
 
       <div style={{ maxWidth: 920, margin: "0 auto", padding: "40px 20px 80px" }}>
         {/* Header */}
