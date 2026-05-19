@@ -74,7 +74,7 @@ export default function DashboardPage() {
         wins: dbStats.wins || 0,
         winRate: dbStats.games > 0 ? ((dbStats.wins || 0) / dbStats.games * 100).toFixed(1) : 0,
         kd: dbStats.games ? ((dbStats.kills || 0) / Math.max(1, dbStats.games - (dbStats.wins || 0))).toFixed(2) : 0,
-        top3: dbStats.top3 || 0,
+        avgKills: dbStats.games > 0 ? ((dbStats.kills || 0) / dbStats.games).toFixed(2) : 0,
     };
     
     // Derived score directly from the player document
@@ -201,8 +201,8 @@ export default function DashboardPage() {
                                 value={stats.kd}
                             />
                             <StatsCard
-                                title={t.dashboard.top3}
-                                value={stats.top3}
+                                title={t.dashboard.avgKills}
+                                value={stats.avgKills}
                             />
                             <StatsCard
                                 title={t.dashboard.winRate}
@@ -213,34 +213,6 @@ export default function DashboardPage() {
 
                     {/* Right Column: Recent Activity & Form */}
                     <div className="lg:col-span-1 space-y-10">
-                        <div className="glass-dark border-white/5 rounded-[40px] p-10 relative overflow-hidden group">
-                            <h3 className="text-xl font-heading font-black text-white uppercase tracking-widest mb-8 flex items-center gap-4">
-                                <div className="w-1.5 h-6 bg-primary/40 rounded-full" />
-                                {t.dashboard.recentForm}
-                            </h3>
-
-                            <div className="grid grid-cols-5 gap-4">
-                                {["?", "?", "?", "?", "?", "?", "?", "?", "?", "?"].map((result, i) => (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        whileInView={{ opacity: 1, scale: 1 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: i * 0.05 }}
-                                        className="aspect-square rounded-2xl flex items-center justify-center font-black text-sm border-2 bg-white/5 border-white/10 text-gray-500"
-                                    >
-                                        {result}
-                                    </motion.div>
-                                ))}
-                            </div>
-
-                            <div className="mt-10 pt-8 border-t border-white/5">
-                                <p className="text-xs text-gray-400 text-center uppercase tracking-widest">
-                                    {t.dashboard.matchHistory}
-                                </p>
-                            </div>
-                        </div>
-
                         {/* Admin Cards */}
                         {isAdmin && (
                             <>
