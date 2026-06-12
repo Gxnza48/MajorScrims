@@ -1,0 +1,528 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+    ArrowRight,
+    Clock,
+    Palette,
+    ScrollText,
+    ShieldCheck,
+    Star,
+    Swords,
+    Trophy,
+    Users,
+} from "lucide-react";
+
+/* ──────────────────────────────────────────────────────────────────
+   Boceto de nuevo diseño de la home — estilo minimalista (ref. nobleprac.com)
+   Tres paletas seleccionables en vivo. Compartible por link directo:
+   /newmodel?theme=verde · /newmodel?theme=dorado · /newmodel?theme=mono
+   ────────────────────────────────────────────────────────────────── */
+
+type Theme = {
+    id: string;
+    label: string;
+    vars: Record<string, string>;
+};
+
+const THEMES: Theme[] = [
+    {
+        id: "verde",
+        label: "Verde",
+        vars: {
+            "--acc": "#22D962",
+            "--acc-rgb": "34 217 98",
+            "--acc-hover": "#1FC058",
+            "--on-acc": "#04130A",
+            "--h1": "#FFFFFF",
+            "--bg0": "#111816",
+            "--bg1": "#0C100F",
+            "--bg2": "#070908",
+        },
+    },
+    {
+        id: "dorado",
+        label: "Dorado",
+        vars: {
+            "--acc": "#F5B500",
+            "--acc-rgb": "245 181 0",
+            "--acc-hover": "#D99F02",
+            "--on-acc": "#132430",
+            "--h1": "#FFFFFF",
+            "--bg0": "#152530",
+            "--bg1": "#0F1F2A",
+            "--bg2": "#0A1520",
+        },
+    },
+    {
+        id: "mono",
+        label: "Mono",
+        vars: {
+            "--acc": "#FAFAFA",
+            "--acc-rgb": "250 250 250",
+            "--acc-hover": "#FFFFFF",
+            "--on-acc": "#0A0B0D",
+            "--h1": "#8B919C",
+            "--bg0": "#141519",
+            "--bg1": "#0E0F12",
+            "--bg2": "#08090B",
+        },
+    },
+];
+
+const FEATURES = [
+    {
+        icon: Swords,
+        title: "Scrims diárias",
+        desc: "Treinos com lobbies equilibrados e nível competitivo real, todos os dias.",
+    },
+    {
+        icon: Clock,
+        title: "Customs 24/7",
+        desc: "Partidas personalizadas a qualquer hora, com servidores ativos dia e noite.",
+    },
+    {
+        icon: ScrollText,
+        title: "Regras profissionais",
+        desc: "Formato e regras alinhados ao cenário competitivo oficial.",
+    },
+    {
+        icon: ShieldCheck,
+        title: "Moderação ativa",
+        desc: "Equipe dedicada garantindo partidas justas e um ambiente saudável.",
+    },
+    {
+        icon: Trophy,
+        title: "Leaderboard & rankings",
+        desc: "Acompanhe sua evolução com estatísticas e rankings atualizados.",
+    },
+    {
+        icon: Users,
+        title: "Comunidade pro",
+        desc: "Jogadores profissionais e talentos do Brasil e LATAM treinam aqui.",
+    },
+];
+
+const PRO_PLAYERS = ["Cadu", "Fazer", "Gabzera", "k1nG", "Phzin", "Tisco"];
+
+type Player = {
+    name: string;
+    xp: number;
+    kills: number;
+    games: number;
+    rank: number;
+};
+
+const FALLBACK_TOP: Player[] = [
+    { rank: 1, name: "AURA LeoS2", xp: 248, kills: 62, games: 46 },
+    { rank: 2, name: "2two Keyxity", xp: 168, kills: 62, games: 27 },
+    { rank: 3, name: "shinnzx1", xp: 164, kills: 24, games: 16 },
+    { rank: 4, name: "manya", xp: 162, kills: 29, games: 26 },
+    { rank: 5, name: "astrx 67", xp: 140, kills: 50, games: 43 },
+];
+
+const DISCORD_URL = "https://discord.com/invite/majorscrims";
+
+const DiscordIcon = ({ className }: { className?: string }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 127.14 96.36"
+        fill="currentColor"
+        className={className}
+    >
+        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.11,77.11,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22c2.36-24.44-3-48.42-18.9-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+    </svg>
+);
+
+export default function NewModelPage() {
+    const [themeId, setThemeId] = useState("verde");
+    const [topPlayers, setTopPlayers] = useState<Player[]>(FALLBACK_TOP);
+    const [totalPlayers, setTotalPlayers] = useState(7700);
+
+    useEffect(() => {
+        const param = new URLSearchParams(window.location.search).get("theme");
+        if (param && THEMES.some((t) => t.id === param)) {
+            setThemeId(param);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetch("/data.json")
+            .then((r) => r.json())
+            .then((d) => {
+                if (Array.isArray(d?.players) && d.players.length > 0) {
+                    setTopPlayers(d.players.slice(0, 5));
+                    setTotalPlayers(d.players.length);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    const selectTheme = (id: string) => {
+        setThemeId(id);
+        const url = new URL(window.location.href);
+        url.searchParams.set("theme", id);
+        window.history.replaceState(null, "", url.toString());
+    };
+
+    const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
+
+    return (
+        <div
+            className="min-h-screen text-white"
+            style={
+                {
+                    ...theme.vars,
+                    background:
+                        "linear-gradient(to bottom, var(--bg0), var(--bg1) 45%, var(--bg2))",
+                } as React.CSSProperties
+            }
+        >
+            <style>{`
+                @keyframes nmRise {
+                    from { opacity: 0; transform: translateY(14px); }
+                    to { opacity: 1; transform: none; }
+                }
+                .nm-rise { animation: nmRise .7s cubic-bezier(.22,1,.36,1) both; }
+                .nm-d1 { animation-delay: .08s; }
+                .nm-d2 { animation-delay: .16s; }
+                .nm-d3 { animation-delay: .24s; }
+                .nm-d4 { animation-delay: .32s; }
+            `}</style>
+
+            {/* ── Navbar ─────────────────────────────────────────── */}
+            <header className="sticky top-0 z-40 border-b border-white/5 bg-black/30 backdrop-blur-md">
+                <div className="container mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
+                    <Link href="/newmodel" className="flex items-center gap-2">
+                        <img
+                            src="/images/logo_full.png"
+                            alt="Major Scrims"
+                            className="h-8 w-auto md:h-9"
+                        />
+                    </Link>
+
+                    <nav className="hidden items-center gap-8 md:flex">
+                        <a
+                            href="#features"
+                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                        >
+                            Sobre
+                        </a>
+                        <Link
+                            href="/leaderboard"
+                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                        >
+                            Leaderboard
+                        </Link>
+                        <Link
+                            href="/tournaments"
+                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                        >
+                            Torneios
+                        </Link>
+                        <Link
+                            href="/blog"
+                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                        >
+                            Blog
+                        </Link>
+                    </nav>
+
+                    <a
+                        href={DISCORD_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg bg-[var(--acc)] px-5 py-2.5 text-sm font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                    >
+                        <DiscordIcon className="h-4 w-4" />
+                        <span className="hidden sm:inline">Entrar no Discord</span>
+                        <span className="sm:hidden">Discord</span>
+                    </a>
+                </div>
+            </header>
+
+            {/* ── Hero ───────────────────────────────────────────── */}
+            <section className="relative flex min-h-[calc(100dvh-72px)] items-center justify-center overflow-hidden py-20">
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute left-10 top-1/4 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.14)] blur-3xl" />
+                    <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.08)] blur-3xl" />
+                </div>
+
+                <div className="container relative z-10 mx-auto max-w-4xl px-6 text-center">
+                    <div className="nm-rise mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                        <Star size={16} className="text-[var(--acc)]" />
+                        <span className="text-sm font-medium text-[var(--acc)]">
+                            Mais de 46.000 jogadores confiam na Major
+                        </span>
+                    </div>
+
+                    <h1 className="nm-rise nm-d1 mb-6 text-4xl font-bold leading-tight text-[var(--h1)] md:text-6xl">
+                        Scrims & customs de elite para{" "}
+                        <span className="text-[var(--acc)]">Fortnite competitivo</span>
+                    </h1>
+
+                    <p className="nm-rise nm-d2 mx-auto mb-10 max-w-2xl text-lg text-white/70 md:text-xl">
+                        A comunidade líder de treinos competitivos no Brasil e LATAM.
+                        Lobbies equilibrados, regras profissionais e atividade 24 horas
+                        por dia.
+                    </p>
+
+                    <div className="nm-rise nm-d3 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                        <a
+                            href={DISCORD_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)] sm:w-auto"
+                        >
+                            Entrar no Discord
+                            <ArrowRight size={18} />
+                        </a>
+                        <Link
+                            href="/leaderboard"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-8 py-3.5 font-bold text-white transition-colors duration-300 hover:border-white/30 hover:bg-white/5 sm:w-auto"
+                        >
+                            Ver leaderboard
+                        </Link>
+                    </div>
+
+                    <div className="nm-rise nm-d4 mt-14 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+                        {[
+                            ["46k+", "Membros ativos"],
+                            [`${totalPlayers.toLocaleString("pt-BR")}`, "Jogadores ranqueados"],
+                            ["24/7", "Customs e scrims"],
+                        ].map(([value, label]) => (
+                            <div key={label} className="text-center">
+                                <div className="text-2xl font-bold text-white md:text-3xl">
+                                    {value}
+                                </div>
+                                <div className="mt-1 text-sm text-white/50">{label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Features ───────────────────────────────────────── */}
+            <section id="features" className="py-24">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="mx-auto mb-16 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Por que treinar na Major?
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Estrutura profissional pensada para levar o seu jogo ao
+                            próximo nível.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {FEATURES.map(({ icon: Icon, title, desc }) => (
+                            <div
+                                key={title}
+                                className="rounded-xl border border-white/10 bg-white/[0.03] p-7 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                            >
+                                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg bg-[rgb(var(--acc-rgb)_/_0.12)]">
+                                    <Icon size={22} className="text-[var(--acc)]" />
+                                </div>
+                                <h3 className="mb-2 text-lg font-bold">{title}</h3>
+                                <p className="text-sm leading-relaxed text-white/60">
+                                    {desc}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Leaderboard preview ────────────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-4xl px-6">
+                    <div className="mx-auto mb-12 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Os melhores da temporada
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Rankings atualizados com o desempenho real das sessões.
+                        </p>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                        <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-4 border-b border-white/10 px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]">
+                            <span>#</span>
+                            <span>Jogador</span>
+                            <span className="text-right">XP</span>
+                            <span className="text-right">Kills</span>
+                            <span className="hidden text-right sm:block">Partidas</span>
+                        </div>
+                        {topPlayers.map((p) => (
+                            <div
+                                key={p.rank}
+                                className="grid grid-cols-[3rem_1fr_4rem_4rem] items-center gap-4 border-b border-white/5 px-6 py-4 last:border-b-0 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]"
+                            >
+                                <span className="font-bold text-[var(--acc)]">
+                                    {p.rank}
+                                </span>
+                                <span className="truncate font-medium text-white">
+                                    {p.name}
+                                </span>
+                                <span className="text-right text-white/70">{p.xp}</span>
+                                <span className="text-right text-white/70">
+                                    {p.kills}
+                                </span>
+                                <span className="hidden text-right text-white/70 sm:block">
+                                    {p.games}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-8 text-center">
+                        <Link
+                            href="/leaderboard"
+                            className="inline-flex items-center gap-2 font-semibold text-[var(--acc)] transition-opacity hover:opacity-80"
+                        >
+                            Ver leaderboard completo
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Pro players ────────────────────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-5xl px-6">
+                    <div className="mx-auto mb-14 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Quem treina na Major
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Jogadores profissionais e criadores de conteúdo escolhem os
+                            nossos servidores.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
+                        {PRO_PLAYERS.map((name) => (
+                            <div key={name} className="group flex flex-col items-center gap-3">
+                                <img
+                                    src={`/images/pro-players/${name}.png`}
+                                    alt={name}
+                                    loading="lazy"
+                                    className="h-16 w-16 rounded-full border border-white/10 object-cover grayscale transition-all duration-300 group-hover:grayscale-0 md:h-20 md:w-20"
+                                />
+                                <span className="text-xs font-medium text-white/50 transition-colors group-hover:text-white">
+                                    {name}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Discord CTA ────────────────────────────────────── */}
+            <section className="pb-32 pt-8">
+                <div className="container mx-auto max-w-4xl px-6">
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] px-8 py-16 text-center md:px-16">
+                        <div className="absolute left-1/2 top-0 h-48 w-2/3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgb(var(--acc-rgb)_/_0.10)] blur-3xl" />
+                        <div className="relative z-10">
+                            <DiscordIcon className="mx-auto mb-6 h-12 w-12 text-[var(--acc)]" />
+                            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+                                Pronto para evoluir?
+                            </h2>
+                            <p className="mx-auto mb-9 max-w-xl text-lg text-white/70">
+                                Entre no Discord da Major Scrims e comece a treinar com os
+                                melhores do Brasil e LATAM hoje mesmo.
+                            </p>
+                            <a
+                                href={DISCORD_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                            >
+                                <DiscordIcon className="h-5 w-5" />
+                                Entrar no Discord
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Footer ─────────────────────────────────────────── */}
+            <footer className="border-t border-white/5 py-10">
+                <div className="container mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 md:flex-row">
+                    <img
+                        src="/images/logo_full.png"
+                        alt="Major Scrims"
+                        className="h-7 w-auto opacity-70"
+                    />
+                    <p className="text-xs text-white/40">
+                        © {new Date().getFullYear()} Major Scrims. Todos os direitos
+                        reservados.
+                    </p>
+                    <div className="flex items-center gap-5">
+                        <a
+                            href="https://x.com/MajorScrims"
+                            target="_blank"
+                            rel="noopener"
+                            className="text-sm text-white/40 transition-colors hover:text-white"
+                        >
+                            X
+                        </a>
+                        <a
+                            href="https://www.instagram.com/majorscrims/"
+                            target="_blank"
+                            rel="noopener"
+                            className="text-sm text-white/40 transition-colors hover:text-white"
+                        >
+                            Instagram
+                        </a>
+                        <a
+                            href="http://tiktok.com/@majorscrims_"
+                            target="_blank"
+                            rel="noopener"
+                            className="text-sm text-white/40 transition-colors hover:text-white"
+                        >
+                            TikTok
+                        </a>
+                        <a
+                            href={DISCORD_URL}
+                            target="_blank"
+                            rel="noopener"
+                            className="text-white/40 transition-colors hover:text-white"
+                        >
+                            <DiscordIcon className="h-4 w-4" />
+                        </a>
+                    </div>
+                </div>
+            </footer>
+
+            {/* ── Selector de paleta (solo para revisión del boceto) ── */}
+            <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2">
+                <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/75 px-2 py-2 shadow-2xl backdrop-blur-xl">
+                    <span className="hidden items-center gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-widest text-white/50 sm:flex">
+                        <Palette size={13} />
+                        Paleta
+                    </span>
+                    {THEMES.map((t) => (
+                        <button
+                            key={t.id}
+                            onClick={() => selectTheme(t.id)}
+                            className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                                t.id === themeId
+                                    ? "bg-white/15 text-white"
+                                    : "text-white/50 hover:text-white"
+                            }`}
+                        >
+                            <span
+                                className="h-3 w-3 rounded-full border border-white/30"
+                                style={{ background: t.vars["--acc"] }}
+                            />
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
