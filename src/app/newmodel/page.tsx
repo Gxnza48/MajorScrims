@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
     ArrowRight,
+    BarChart3,
     Clock,
     Palette,
     ScrollText,
@@ -16,8 +17,8 @@ import {
 
 /* ──────────────────────────────────────────────────────────────────
    Boceto de nuevo diseño de la home — estilo minimalista (ref. nobleprac.com)
-   Tres paletas seleccionables en vivo. Compartible por link directo:
-   /newmodel?theme=verde · /newmodel?theme=dorado · /newmodel?theme=mono
+   Paletas seleccionables en vivo. Compartible por link directo:
+   /newmodel?theme=verde · ?theme=suave · ?theme=dorado · ?theme=mono
    ────────────────────────────────────────────────────────────────── */
 
 type Theme = {
@@ -33,12 +34,36 @@ const THEMES: Theme[] = [
         vars: {
             "--acc": "#22D962",
             "--acc-rgb": "34 217 98",
+            "--acc-hover": "#43E97B",
+            "--on-acc": "#04130A",
+            "--h1": "#FFFFFF",
+            "--bg0": "#142019",
+            "--bg1": "#0D1511",
+            "--bg2": "#090E0B",
+            "--orb1": "rgb(34 217 98 / 0.28)",
+            "--orb2": "rgb(34 217 98 / 0.18)",
+            "--amb": "rgb(34 217 98 / 0.08)",
+            "--glow-btn": "0 8px 32px rgba(34, 217, 98, 0.40)",
+            "--glow-h1": "0 0 36px rgba(34, 217, 98, 0.45)",
+        },
+    },
+    {
+        id: "suave",
+        label: "Verde suave",
+        vars: {
+            "--acc": "#22D962",
+            "--acc-rgb": "34 217 98",
             "--acc-hover": "#1FC058",
             "--on-acc": "#04130A",
             "--h1": "#FFFFFF",
             "--bg0": "#111816",
             "--bg1": "#0C100F",
             "--bg2": "#070908",
+            "--orb1": "rgb(34 217 98 / 0.14)",
+            "--orb2": "rgb(34 217 98 / 0.08)",
+            "--amb": "transparent",
+            "--glow-btn": "none",
+            "--glow-h1": "none",
         },
     },
     {
@@ -53,6 +78,11 @@ const THEMES: Theme[] = [
             "--bg0": "#152530",
             "--bg1": "#0F1F2A",
             "--bg2": "#0A1520",
+            "--orb1": "rgb(245 181 0 / 0.14)",
+            "--orb2": "rgb(245 181 0 / 0.08)",
+            "--amb": "transparent",
+            "--glow-btn": "none",
+            "--glow-h1": "none",
         },
     },
     {
@@ -67,6 +97,11 @@ const THEMES: Theme[] = [
             "--bg0": "#141519",
             "--bg1": "#0E0F12",
             "--bg2": "#08090B",
+            "--orb1": "rgb(250 250 250 / 0.10)",
+            "--orb2": "rgb(250 250 250 / 0.06)",
+            "--amb": "transparent",
+            "--glow-btn": "none",
+            "--glow-h1": "none",
         },
     },
 ];
@@ -106,6 +141,19 @@ const FEATURES = [
 
 const PRO_PLAYERS = ["Cadu", "Fazer", "Gabzera", "k1nG", "Phzin", "Tisco"];
 
+const BRANDS = [
+    {
+        name: "Twitch",
+        logo: "https://m.media-amazon.com/images/I/21kRx-CJsUL.png",
+        desc: "Parceria oficial para transmissões e eventos da comunidade.",
+    },
+    {
+        name: "Fortnite",
+        logo: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Fortnite_F_lettermark_logo.png",
+        desc: "Scrims e customs dentro do ecossistema competitivo oficial.",
+    },
+];
+
 type Player = {
     name: string;
     xp: number;
@@ -122,7 +170,58 @@ const FALLBACK_TOP: Player[] = [
     { rank: 5, name: "astrx 67", xp: 140, kills: 50, games: 43 },
 ];
 
+type BlogPost = {
+    _id: string;
+    slug: string;
+    createdAt: string;
+    title?: Record<string, string>;
+    content?: Record<string, string>;
+};
+
+type PostCard = {
+    key: string;
+    href: string;
+    date: string;
+    title: string;
+    snippet: string;
+    example: boolean;
+};
+
+// Mostradas mientras el blog no tenga posts reales, para que la sección
+// "Últimas atualizações" sea visible en el boceto.
+const EXAMPLE_POSTS: PostCard[] = [
+    {
+        key: "ex-1",
+        href: "/blog",
+        date: "10/06/2026",
+        title: "Nova temporada do leaderboard",
+        snippet:
+            "O split atual foi resetado e a nova temporada já está valendo. Confira como funciona a pontuação e os tiers.",
+        example: true,
+    },
+    {
+        key: "ex-2",
+        href: "/blog",
+        date: "05/06/2026",
+        title: "Atualização das regras de scrims",
+        snippet:
+            "Ajustes no formato das sessões noturnas e novas diretrizes de moderação para as lobbies competitivas.",
+        example: true,
+    },
+    {
+        key: "ex-3",
+        href: "/blog",
+        date: "28/05/2026",
+        title: "Major Cup: inscrições abertas",
+        snippet:
+            "O torneio interno da comunidade está de volta. Garanta a sua vaga e dispute contra os melhores da região.",
+        example: true,
+    },
+];
+
 const DISCORD_URL = "https://discord.com/invite/majorscrims";
+
+const glowBtn = { boxShadow: "var(--glow-btn)" } as React.CSSProperties;
 
 const DiscordIcon = ({ className }: { className?: string }) => (
     <svg
@@ -135,10 +234,19 @@ const DiscordIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+function stripMarkup(html: string): string {
+    return html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/[#_*\[\]]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 export default function NewModelPage() {
     const [themeId, setThemeId] = useState("verde");
     const [topPlayers, setTopPlayers] = useState<Player[]>(FALLBACK_TOP);
     const [totalPlayers, setTotalPlayers] = useState(7700);
+    const [posts, setPosts] = useState<PostCard[]>(EXAMPLE_POSTS);
 
     useEffect(() => {
         const param = new URLSearchParams(window.location.search).get("theme");
@@ -154,6 +262,28 @@ export default function NewModelPage() {
                 if (Array.isArray(d?.players) && d.players.length > 0) {
                     setTopPlayers(d.players.slice(0, 5));
                     setTotalPlayers(d.players.length);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        fetch("/api/blog")
+            .then((r) => r.json())
+            .then((d) => {
+                if (Array.isArray(d?.posts) && d.posts.length > 0) {
+                    setPosts(
+                        d.posts.slice(0, 3).map((p: BlogPost) => ({
+                            key: p._id,
+                            href: `/blog/${p.slug}`,
+                            date: new Date(p.createdAt).toLocaleDateString("pt-BR"),
+                            title: p.title?.pt || p.title?.es || "Sem título",
+                            snippet: stripMarkup(
+                                p.content?.pt || p.content?.es || ""
+                            ).substring(0, 140),
+                            example: false,
+                        }))
+                    );
                 }
             })
             .catch(() => {});
@@ -234,6 +364,7 @@ export default function NewModelPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 rounded-lg bg-[var(--acc)] px-5 py-2.5 text-sm font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                        style={glowBtn}
                     >
                         <DiscordIcon className="h-4 w-4" />
                         <span className="hidden sm:inline">Entrar no Discord</span>
@@ -245,8 +376,15 @@ export default function NewModelPage() {
             {/* ── Hero ───────────────────────────────────────────── */}
             <section className="relative flex min-h-[calc(100dvh-72px)] items-center justify-center overflow-hidden py-20">
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute left-10 top-1/4 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.14)] blur-3xl" />
-                    <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.08)] blur-3xl" />
+                    <div
+                        className="absolute inset-x-0 top-0 h-[55vh]"
+                        style={{
+                            background:
+                                "radial-gradient(ellipse at 50% 0%, var(--amb), transparent 65%)",
+                        }}
+                    />
+                    <div className="absolute left-10 top-1/4 h-96 w-96 rounded-full bg-[var(--orb1)] blur-3xl" />
+                    <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[var(--orb2)] blur-3xl" />
                 </div>
 
                 <div className="container relative z-10 mx-auto max-w-4xl px-6 text-center">
@@ -259,7 +397,12 @@ export default function NewModelPage() {
 
                     <h1 className="nm-rise nm-d1 mb-6 text-4xl font-bold leading-tight text-[var(--h1)] md:text-6xl">
                         Scrims & customs de elite para{" "}
-                        <span className="text-[var(--acc)]">Fortnite competitivo</span>
+                        <span
+                            className="text-[var(--acc)]"
+                            style={{ textShadow: "var(--glow-h1)" }}
+                        >
+                            Fortnite competitivo
+                        </span>
                     </h1>
 
                     <p className="nm-rise nm-d2 mx-auto mb-10 max-w-2xl text-lg text-white/70 md:text-xl">
@@ -274,6 +417,7 @@ export default function NewModelPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)] sm:w-auto"
+                            style={glowBtn}
                         >
                             Entrar no Discord
                             <ArrowRight size={18} />
@@ -389,6 +533,48 @@ export default function NewModelPage() {
                 </div>
             </section>
 
+            {/* ── Dashboard CTA ──────────────────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+                        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.10)] blur-3xl" />
+                        <div className="relative z-10 grid items-stretch lg:grid-cols-[3fr_2fr]">
+                            <div className="p-10 md:p-14">
+                                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                                    <BarChart3 size={16} className="text-[var(--acc)]" />
+                                    <span className="text-sm font-medium text-[var(--acc)]">
+                                        Estatísticas
+                                    </span>
+                                </div>
+                                <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                                    Acompanhe a sua evolução
+                                </h2>
+                                <p className="mb-9 max-w-xl text-lg text-white/70">
+                                    Dashboard pessoal com XP, kills, partidas e ranking da
+                                    temporada. Conecte a sua conta e veja o seu progresso
+                                    sessão a sessão.
+                                </p>
+                                <Link
+                                    href="/dashboard"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                                    style={glowBtn}
+                                >
+                                    Acessar o dashboard
+                                    <ArrowRight size={18} />
+                                </Link>
+                            </div>
+                            <div className="relative hidden lg:block">
+                                <img
+                                    src="/images/sections/dashboard_cta.png"
+                                    alt="Dashboard da Major Scrims"
+                                    className="absolute bottom-0 left-1/2 w-[150%] max-w-none -translate-x-1/2 translate-y-10 select-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* ── Pro players ────────────────────────────────────── */}
             <section className="py-24">
                 <div className="container mx-auto max-w-5xl px-6">
@@ -420,6 +606,94 @@ export default function NewModelPage() {
                 </div>
             </section>
 
+            {/* ── Blog / últimas atualizações ────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="mx-auto mb-12 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Últimas atualizações
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Anúncios, mudanças e novidades da comunidade.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-3">
+                        {posts.map((post) => (
+                            <Link
+                                key={post.key}
+                                href={post.href}
+                                className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.03] p-7 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                            >
+                                <div className="mb-4 flex items-center gap-3 text-xs text-white/40">
+                                    <span>{post.date}</span>
+                                    {post.example && (
+                                        <span className="rounded-full border border-white/10 px-2 py-0.5 uppercase tracking-wider">
+                                            exemplo
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="mb-3 text-lg font-bold leading-snug">
+                                    {post.title}
+                                </h3>
+                                <p className="mb-6 flex-grow text-sm leading-relaxed text-white/60">
+                                    {post.snippet}
+                                </p>
+                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--acc)] transition-all group-hover:gap-3">
+                                    Ler mais
+                                    <ArrowRight size={14} />
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 text-center">
+                        <Link
+                            href="/blog"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-8 py-3.5 font-bold text-white transition-colors duration-300 hover:border-white/30 hover:bg-white/5"
+                        >
+                            Ver todas as atualizações
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Brands ─────────────────────────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-4xl px-6">
+                    <div className="mx-auto mb-12 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Marcas que confiam na Major
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Parcerias e colaborações oficiais da comunidade.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        {BRANDS.map((brand) => (
+                            <div
+                                key={brand.name}
+                                className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                            >
+                                <img
+                                    src={brand.logo}
+                                    alt={brand.name}
+                                    loading="lazy"
+                                    className="h-12 w-12 flex-shrink-0 rounded-lg object-contain"
+                                />
+                                <div>
+                                    <h3 className="mb-1 font-bold">{brand.name}</h3>
+                                    <p className="text-sm leading-relaxed text-white/60">
+                                        {brand.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* ── Discord CTA ────────────────────────────────────── */}
             <section className="pb-32 pt-8">
                 <div className="container mx-auto max-w-4xl px-6">
@@ -439,6 +713,7 @@ export default function NewModelPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                                style={glowBtn}
                             >
                                 <DiscordIcon className="h-5 w-5" />
                                 Entrar no Discord
@@ -500,7 +775,7 @@ export default function NewModelPage() {
             {/* ── Selector de paleta (solo para revisión del boceto) ── */}
             <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2">
                 <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/75 px-2 py-2 shadow-2xl backdrop-blur-xl">
-                    <span className="hidden items-center gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-widest text-white/50 sm:flex">
+                    <span className="hidden items-center gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-widest text-white/50 lg:flex">
                         <Palette size={13} />
                         Paleta
                     </span>
@@ -508,17 +783,17 @@ export default function NewModelPage() {
                         <button
                             key={t.id}
                             onClick={() => selectTheme(t.id)}
-                            className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                            className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                                 t.id === themeId
                                     ? "bg-white/15 text-white"
                                     : "text-white/50 hover:text-white"
                             }`}
                         >
                             <span
-                                className="h-3 w-3 rounded-full border border-white/30"
+                                className="h-3 w-3 flex-shrink-0 rounded-full border border-white/30"
                                 style={{ background: t.vars["--acc"] }}
                             />
-                            {t.label}
+                            <span className="hidden sm:inline">{t.label}</span>
                         </button>
                     ))}
                 </div>
