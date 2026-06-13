@@ -479,129 +479,112 @@ export default function NewModelPage() {
                 </div>
             </section>
 
-            {/* ── Leaderboard preview ────────────────────────────── */}
-            <section className="py-24">
-                <div className="container mx-auto max-w-4xl px-6">
-                    <div className="mx-auto mb-12 max-w-3xl text-center">
-                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                            Os melhores da temporada
-                        </h2>
-                        <p className="text-lg text-white/70">
-                            Rankings atualizados com o desempenho real das sessões.
-                        </p>
-                    </div>
-
-                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                        <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-4 border-b border-white/10 px-6 py-4 text-xs font-semibold uppercase tracking-wider text-white/40 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]">
-                            <span>#</span>
-                            <span>Jogador</span>
-                            <span className="text-right">XP</span>
-                            <span className="text-right">Kills</span>
-                            <span className="hidden text-right sm:block">Partidas</span>
-                        </div>
-                        {topPlayers.map((p) => (
-                            <div
-                                key={p.rank}
-                                className="grid grid-cols-[3rem_1fr_4rem_4rem] items-center gap-4 border-b border-white/5 px-6 py-4 last:border-b-0 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]"
-                            >
-                                <span className="font-bold text-[var(--acc)]">
-                                    {p.rank}
-                                </span>
-                                <span className="truncate font-medium text-white">
-                                    {p.name}
-                                </span>
-                                <span className="text-right text-white/70">{p.xp}</span>
-                                <span className="text-right text-white/70">
-                                    {p.kills}
-                                </span>
-                                <span className="hidden text-right text-white/70 sm:block">
-                                    {p.games}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="mt-8 text-center">
-                        <Link
-                            href="/leaderboard"
-                            className="inline-flex items-center gap-2 font-semibold text-[var(--acc)] transition-opacity hover:opacity-80"
-                        >
-                            Ver leaderboard completo
-                            <ArrowRight size={16} />
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
-            {/* ── Dashboard CTA ──────────────────────────────────── */}
+            {/* ── Leaderboard + Dashboard (uma só box) ───────────── */}
             <section className="py-24">
                 <div className="container mx-auto max-w-6xl px-6">
                     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
                         <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.10)] blur-3xl" />
-                        <div className="relative z-10 grid items-stretch lg:grid-cols-[3fr_2fr]">
-                            <div className="p-10 md:p-14">
-                                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                                    <BarChart3 size={16} className="text-[var(--acc)]" />
-                                    <span className="text-sm font-medium text-[var(--acc)]">
-                                        Estatísticas
-                                    </span>
+                        <div className="relative z-10 grid items-stretch lg:grid-cols-[3fr_2fr] lg:divide-x lg:divide-white/10">
+                            {/* Metade 1 — Tabela das customs */}
+                            <div className="flex flex-col p-8 md:p-10">
+                                <div className="mb-6">
+                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                                        <Trophy size={16} className="text-[var(--acc)]" />
+                                        <span className="text-sm font-medium text-[var(--acc)]">
+                                            Leaderboard
+                                        </span>
+                                    </div>
+                                    <h2 className="mb-2 text-2xl font-bold md:text-3xl">
+                                        Os melhores da temporada
+                                    </h2>
+                                    <p className="text-white/70">
+                                        Rankings atualizados com o desempenho real das
+                                        sessões.
+                                    </p>
                                 </div>
-                                <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                                    Acompanhe a sua evolução
-                                </h2>
-                                <p className="mb-9 max-w-xl text-lg text-white/70">
-                                    Dashboard pessoal com XP, kills, partidas e ranking da
-                                    temporada. Conecte a sua conta e veja o seu progresso
-                                    sessão a sessão.
-                                </p>
+
+                                <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                                    <div className="grid grid-cols-[3rem_1fr_4rem_4rem] gap-4 border-b border-white/10 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-white/40 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]">
+                                        <span>#</span>
+                                        <span>Jogador</span>
+                                        <span className="text-right">XP</span>
+                                        <span className="text-right">Kills</span>
+                                        <span className="hidden text-right sm:block">
+                                            Partidas
+                                        </span>
+                                    </div>
+                                    {topPlayers.map((p) => (
+                                        <div
+                                            key={p.rank}
+                                            className="grid grid-cols-[3rem_1fr_4rem_4rem] items-center gap-4 border-b border-white/5 px-5 py-3.5 last:border-b-0 sm:grid-cols-[3rem_1fr_5rem_5rem_5rem]"
+                                        >
+                                            <span className="font-bold text-[var(--acc)]">
+                                                {p.rank}
+                                            </span>
+                                            <span className="truncate font-medium text-white">
+                                                {p.name}
+                                            </span>
+                                            <span className="text-right text-white/70">
+                                                {p.xp}
+                                            </span>
+                                            <span className="text-right text-white/70">
+                                                {p.kills}
+                                            </span>
+                                            <span className="hidden text-right text-white/70 sm:block">
+                                                {p.games}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-6">
+                                    <Link
+                                        href="/leaderboard"
+                                        className="inline-flex items-center gap-2 font-semibold text-[var(--acc)] transition-opacity hover:opacity-80"
+                                    >
+                                        Ver leaderboard completo
+                                        <ArrowRight size={16} />
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* Metade 2 — CTA do dashboard */}
+                            <div className="flex flex-col p-8 md:p-10">
+                                <div className="mb-6">
+                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                                        <BarChart3 size={16} className="text-[var(--acc)]" />
+                                        <span className="text-sm font-medium text-[var(--acc)]">
+                                            Estatísticas
+                                        </span>
+                                    </div>
+                                    <h2 className="mb-2 text-2xl font-bold md:text-3xl">
+                                        Acompanhe a sua evolução
+                                    </h2>
+                                    <p className="text-white/70">
+                                        Dashboard pessoal com XP, kills, partidas e ranking
+                                        da temporada. Conecte a sua conta e veja o seu
+                                        progresso sessão a sessão.
+                                    </p>
+                                </div>
+
+                                <div className="mb-7 min-h-[220px] flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                                    <img
+                                        src="/images/sections/dashboard_cta.png"
+                                        alt="Dashboard da Major Scrims"
+                                        className="h-full w-full select-none object-cover object-top"
+                                    />
+                                </div>
+
                                 <Link
                                     href="/dashboard"
-                                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
+                                    className="inline-flex w-fit items-center gap-2 rounded-lg bg-[var(--acc)] px-8 py-3.5 font-bold text-[var(--on-acc)] transition-colors duration-300 hover:bg-[var(--acc-hover)]"
                                     style={glowBtn}
                                 >
                                     Acessar o dashboard
                                     <ArrowRight size={18} />
                                 </Link>
                             </div>
-                            <div className="relative hidden lg:block">
-                                <img
-                                    src="/images/sections/dashboard_cta.png"
-                                    alt="Dashboard da Major Scrims"
-                                    className="absolute bottom-0 left-1/2 w-[150%] max-w-none -translate-x-1/2 translate-y-10 select-none"
-                                />
-                            </div>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* ── Pro players ────────────────────────────────────── */}
-            <section className="py-24">
-                <div className="container mx-auto max-w-5xl px-6">
-                    <div className="mx-auto mb-14 max-w-3xl text-center">
-                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                            Quem treina na Major
-                        </h2>
-                        <p className="text-lg text-white/70">
-                            Jogadores profissionais e criadores de conteúdo escolhem os
-                            nossos servidores.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-start justify-center gap-x-10 gap-y-8">
-                        {PRO_PLAYERS.map((name) => (
-                            <div key={name} className="group flex flex-col items-center gap-3">
-                                <img
-                                    src={`/images/pro-players/${name}.png`}
-                                    alt={name}
-                                    loading="lazy"
-                                    className="h-16 w-16 rounded-full border border-white/10 object-cover grayscale transition-all duration-300 group-hover:grayscale-0 md:h-20 md:w-20"
-                                />
-                                <span className="text-xs font-medium text-white/50 transition-colors group-hover:text-white">
-                                    {name}
-                                </span>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
@@ -658,38 +641,92 @@ export default function NewModelPage() {
                 </div>
             </section>
 
-            {/* ── Brands ─────────────────────────────────────────── */}
+            {/* ── Marcas + Pros (uma só box) ─────────────────────── */}
             <section className="py-24">
-                <div className="container mx-auto max-w-4xl px-6">
-                    <div className="mx-auto mb-12 max-w-3xl text-center">
-                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                            Marcas que confiam na Major
-                        </h2>
-                        <p className="text-lg text-white/70">
-                            Parcerias e colaborações oficiais da comunidade.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-6 sm:grid-cols-2">
-                        {BRANDS.map((brand) => (
-                            <div
-                                key={brand.name}
-                                className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
-                            >
-                                <img
-                                    src={brand.logo}
-                                    alt={brand.name}
-                                    loading="lazy"
-                                    className="h-12 w-12 flex-shrink-0 rounded-lg object-contain"
-                                />
-                                <div>
-                                    <h3 className="mb-1 font-bold">{brand.name}</h3>
-                                    <p className="text-sm leading-relaxed text-white/60">
-                                        {brand.desc}
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+                        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.10)] blur-3xl" />
+                        <div className="relative z-10 grid items-stretch lg:grid-cols-2 lg:divide-x lg:divide-white/10">
+                            {/* Metade 1 — Marcas */}
+                            <div className="flex flex-col p-8 md:p-10">
+                                <div className="mb-6">
+                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                                        <ShieldCheck size={16} className="text-[var(--acc)]" />
+                                        <span className="text-sm font-medium text-[var(--acc)]">
+                                            Parcerias
+                                        </span>
+                                    </div>
+                                    <h2 className="mb-2 text-2xl font-bold md:text-3xl">
+                                        Marcas que confiam na Major
+                                    </h2>
+                                    <p className="text-white/70">
+                                        Parcerias e colaborações oficiais da comunidade.
                                     </p>
                                 </div>
+
+                                <div className="flex flex-1 flex-col justify-center gap-5">
+                                    {BRANDS.map((brand) => (
+                                        <div
+                                            key={brand.name}
+                                            className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                                        >
+                                            <img
+                                                src={brand.logo}
+                                                alt={brand.name}
+                                                loading="lazy"
+                                                className="h-12 w-12 flex-shrink-0 rounded-lg object-contain"
+                                            />
+                                            <div>
+                                                <h3 className="mb-1 font-bold">
+                                                    {brand.name}
+                                                </h3>
+                                                <p className="text-sm leading-relaxed text-white/60">
+                                                    {brand.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        ))}
+
+                            {/* Metade 2 — Pros que jogam as customs */}
+                            <div className="flex flex-col p-8 md:p-10">
+                                <div className="mb-6">
+                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                                        <Users size={16} className="text-[var(--acc)]" />
+                                        <span className="text-sm font-medium text-[var(--acc)]">
+                                            Comunidade pro
+                                        </span>
+                                    </div>
+                                    <h2 className="mb-2 text-2xl font-bold md:text-3xl">
+                                        Quem treina na Major
+                                    </h2>
+                                    <p className="text-white/70">
+                                        Jogadores profissionais e criadores de conteúdo
+                                        escolhem os nossos servidores.
+                                    </p>
+                                </div>
+
+                                <div className="grid flex-1 grid-cols-3 content-center gap-x-6 gap-y-8 sm:gap-x-8">
+                                    {PRO_PLAYERS.map((name) => (
+                                        <div
+                                            key={name}
+                                            className="group flex flex-col items-center gap-3"
+                                        >
+                                            <img
+                                                src={`/images/pro-players/${name}.png`}
+                                                alt={name}
+                                                loading="lazy"
+                                                className="h-16 w-16 rounded-full border border-white/10 object-cover grayscale transition-all duration-300 group-hover:grayscale-0 md:h-20 md:w-20"
+                                            />
+                                            <span className="text-xs font-medium text-white/50 transition-colors group-hover:text-white">
+                                                {name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
