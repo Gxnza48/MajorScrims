@@ -250,6 +250,7 @@ export default function NewModelPage() {
     const [totalPlayers, setTotalPlayers] = useState(7700);
     const [posts, setPosts] = useState<PostCard[]>(EXAMPLE_POSTS);
     const [proIndex, setProIndex] = useState(0);
+    const [proPaused, setProPaused] = useState(false);
 
     useEffect(() => {
         const param = new URLSearchParams(window.location.search).get("theme");
@@ -292,6 +293,16 @@ export default function NewModelPage() {
             .catch(() => {});
     }, []);
 
+    // Autoplay: avança sozinho a cada 4s; pausa no hover e reinicia o timer
+    // sempre que o índice muda (inclusive ao usar as setas/dots).
+    useEffect(() => {
+        if (proPaused) return;
+        const id = setInterval(() => {
+            setProIndex((i) => (i + 1) % PRO_PLAYERS.length);
+        }, 4000);
+        return () => clearInterval(id);
+    }, [proPaused, proIndex]);
+
     const prevPro = () =>
         setProIndex((i) => (i - 1 + PRO_PLAYERS.length) % PRO_PLAYERS.length);
     const nextPro = () =>
@@ -327,6 +338,8 @@ export default function NewModelPage() {
                 .nm-d2 { animation-delay: .16s; }
                 .nm-d3 { animation-delay: .24s; }
                 .nm-d4 { animation-delay: .32s; }
+                @keyframes nmFade { from { opacity: 0; } to { opacity: 1; } }
+                .nm-fade { animation: nmFade .5s ease both; }
             `}</style>
 
             {/* ── Navbar ─────────────────────────────────────────── */}
@@ -664,13 +677,18 @@ export default function NewModelPage() {
                                 </div>
 
                                 <div className="flex flex-1 flex-col justify-center">
-                                    <div className="group relative mx-auto w-full max-w-sm">
+                                    <div
+                                        className="group relative mx-auto w-full max-w-sm"
+                                        onMouseEnter={() => setProPaused(true)}
+                                        onMouseLeave={() => setProPaused(false)}
+                                    >
                                         <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
                                             <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
                                             <img
+                                                key={proIndex}
                                                 src={`/images/pro-players/${PRO_PLAYERS[proIndex]}.png`}
                                                 alt={PRO_PLAYERS[proIndex]}
-                                                className="h-full w-full select-none object-cover object-center"
+                                                className="nm-fade h-full w-full select-none object-cover object-center"
                                             />
                                             <div className="absolute bottom-0 left-0 z-20 w-full p-6">
                                                 <h3 className="text-2xl font-bold text-white">
