@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
     ArrowRight,
     BarChart3,
+    ChevronLeft,
+    ChevronRight,
     Clock,
     Palette,
     ScrollText,
@@ -247,6 +249,7 @@ export default function NewModelPage() {
     const [topPlayers, setTopPlayers] = useState<Player[]>(FALLBACK_TOP);
     const [totalPlayers, setTotalPlayers] = useState(7700);
     const [posts, setPosts] = useState<PostCard[]>(EXAMPLE_POSTS);
+    const [proIndex, setProIndex] = useState(0);
 
     useEffect(() => {
         const param = new URLSearchParams(window.location.search).get("theme");
@@ -288,6 +291,11 @@ export default function NewModelPage() {
             })
             .catch(() => {});
     }, []);
+
+    const prevPro = () =>
+        setProIndex((i) => (i - 1 + PRO_PLAYERS.length) % PRO_PLAYERS.length);
+    const nextPro = () =>
+        setProIndex((i) => (i + 1) % PRO_PLAYERS.length);
 
     const selectTheme = (id: string) => {
         setThemeId(id);
@@ -589,58 +597,6 @@ export default function NewModelPage() {
                 </div>
             </section>
 
-            {/* ── Blog / últimas atualizações ────────────────────── */}
-            <section className="py-24">
-                <div className="container mx-auto max-w-6xl px-6">
-                    <div className="mx-auto mb-12 max-w-3xl text-center">
-                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                            Últimas atualizações
-                        </h2>
-                        <p className="text-lg text-white/70">
-                            Anúncios, mudanças e novidades da comunidade.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {posts.map((post) => (
-                            <Link
-                                key={post.key}
-                                href={post.href}
-                                className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.03] p-7 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
-                            >
-                                <div className="mb-4 flex items-center gap-3 text-xs text-white/40">
-                                    <span>{post.date}</span>
-                                    {post.example && (
-                                        <span className="rounded-full border border-white/10 px-2 py-0.5 uppercase tracking-wider">
-                                            exemplo
-                                        </span>
-                                    )}
-                                </div>
-                                <h3 className="mb-3 text-lg font-bold leading-snug">
-                                    {post.title}
-                                </h3>
-                                <p className="mb-6 flex-grow text-sm leading-relaxed text-white/60">
-                                    {post.snippet}
-                                </p>
-                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--acc)] transition-all group-hover:gap-3">
-                                    Ler mais
-                                    <ArrowRight size={14} />
-                                </span>
-                            </Link>
-                        ))}
-                    </div>
-
-                    <div className="mt-10 text-center">
-                        <Link
-                            href="/blog"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-8 py-3.5 font-bold text-white transition-colors duration-300 hover:border-white/30 hover:bg-white/5"
-                        >
-                            Ver todas as atualizações
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
             {/* ── Marcas + Pros (uma só box) ─────────────────────── */}
             <section className="py-24">
                 <div className="container mx-auto max-w-6xl px-6">
@@ -707,26 +663,116 @@ export default function NewModelPage() {
                                     </p>
                                 </div>
 
-                                <div className="grid flex-1 grid-cols-3 content-center gap-x-6 gap-y-8 sm:gap-x-8">
-                                    {PRO_PLAYERS.map((name) => (
-                                        <div
-                                            key={name}
-                                            className="group flex flex-col items-center gap-3"
-                                        >
+                                <div className="flex flex-1 flex-col justify-center">
+                                    <div className="group relative mx-auto w-full max-w-sm">
+                                        <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                                            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
                                             <img
-                                                src={`/images/pro-players/${name}.png`}
-                                                alt={name}
-                                                loading="lazy"
-                                                className="h-16 w-16 rounded-full border border-white/10 object-cover grayscale transition-all duration-300 group-hover:grayscale-0 md:h-20 md:w-20"
+                                                src={`/images/pro-players/${PRO_PLAYERS[proIndex]}.png`}
+                                                alt={PRO_PLAYERS[proIndex]}
+                                                className="h-full w-full select-none object-cover object-center"
                                             />
-                                            <span className="text-xs font-medium text-white/50 transition-colors group-hover:text-white">
-                                                {name}
-                                            </span>
+                                            <div className="absolute bottom-0 left-0 z-20 w-full p-6">
+                                                <h3 className="text-2xl font-bold text-white">
+                                                    {PRO_PLAYERS[proIndex]}
+                                                </h3>
+                                                <div className="mt-1.5 flex items-center gap-2">
+                                                    <span className="h-2 w-2 rounded-full bg-[var(--acc)]" />
+                                                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">
+                                                        Pro player
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    ))}
+
+                                        <button
+                                            type="button"
+                                            onClick={prevPro}
+                                            aria-label="Jogador anterior"
+                                            className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-md transition-colors hover:border-[var(--acc)] hover:bg-black/70"
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={nextPro}
+                                            aria-label="Próximo jogador"
+                                            className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-md transition-colors hover:border-[var(--acc)] hover:bg-black/70"
+                                        >
+                                            <ChevronRight size={20} />
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-5 flex items-center justify-center gap-2">
+                                        {PRO_PLAYERS.map((name, i) => (
+                                            <button
+                                                key={name}
+                                                type="button"
+                                                onClick={() => setProIndex(i)}
+                                                aria-label={`Ver ${name}`}
+                                                className={`h-2 rounded-full transition-all ${
+                                                    i === proIndex
+                                                        ? "w-6 bg-[var(--acc)]"
+                                                        : "w-2 bg-white/20 hover:bg-white/40"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Blog / últimas atualizações ────────────────────── */}
+            <section className="py-24">
+                <div className="container mx-auto max-w-6xl px-6">
+                    <div className="mx-auto mb-12 max-w-3xl text-center">
+                        <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                            Últimas atualizações
+                        </h2>
+                        <p className="text-lg text-white/70">
+                            Anúncios, mudanças e novidades da comunidade.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-3">
+                        {posts.map((post) => (
+                            <Link
+                                key={post.key}
+                                href={post.href}
+                                className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.03] p-7 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                            >
+                                <div className="mb-4 flex items-center gap-3 text-xs text-white/40">
+                                    <span>{post.date}</span>
+                                    {post.example && (
+                                        <span className="rounded-full border border-white/10 px-2 py-0.5 uppercase tracking-wider">
+                                            exemplo
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="mb-3 text-lg font-bold leading-snug">
+                                    {post.title}
+                                </h3>
+                                <p className="mb-6 flex-grow text-sm leading-relaxed text-white/60">
+                                    {post.snippet}
+                                </p>
+                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--acc)] transition-all group-hover:gap-3">
+                                    Ler mais
+                                    <ArrowRight size={14} />
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 text-center">
+                        <Link
+                            href="/blog"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 px-8 py-3.5 font-bold text-white transition-colors duration-300 hover:border-white/30 hover:bg-white/5"
+                        >
+                            Ver todas as atualizações
+                        </Link>
                     </div>
                 </div>
             </section>
