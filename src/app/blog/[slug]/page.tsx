@@ -22,7 +22,7 @@ function BlockRenderer({ block }: { block: IContentBlock }) {
                 dangerouslySetInnerHTML={{ __html: block.content }}
             />
         ) : (
-            <div className="text-gray-300 leading-relaxed" style={{ whiteSpace: "pre-wrap" }}>
+            <div className="leading-relaxed text-white/70" style={{ whiteSpace: "pre-wrap" }}>
                 {block.content}
             </div>
         );
@@ -34,10 +34,10 @@ function BlockRenderer({ block }: { block: IContentBlock }) {
                 <img
                     src={block.content}
                     alt={block.caption || ""}
-                    className="w-full rounded-3xl object-cover border border-white/5"
+                    className="w-full rounded-2xl border border-white/10 object-cover"
                 />
                 {block.caption && (
-                    <figcaption className="text-center text-gray-500 text-sm mt-3 italic">
+                    <figcaption className="mt-3 text-center text-sm italic text-white/40">
                         {block.caption}
                     </figcaption>
                 )}
@@ -50,7 +50,7 @@ function BlockRenderer({ block }: { block: IContentBlock }) {
         return (
             <figure className="my-2">
                 {embedUrl ? (
-                    <div className="aspect-video w-full rounded-3xl overflow-hidden border border-white/5">
+                    <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10">
                         <iframe
                             src={embedUrl}
                             title={block.caption || "video"}
@@ -63,11 +63,11 @@ function BlockRenderer({ block }: { block: IContentBlock }) {
                     <video
                         src={block.content}
                         controls
-                        className="w-full rounded-3xl border border-white/5"
+                        className="w-full rounded-2xl border border-white/10"
                     />
                 )}
                 {block.caption && (
-                    <figcaption className="text-center text-gray-500 text-sm mt-3 italic">
+                    <figcaption className="mt-3 text-center text-sm italic text-white/40">
                         {block.caption}
                     </figcaption>
                 )}
@@ -100,8 +100,8 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
             </div>
         );
     }
@@ -116,30 +116,35 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     const legacyContent = post.content?.[language] || post.content?.es || post.content?.pt;
 
     return (
-        <article className="min-h-screen bg-[#050505] relative pt-32 pb-32">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-primary/0 to-transparent pointer-events-none opacity-60" />
-
-            <div className="container mx-auto px-6 max-w-4xl relative z-10">
+        <article className="relative">
+            <div className="container relative z-10 mx-auto max-w-3xl px-6 py-16">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5 }}
                 >
-                    <Link href="/blog" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-12 uppercase tracking-widest text-xs font-bold">
+                    <Link
+                        href="/blog"
+                        className="mb-10 inline-flex items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-primary"
+                    >
                         <ArrowLeft size={16} /> {t.blog.back}
                     </Link>
 
-                    <div className="flex items-center gap-6 text-sm font-bold text-gray-400 uppercase tracking-widest mb-8 border-b border-white/5 pb-8">
-                        <span className="flex items-center gap-2"><Calendar size={16} className="text-primary" /> {new Date(post.createdAt).toLocaleDateString()}</span>
-                        <div className="w-1 h-1 rounded-full bg-white/20" />
-                        <span className="flex items-center gap-2"><User size={16} className="text-primary" /> {post.authorName}</span>
-                    </div>
-
-                    <h1 className="text-4xl md:text-6xl font-heading font-black text-white leading-tight tracking-tight mb-16">
+                    <h1 className="mb-6 text-3xl font-bold leading-tight text-white md:text-5xl">
                         {title}
                     </h1>
 
-                    <div className="prose prose-invert prose-lg max-w-none prose-headings:font-heading prose-headings:font-black prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-3xl">
+                    <div className="mb-12 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-white/10 pb-8 text-sm text-white/40">
+                        <span className="flex items-center gap-2">
+                            <Calendar size={16} className="text-primary" />{" "}
+                            {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <User size={16} className="text-primary" /> {post.authorName}
+                        </span>
+                    </div>
+
+                    <div className="prose prose-invert prose-lg max-w-none prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-2xl">
                         {blocks && blocks.length > 0 ? (
                             <div className="flex flex-col gap-8">
                                 {blocks.map((block, idx) => (
@@ -149,7 +154,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                         ) : legacyContent?.trim().startsWith("<") ? (
                             <div className="blog-rich-content" dangerouslySetInnerHTML={{ __html: legacyContent }} />
                         ) : (
-                            <div style={{ whiteSpace: "pre-wrap" }} className="text-gray-300 leading-relaxed">
+                            <div style={{ whiteSpace: "pre-wrap" }} className="leading-relaxed text-white/70">
                                 {legacyContent}
                             </div>
                         )}

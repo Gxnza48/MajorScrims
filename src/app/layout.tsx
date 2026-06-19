@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="pt">
-            <body className={`${inter.className} bg-black min-h-screen text-white selection:bg-[#1FC058] selection:text-black overflow-x-hidden`}>
+            <body className={`${inter.className} min-h-screen text-white selection:bg-[#22D962] selection:text-black overflow-x-hidden`}>
                 <Providers>
                     <Chrome>{children}</Chrome>
                 </Providers>

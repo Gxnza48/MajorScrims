@@ -38,18 +38,18 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
     if (!editor) return null;
 
     const btn = (active: boolean, danger = false) =>
-        `w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
+        `rounded-md px-2.5 py-1.5 flex items-center justify-center transition-colors duration-150 ${
             danger
-                ? "bg-white/5 text-gray-500 hover:bg-red-500/20 hover:text-red-400"
+                ? "text-white/60 hover:bg-red-500/15 hover:text-red-400"
                 : active
-                ? "bg-primary text-black shadow-[0_0_8px_rgba(34,217,98,0.35)]"
-                : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                ? "bg-primary/15 text-primary"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
         }`;
 
     return (
-        <div className="bg-black/50 border border-white/10 rounded-xl overflow-hidden focus-within:border-primary/50 transition-colors">
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden transition-colors duration-300 focus-within:border-primary/35">
             {/* ── Toolbar ── */}
-            <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 border-b border-white/5 bg-black/30">
+            <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 border-b border-white/10">
 
                 {/* Format */}
                 <button type="button" title="Negrita (Ctrl+B)"
@@ -79,7 +79,7 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
                 {([1, 2, 3] as const).map(level => (
                     <button key={level} type="button" title={`Título ${level}`}
                         onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-                        className={`${btn(editor.isActive("heading", { level }))} text-[11px] font-black`}>
+                        className={`${btn(editor.isActive("heading", { level }))} text-[11px] font-bold`}>
                         H{level}
                     </button>
                 ))}
@@ -90,14 +90,14 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
                 {PRESET_COLORS.map(color => (
                     <button key={color} type="button" title={color}
                         onClick={() => editor.chain().focus().setColor(color).run()}
-                        className="w-4.5 h-4.5 rounded-md border border-white/20 hover:scale-125 transition-transform flex-shrink-0"
+                        className="w-4.5 h-4.5 rounded-md border border-white/20 transition-colors hover:border-primary/50 flex-shrink-0"
                         style={{ backgroundColor: color, width: "18px", height: "18px" }}
                     />
                 ))}
 
                 {/* Custom color picker */}
                 <label title="Color personalizado"
-                    className="relative w-[18px] h-[18px] rounded-md overflow-hidden border border-white/20 cursor-pointer hover:scale-125 transition-transform flex-shrink-0">
+                    className="relative w-[18px] h-[18px] rounded-md overflow-hidden border border-white/20 cursor-pointer transition-colors hover:border-primary/50 flex-shrink-0">
                     <input type="color" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                         onChange={e => editor.chain().focus().setColor(e.target.value).run()} />
                     <div className="w-full h-full bg-[conic-gradient(red,yellow,lime,cyan,blue,magenta,red)]" />

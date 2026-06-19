@@ -33,14 +33,14 @@ export function UserMenu() {
                 )}
                 <div className="hidden md:block text-right">
                     <p className="text-sm font-medium text-white">{session.user.name}</p>
-                    <p className={`text-xs font-bold ${isAdmin ? "text-primary" : "text-gray-500"}`}>
+                    <p className={`text-xs font-semibold ${isAdmin ? "text-primary" : "text-white/40"}`}>
                         {isAdmin ? "Admin" : "Member"}
                     </p>
                 </div>
             </div>
             <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-white"
                 title={t.common.signOut}
             >
                 <LogOut size={20} />

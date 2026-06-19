@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { motion, Variants } from "framer-motion";
 import Link from "next/link";
-import { Calendar, User, ArrowRight } from "lucide-react";
+import { Calendar, User, ArrowRight, Newspaper } from "lucide-react";
 
 export default function BlogCatalogPage() {
     const { t } = useI18n();
@@ -26,37 +26,46 @@ export default function BlogCatalogPage() {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: { staggerChildren: 0.1 },
+            transition: { staggerChildren: 0.08 },
         },
     };
 
     const itemVariants: Variants = {
-        hidden: { opacity: 0, y: 30 },
+        hidden: { opacity: 0, y: 12 },
         visible: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.6, ease: "easeOut" as const },
+            transition: { duration: 0.5, ease: "easeOut" as const },
         },
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] relative pt-32 pb-24">
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 blur-[200px] rounded-full -mr-96 -mt-96 pointer-events-none" />
-
-            <div className="container mx-auto px-6 max-w-7xl relative z-10">
-                <div className="text-center mb-20">
-                    <motion.h1 
-                        initial={{ opacity: 0, y: -20 }}
+        <div className="min-h-screen py-16">
+            <div className="container mx-auto max-w-7xl px-6">
+                <div className="mx-auto mb-16 max-w-3xl text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-5xl md:text-7xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 mb-6 uppercase tracking-tighter"
+                        className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2"
                     >
-                        Major <span className="text-primary text-glow">Blog</span>
+                        <Newspaper size={16} className="text-primary" />
+                        <span className="text-sm font-medium text-primary">Blog</span>
+                    </motion.div>
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 }}
+                        className="mb-5 text-4xl font-bold leading-tight text-white md:text-5xl"
+                    >
+                        Major <span className="text-primary">Blog</span>
                     </motion.h1>
-                    <motion.p 
+
+                    <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-gray-400 max-w-2xl mx-auto text-lg"
+                        transition={{ delay: 0.15 }}
+                        className="mx-auto max-w-2xl text-lg text-white/70"
                     >
                         {t.blog.subtitle}
                     </motion.p>
@@ -64,51 +73,53 @@ export default function BlogCatalogPage() {
 
                 {isLoading ? (
                     <div className="flex justify-center py-20">
-                        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
                     </div>
                 ) : posts.length === 0 ? (
-                    <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-3xl backdrop-blur-md">
-                        <p className="text-gray-400 text-lg uppercase tracking-widest font-bold">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-20 text-center">
+                        <p className="text-lg text-white/60">
                             {t.blog.noPosts}
                         </p>
                     </div>
                 ) : (
-                    <motion.div 
+                    <motion.div
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                        className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
                     >
                         {posts.map((post) => {
                             const title = post.title[language] || post.title.es || post.title.pt;
                             const contentSnippet = (post.content[language] || post.content.es || post.content.pt || "").substring(0, 150) + "...";
-                            
+
                             return (
                                 <Link href={`/blog/${post.slug}`} key={post._id}>
-                                    <motion.article 
+                                    <motion.article
                                         variants={itemVariants}
-                                        className="h-full group relative bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 flex flex-col hover:border-primary/30 transition-all duration-500 overflow-hidden"
+                                        className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition-colors duration-300 hover:border-primary/35"
                                     >
-                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        
-                                        <div className="relative z-10 flex-grow">
-                                            <div className="flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">
-                                                <span className="flex items-center gap-1.5"><Calendar size={14} className="text-primary" /> {new Date(post.createdAt).toLocaleDateString()}</span>
-                                                <span className="flex items-center gap-1.5"><User size={14} className="text-primary" /> {post.authorName}</span>
-                                            </div>
-                                            
-                                            <h2 className="text-2xl font-black text-white font-heading tracking-tight mb-4 group-hover:text-primary transition-colors">
-                                                {title}
-                                            </h2>
-                                            
-                                            <p className="text-gray-400 line-clamp-3 text-sm leading-relaxed mb-8">
-                                                {contentSnippet.replace(/[#_*\[\]]/g, "")}
-                                            </p>
+                                        <div className="mb-4 flex items-center gap-4 text-xs text-white/40">
+                                            <span className="flex items-center gap-1.5">
+                                                <Calendar size={14} className="text-primary" />
+                                                {new Date(post.createdAt).toLocaleDateString()}
+                                            </span>
+                                            <span className="flex items-center gap-1.5">
+                                                <User size={14} className="text-primary" />
+                                                {post.authorName}
+                                            </span>
                                         </div>
 
-                                        <div className="mt-auto relative z-10 flex items-center gap-2 text-sm font-black text-primary uppercase tracking-widest group-hover:gap-4 transition-all">
+                                        <h2 className="mb-3 text-xl font-bold leading-snug text-white transition-colors group-hover:text-primary">
+                                            {title}
+                                        </h2>
+
+                                        <p className="mb-6 line-clamp-3 flex-grow text-sm leading-relaxed text-white/60">
+                                            {contentSnippet.replace(/[#_*\[\]]/g, "")}
+                                        </p>
+
+                                        <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-primary transition-all group-hover:gap-3">
                                             {t.blog.readMore} <ArrowRight size={16} />
-                                        </div>
+                                        </span>
                                     </motion.article>
                                 </Link>
                             );

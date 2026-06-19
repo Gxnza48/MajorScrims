@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Navbar } from '@/components/Navbar';
 import TournamentCard from '@/components/TournamentCard';
 import { Trophy, Calendar, Loader2 } from 'lucide-react';
 import { useI18n } from '@/i18n';
@@ -42,45 +41,49 @@ export default function TournamentsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-[#1FC058] selection:text-black">
-            <Navbar />
-
-            <main className="container mx-auto px-4 pt-32 pb-20">
+        <div className="min-h-screen text-white">
+            <main className="container mx-auto max-w-7xl px-6 py-16">
                 {/* Page Header */}
-                <div className="mb-12 border-b border-white/10 pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div className="mb-12 flex flex-col justify-between items-start gap-6 border-b border-white/10 pb-8 md:flex-row md:items-end">
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-bold font-heading mb-2">
-                            <span className="text-gradient uppercase">{t.tournaments.title || 'TORNEOS'}</span>
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                            <Trophy size={16} className="text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                                {t.tournaments.title || 'TORNEOS'}
+                            </span>
+                        </div>
+                        <h1 className="mb-2 text-3xl font-bold md:text-4xl">
+                            {t.tournaments.title || 'TORNEOS'}
                         </h1>
-                        <p className="text-gray-400 font-sans max-w-2xl">
+                        <p className="max-w-2xl text-white/70">
                             {t.tournaments.subtitle || 'Explora los próximos torneos oficiales de Fortnite en la región de Brasil.'}
                         </p>
                     </div>
 
-                    <div className="flex gap-2 text-sm font-mono text-[#1FC058] bg-[#1FC058]/10 px-4 py-2 rounded-lg border border-[#1FC058]/20">
-                        <Trophy size={16} />
-                        <span>REGION: BR ONLY</span>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                        <Trophy size={16} className="text-primary" />
+                        <span className="text-sm font-medium text-primary">REGION: BR ONLY</span>
                     </div>
                 </div>
 
                 {/* Content */}
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20">
-                        <Loader2 size={48} className="text-[#1FC058] animate-spin mb-4" />
-                        <p className="text-gray-400 animate-pulse">Cargando torneos...</p>
+                        <Loader2 size={48} className="mb-4 animate-spin text-primary" />
+                        <p className="text-white/60">Cargando torneos...</p>
                     </div>
                 ) : error ? (
-                    <div className="text-center py-20 bg-red-500/10 border border-red-500/20 rounded-xl">
-                        <p className="text-red-400 mb-2 font-bold">Error</p>
-                        <p className="text-gray-400">{error}</p>
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 py-20 text-center">
+                        <p className="mb-2 font-bold text-red-400">Error</p>
+                        <p className="text-white/60">{error}</p>
                     </div>
                 ) : tournaments.length === 0 ? (
-                    <div className="text-center py-20 bg-white/5 border border-white/10 rounded-xl">
-                        <Calendar size={48} className="text-gray-500 mx-auto mb-4" />
-                        <p className="text-gray-400">No se encontraron torneos activos o próximos por el momento.</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-20 text-center">
+                        <Calendar size={48} className="mx-auto mb-4 text-primary" />
+                        <p className="text-white/60">No se encontraron torneos activos o próximos por el momento.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {tournaments.map((tournament, index) => (
                             <TournamentCard key={index} tournament={tournament} index={index} />
                         ))}

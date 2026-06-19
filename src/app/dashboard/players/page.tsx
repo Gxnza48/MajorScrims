@@ -3,8 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, ArrowLeft, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, Save, X, Users } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/i18n";
 
@@ -121,177 +120,173 @@ export default function PlayersAdminPage() {
 
     if (status === "loading" || isLoading) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full -mr-64 -mt-64 pointer-events-none" />
-
-            <div className="container mx-auto max-w-5xl pt-32 pb-24 px-6 relative z-10">
-                <div className="flex items-center justify-between mb-12">
+        <div className="min-h-screen text-white">
+            <div className="container mx-auto max-w-5xl px-6 py-16">
+                {/* Header */}
+                <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mb-4">
+                        <Link
+                            href="/dashboard"
+                            className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-primary"
+                        >
                             <ArrowLeft size={16} /> {t.admin.backToDashboard}
                         </Link>
-                        <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tight">
-                            {t.admin.playersManagement.split(" ")[0]}{" "}
-                            <span className="text-primary text-glow">{t.admin.playersManagement.split(" ").slice(1).join(" ")}</span>
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                            <Users size={16} className="text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                                {t.admin.playersManagement}
+                            </span>
+                        </div>
+                        <h1 className="text-3xl font-bold text-white md:text-4xl">
+                            {t.admin.playersManagement}
                         </h1>
                     </div>
 
                     {!showForm && (
-                        <motion.button
+                        <button
                             onClick={openAdd}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="bg-primary hover:bg-primary/90 text-black px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(34,217,98,0.3)]"
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B]"
                         >
                             <Plus size={20} /> {t.admin.addPlayer}
-                        </motion.button>
+                        </button>
                     )}
                 </div>
 
                 {/* Add/Edit form */}
                 {showForm && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/[0.02] border border-primary/20 rounded-3xl p-8 backdrop-blur-md mb-8"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-heading font-black text-white uppercase">
+                    <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+                        <div className="mb-6 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-white">
                                 {editingId ? t.admin.editPlayer : t.admin.addPlayer}
                             </h2>
-                            <button onClick={cancelForm} className="text-gray-400 hover:text-white transition-colors">
+                            <button
+                                onClick={cancelForm}
+                                className="text-white/60 transition-colors hover:text-white"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
                         {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm">
+                            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                                 {error}
                             </div>
                         )}
 
-                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div className="mb-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.playerName}</label>
+                                <label className="mb-2 block text-sm text-white/70">{t.admin.playerName}</label>
                                 <input
                                     type="text"
                                     value={form.name}
                                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40"
                                     placeholder="k1nG"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.playerRole}</label>
+                                <label className="mb-2 block text-sm text-white/70">{t.admin.playerRole}</label>
                                 <input
                                     type="text"
                                     value={form.role}
                                     onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40"
                                     placeholder="proplayer"
                                 />
                             </div>
                         </div>
 
                         <div className="mb-2">
-                            <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.playerImage}</label>
+                            <label className="mb-2 block text-sm text-white/70">{t.admin.playerImage}</label>
                             <input
                                 type="text"
                                 value={form.img}
                                 onChange={e => setForm(f => ({ ...f, img: e.target.value }))}
-                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40"
                                 placeholder="https://i.imgur.com/... o /images/pro-players/..."
                             />
-                            <p className="text-[11px] text-gray-600 mt-1">{t.admin.playerImgHelp}</p>
+                            <p className="mt-1 text-[11px] text-white/40">{t.admin.playerImgHelp}</p>
                         </div>
 
                         {form.img && (
-                            <div className="flex items-start gap-4 mt-4 mb-4">
+                            <div className="mb-4 mt-4 flex items-start gap-4">
                                 <img
                                     src={form.img}
                                     alt={form.name}
-                                    className="w-20 h-24 object-cover rounded-2xl border border-white/10 bg-black/30"
+                                    className="h-24 w-20 rounded-xl border border-white/10 bg-white/[0.02] object-cover"
                                     onError={e => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
                                 />
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-white/50">
                                     <p className="font-bold text-white">{form.name || "—"}</p>
                                     <p>{form.role}</p>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex gap-3 mt-6">
-                            <motion.button
+                        <div className="mt-6 flex gap-3">
+                            <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-black px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-[0_0_16px_rgba(34,217,98,0.3)]"
+                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B] disabled:opacity-50"
                             >
                                 <Save size={18} /> {saving ? "..." : t.admin.savePlayer}
-                            </motion.button>
+                            </button>
                             <button
                                 onClick={cancelForm}
-                                className="px-6 py-3 rounded-full font-bold text-gray-400 hover:text-white border border-white/10 hover:bg-white/5 transition-all"
+                                className="rounded-lg border border-white/15 px-6 py-3 font-bold text-white transition-colors duration-300 hover:border-white/30 hover:bg-white/5"
                             >
                                 {t.admin.cancelEdit}
                             </button>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
 
                 {/* Players list */}
-                <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 backdrop-blur-md">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
                     {players.length === 0 ? (
-                        <div className="text-center py-16">
-                            <p className="text-gray-500 text-lg font-medium">{t.admin.noPlayers}</p>
+                        <div className="py-16 text-center">
+                            <p className="text-lg font-medium text-white/50">{t.admin.noPlayers}</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {players.map((player, i) => (
-                                <motion.div
-                                    key={player._id}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="group relative"
-                                >
-                                    <div className="relative rounded-2xl overflow-hidden aspect-[3/4] border border-white/10 bg-black/50 hover:border-primary/40 transition-all duration-300">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10" />
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                            {players.map((player) => (
+                                <div key={player._id} className="group relative">
+                                    <div className="relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition-colors duration-300 hover:border-primary/35">
+                                        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/20 to-transparent" />
                                         <img
                                             src={player.img}
                                             alt={player.name}
-                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+                                            className="h-full w-full object-cover grayscale transition-all duration-300 group-hover:grayscale-0"
                                             onError={e => {
                                                 (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='133' fill='%23222'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
                                             }}
                                         />
-                                        <div className="absolute bottom-0 left-0 w-full p-3 z-20">
-                                            <p className="text-xs font-black text-white uppercase tracking-tight truncate">{player.name}</p>
+                                        <div className="absolute bottom-0 left-0 z-20 w-full p-3">
+                                            <p className="truncate text-xs font-bold text-white">{player.name}</p>
                                         </div>
-                                        <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute right-2 top-2 z-20 flex flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                             <button
                                                 onClick={() => openEdit(player)}
-                                                className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-black hover:bg-white transition-colors"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white transition-colors hover:border-white/30 hover:bg-white/20"
                                             >
                                                 <Edit size={12} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(player._id)}
-                                                className="w-7 h-7 rounded-lg bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20"
                                             >
                                                 <Trash2 size={12} />
                                             </button>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </div>
                             ))}
                         </div>
                     )}

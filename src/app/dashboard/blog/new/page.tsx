@@ -40,10 +40,10 @@ const BLOCK_ICONS: Record<BlockType, React.ReactNode> = {
     video: <Video size={16} />,
 };
 
-const BLOCK_COLORS: Record<BlockType, string> = {
-    text:  "border-white/10 text-gray-400",
-    image: "border-blue-500/30 text-blue-400",
-    video: "border-red-500/30 text-red-400",
+const BLOCK_ACCENTS: Record<BlockType, string> = {
+    text:  "text-white/60",
+    image: "text-primary",
+    video: "text-primary",
 };
 
 export default function NewBlogPostPage() {
@@ -131,8 +131,8 @@ export default function NewBlogPostPage() {
 
     if (status === "loading") {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
             </div>
         );
     }
@@ -146,65 +146,61 @@ export default function NewBlogPostPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#050505] relative pb-32">
-            <div className="absolute top-0 right-1/2 translate-x-1/2 w-full max-w-4xl h-[600px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-primary/0 to-transparent pointer-events-none opacity-60" />
-
-            <div className="container mx-auto max-w-3xl pt-32 px-6 relative z-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-6">
+        <div className="min-h-screen">
+            <div className="container mx-auto max-w-4xl px-6 py-16">
+                <div className="mb-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                     <div>
-                        <Link href="/dashboard/blog" className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mb-4">
+                        <Link
+                            href="/dashboard/blog"
+                            className="mb-5 inline-flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-primary"
+                        >
                             <ArrowLeft size={16} /> {t.admin.backToPosts}
                         </Link>
-                        <h1 className="text-4xl font-heading font-black text-white uppercase tracking-tight">
-                            {t.admin.newTitle.split(" ")[0]}{" "}
-                            <span className="text-primary text-glow">{t.admin.newTitle.split(" ").slice(1).join(" ")}</span>
-                        </h1>
-                        <p className="text-gray-500 text-sm mt-3">{t.admin.writeDescription}</p>
+                        <h1 className="text-3xl font-bold text-white">{t.admin.newTitle}</h1>
+                        <p className="mt-3 text-sm text-white/60">{t.admin.writeDescription}</p>
                     </div>
 
-                    <motion.button
+                    <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-black px-8 py-3.5 rounded-full font-bold flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(34,217,98,0.3)] hover:shadow-[0_0_30px_rgba(34,217,98,0.5)] shrink-0"
+                        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B] disabled:opacity-60"
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                         {isSaving ? t.admin.publishing : t.admin.publishBtn}
-                    </motion.button>
+                    </button>
                 </div>
 
                 {errorMsg && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-4 rounded-2xl mb-8">
+                    <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-6 py-4 text-red-400">
                         {errorMsg}
                     </div>
                 )}
 
                 <div className="flex flex-col gap-6">
                     {/* Title */}
-                    <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 backdrop-blur-md">
-                        <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">{t.admin.titleLabel}</label>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+                        <label className="mb-2 block text-sm font-medium text-white/70">{t.admin.titleLabel}</label>
                         <input
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors text-lg"
+                            className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-lg text-white outline-none transition-colors placeholder-white/30 focus:border-primary/40"
                             placeholder={t.admin.titlePlaceholder}
                         />
                     </div>
 
                     {/* Template selector */}
-                    <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 backdrop-blur-md">
-                        <label className="block text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">{t.admin.templateLabel}</label>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+                        <label className="mb-4 block text-sm font-medium text-white/70">{t.admin.templateLabel}</label>
                         <div className="flex flex-wrap gap-2">
                             {templates.map(tmpl => (
                                 <button
                                     key={tmpl.key}
                                     onClick={() => handleTemplateSelect(tmpl.key)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-200 ${
+                                    className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors duration-300 ${
                                         activeTemplate === tmpl.key
-                                            ? "bg-primary text-black shadow-[0_0_12px_rgba(34,217,98,0.4)]"
-                                            : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5"
+                                            ? "border-primary/40 bg-primary/10 text-primary"
+                                            : "border-white/10 bg-white/[0.03] text-white/60 hover:border-primary/35 hover:text-white"
                                     }`}
                                 >
                                     {tmpl.label}
@@ -220,35 +216,35 @@ export default function NewBlogPostPage() {
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`bg-white/[0.02] border rounded-3xl p-6 backdrop-blur-md ${BLOCK_COLORS[block.type]}`}
+                                    className="rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300"
                                 >
                                     {/* Block header */}
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-2">
+                                    <div className="mb-4 flex items-center justify-between">
+                                        <div className={`flex items-center gap-2 ${BLOCK_ACCENTS[block.type]}`}>
                                             {BLOCK_ICONS[block.type]}
-                                            <span className="text-xs font-black uppercase tracking-widest">
+                                            <span className="text-sm font-medium">
                                                 {block.type === "text" ? t.admin.blockText : block.type === "image" ? t.admin.blockImage : t.admin.blockVideo}
                                             </span>
-                                            <span className="text-[10px] text-gray-600 font-bold">#{idx + 1}</span>
+                                            <span className="text-xs font-medium text-white/40">#{idx + 1}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
                                                 onClick={() => moveBlock(idx, -1)}
                                                 disabled={idx === 0}
-                                                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
                                             >
                                                 <ChevronUp size={14} />
                                             </button>
                                             <button
                                                 onClick={() => moveBlock(idx, 1)}
                                                 disabled={idx === blocks.length - 1}
-                                                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
                                             >
                                                 <ChevronDown size={14} />
                                             </button>
                                             <button
                                                 onClick={() => removeBlock(block.id)}
-                                                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-500/20 transition-colors"
+                                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] text-red-400 transition-colors hover:bg-red-500/20 hover:text-white"
                                             >
                                                 <X size={14} />
                                             </button>
@@ -266,24 +262,24 @@ export default function NewBlogPostPage() {
                                     ) : (
                                         <div className="flex flex-col gap-3">
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1 uppercase tracking-wider font-bold">
+                                                <label className="mb-1 block text-sm font-medium text-white/70">
                                                     {block.type === "image" ? t.admin.imageUrl : t.admin.videoUrl}
                                                 </label>
                                                 <input
                                                     type="url"
                                                     value={block.content}
                                                     onChange={e => updateBlock(block.id, "content", e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors text-sm"
+                                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm text-white outline-none transition-colors placeholder-white/30 focus:border-primary/40"
                                                     placeholder={block.type === "image" ? t.admin.imageUrlPlaceholder : t.admin.videoUrlPlaceholder}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1 uppercase tracking-wider font-bold">{t.admin.caption}</label>
+                                                <label className="mb-1 block text-sm font-medium text-white/70">{t.admin.caption}</label>
                                                 <input
                                                     type="text"
                                                     value={block.caption}
                                                     onChange={e => updateBlock(block.id, "caption", e.target.value)}
-                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors text-sm"
+                                                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm text-white outline-none transition-colors placeholder-white/30 focus:border-primary/40"
                                                     placeholder={t.admin.caption}
                                                 />
                                             </div>
@@ -291,7 +287,7 @@ export default function NewBlogPostPage() {
                                                 <img
                                                     src={block.content}
                                                     alt={block.caption || "preview"}
-                                                    className="w-full max-h-48 object-contain rounded-xl border border-white/5 bg-black/30 mt-1"
+                                                    className="mt-1 max-h-48 w-full rounded-lg border border-white/10 bg-white/[0.02] object-contain"
                                                     onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                                                 />
                                             )}
@@ -300,14 +296,14 @@ export default function NewBlogPostPage() {
                                 </motion.div>
 
                                 {/* Add block between */}
-                                <div className="flex items-center gap-2 py-2 px-4">
+                                <div className="flex items-center gap-2 px-4 py-2">
                                     {(["text", "image", "video"] as BlockType[]).map(type => (
                                         <button
                                             key={type}
                                             onClick={() => addBlockAfter(idx, type)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.03] text-gray-600 hover:text-white hover:bg-white/10 border border-white/5 transition-all duration-200"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/50 transition-colors duration-300 hover:border-primary/35 hover:text-white"
                                         >
-                                            <Plus size={10} />
+                                            <Plus size={12} />
                                             {type === "text" ? t.admin.blockText : type === "image" ? t.admin.blockImage : t.admin.blockVideo}
                                         </button>
                                     ))}

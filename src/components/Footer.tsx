@@ -1,10 +1,7 @@
 "use client";
 
 import { useI18n } from "../i18n";
-import { Twitter, Instagram } from "lucide-react"; // Note: Lucide might not have Discord icon, checking alternatives or using Disc/MessageCircle. Usually generic icons are safe.
-// Actually Lucide usually has generic icons. I will use a custom SVG for Discord if needed or a generic one. Simple generic icons are fine.
-// Wait, Discord icon is specific. I can use an SVG or react-icons implicitly? No, I only installed lucide-react.
-// I will use an SVG for Discord.
+import { Twitter, Instagram } from "lucide-react";
 
 const DiscordIcon = ({ className }: { className?: string }) => (
     <svg
@@ -32,57 +29,68 @@ export function Footer() {
     const { t } = useI18n();
 
     return (
-        <footer className="bg-black border-t border-white/10 pt-16 pb-8">
-            <div className="container mx-auto px-6">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
-                    {/* Brand */}
-                    <div className="flex flex-col items-center md:items-start gap-4">
-                        <a href="#" className="flex items-center gap-2">
-                            <img src="/images/hero_text_logo.png" alt="Major Scrims" className="h-12 w-auto grayscale hover:grayscale-0 transition-all" />
-                            <span className="font-heading font-bold text-2xl tracking-tighter text-white">MAJOR SCRIMS</span>
+        <footer className="border-t border-white/5 py-10">
+            <div className="container mx-auto max-w-6xl px-6">
+                <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+                    <img
+                        src="/images/logo_full.png"
+                        alt="Major Scrims"
+                        className="h-7 w-auto opacity-70"
+                    />
+                    <p className="text-xs text-white/40">
+                        © {new Date().getFullYear()} Major Scrims. {t.footer.rights}
+                    </p>
+                    <div className="flex items-center gap-5">
+                        <a
+                            href="https://x.com/MajorScrims"
+                            target="_blank"
+                            rel="noopener"
+                            aria-label="X"
+                            className="text-white/40 transition-colors hover:text-white"
+                        >
+                            <Twitter size={18} />
                         </a>
-                        <p className="text-gray-500 text-sm max-w-xs text-center md:text-left">
-                            The premier destination for competitive Fortnite practice in Brazil.
-                        </p>
-                    </div>
-
-                    {/* Socials & CTA */}
-                    <div className="flex flex-col items-center md:items-end gap-6">
-                        <div className="flex items-center gap-6">
-                            <a href="https://x.com/MajorScrims" target="_blank" rel="noopener" className="text-gray-400 hover:text-[#1FC058] transition-colors">
-                                <Twitter size={24} />
-                            </a>
-                            <a href="https://www.instagram.com/majorscrims/" target="_blank" rel="noopener" className="text-gray-400 hover:text-[#1FC058] transition-colors">
-                                <Instagram size={24} />
-                            </a>
-                            <a href="http://tiktok.com/@majorscrims_" target="_blank" rel="noopener" className="text-gray-400 hover:text-[#1FC058] transition-colors">
-                                <TikTokIcon className="w-6 h-6" />
-                            </a>
-                            <a href="https://discord.com/invite/majorscrims" target="_blank" rel="noopener" className="text-gray-400 hover:text-[#1FC058] transition-colors">
-                                <DiscordIcon className="w-6 h-6" />
-                            </a>
-                        </div>
-
+                        <a
+                            href="https://www.instagram.com/majorscrims/"
+                            target="_blank"
+                            rel="noopener"
+                            aria-label="Instagram"
+                            className="text-white/40 transition-colors hover:text-white"
+                        >
+                            <Instagram size={18} />
+                        </a>
+                        <a
+                            href="http://tiktok.com/@majorscrims_"
+                            target="_blank"
+                            rel="noopener"
+                            aria-label="TikTok"
+                            className="text-white/40 transition-colors hover:text-white"
+                        >
+                            <TikTokIcon className="h-4 w-4" />
+                        </a>
                         <a
                             href="https://discord.com/invite/majorscrims"
                             target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-2 rounded-lg transition-all"
+                            rel="noopener"
+                            aria-label="Discord"
+                            className="text-white/40 transition-colors hover:text-white"
                         >
-                            <DiscordIcon className="w-5 h-5" />
-                            <span className="font-bold text-sm">{t.nav.join}</span>
+                            <DiscordIcon className="h-4 w-4" />
                         </a>
                     </div>
                 </div>
 
-                <div className="border-t border-white/5 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-gray-600 text-xs">
-                        © {new Date().getFullYear()} Major Scrims. {t.footer.rights}
-                    </p>
-                    <p className="text-gray-700 text-xs">
-                        Developed by <a href="https://github.com/gxnza48" target="_blank" rel="noopener" className="text-gray-400 hover:text-[#1FC058] transition-colors">gxnza.48</a>
-                    </p>
-                </div>
+                <p className="mt-6 text-center text-xs text-white/30">
+                    Developed by{" "}
+                    <a
+                        href="https://github.com/gxnza48"
+                        target="_blank"
+                        rel="noopener"
+                        className="transition-colors hover:text-white"
+                    >
+                        gxnza.48
+                    </a>
+                </p>
             </div>
         </footer>
     );

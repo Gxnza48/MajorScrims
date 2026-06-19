@@ -19,28 +19,28 @@ export default function TournamentCard({ tournament, index }: { tournament: Tour
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-[#121212] border border-white/10 rounded-xl overflow-hidden hover:border-[#1FC058]/50 transition-all group"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * 0.08, duration: 0.4 }}
+            className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors duration-300 hover:border-primary/35"
         >
-            <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-800 to-black">
+            <div className="relative aspect-square overflow-hidden bg-white/[0.02]">
                 {tournament.poster ? (
                     <img
                         src={tournament.poster}
                         alt={tournament.title}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                        className="h-full w-full object-cover object-top"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="flex h-full w-full items-center justify-center">
                         <Trophy className="text-white/20" size={64} />
                     </div>
                 )}
-                <div className="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/10">
+                <div className="absolute right-2 top-2 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                     <span className={
                         tournament.status === 'Live' ? 'text-red-500 animate-pulse' :
-                            tournament.status === 'Upcoming' ? 'text-[#1FC058]' :
-                                'text-gray-400'
+                            tournament.status === 'Upcoming' ? 'text-primary' :
+                                'text-white/50'
                     }>
                         {tournament.status}
                     </span>
@@ -48,33 +48,33 @@ export default function TournamentCard({ tournament, index }: { tournament: Tour
             </div>
 
             <div className="p-5">
-                <h3 className="text-xl font-bold font-heading text-white mb-4 line-clamp-1" title={tournament.title}>
+                <h3 className="mb-4 line-clamp-1 text-xl font-bold text-white" title={tournament.title}>
                     {tournament.title}
                 </h3>
 
-                <div className="grid grid-cols-2 gap-y-3 text-sm text-gray-400">
+                <div className="grid grid-cols-2 gap-y-3 text-sm text-white/60">
                     <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-[#1FC058]" />
+                        <Calendar size={14} className="text-primary" />
                         <span>{startDate}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-[#1FC058]" />
+                        <Clock size={14} className="text-primary" />
                         <span>{startTime}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Users size={14} className="text-[#1FC058]" />
+                        <Users size={14} className="text-primary" />
                         <span>{tournament.teamSize}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-[#1FC058]" />
+                        <MapPin size={14} className="text-primary" />
                         <span>{tournament.region}</span>
                     </div>
                 </div>
 
                 {/* Mode Badge */}
-                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                    <span className="text-xs font-mono text-gray-500 uppercase">Mode</span>
-                    <span className="text-sm font-bold text-white bg-white/5 px-2 py-1 rounded">
+                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+                    <span className="text-xs uppercase text-white/40">Mode</span>
+                    <span className="rounded bg-white/5 px-2 py-1 text-sm font-bold text-white">
                         {tournament.mode}
                     </span>
                 </div>
