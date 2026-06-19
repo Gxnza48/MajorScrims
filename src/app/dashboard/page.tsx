@@ -2,7 +2,6 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { StatsCard } from "@/components/StatsCard";
 import { useI18n } from "@/i18n";
 import { useEffect, useState } from "react";
@@ -97,11 +96,10 @@ export default function DashboardPage() {
                         <div className="relative">
                             <div className="relative h-32 w-32 overflow-hidden rounded-full border border-white/10 md:h-40 md:w-40">
                                 {session.user?.image ? (
-                                    <Image
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
                                         src={session.user.image}
                                         alt={session.user.name || "User"}
-                                        width={160}
-                                        height={160}
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (

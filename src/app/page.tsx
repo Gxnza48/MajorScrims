@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
     ArrowRight,
@@ -16,6 +16,13 @@ import {
     Users,
 } from "lucide-react";
 import { useI18n } from "@/i18n";
+import {
+    animate,
+    motion,
+    useInView,
+    useMotionValue,
+    useTransform,
+} from "framer-motion";
 
 /* ──────────────────────────────────────────────────────────────────
    Home — diseño "verde" aprobado (antes en /newmodel), adaptado a prod.
@@ -86,7 +93,7 @@ const glowBtn = { boxShadow: "var(--glow-btn)" } as React.CSSProperties;
 // ── Copy bilingüe (PT exacto al boceto aprobado; ES neutro-rioplatense) ──
 const COPY = {
     pt: {
-        heroBadge: "Mais de 46.000 jogadores confiam na Major",
+        heroBadge: "Mais de 58.000 jogadores confiam na Major",
         heroTitlePre: "Scrims & customs de elite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
@@ -94,7 +101,7 @@ const COPY = {
         heroCtaDiscord: "Entrar no Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
-            ["46k+", "Membros ativos"],
+            ["58k+", "Membros ativos"],
             ["", "Jogadores ranqueados"],
             ["24/7", "Customs e scrims"],
         ] as [string, string][],
@@ -191,7 +198,7 @@ const COPY = {
         ctaButton: "Entrar no Discord",
     },
     es: {
-        heroBadge: "Más de 46.000 jugadores confían en Major",
+        heroBadge: "Más de 58.000 jugadores confían en Major",
         heroTitlePre: "Scrims y customs de élite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
@@ -199,7 +206,7 @@ const COPY = {
         heroCtaDiscord: "Entrar al Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
-            ["46k+", "Miembros activos"],
+            ["58k+", "Miembros activos"],
             ["", "Jugadores rankeados"],
             ["24/7", "Customs y scrims"],
         ] as [string, string][],
@@ -316,6 +323,34 @@ function stripMarkup(html: string): string {
         .trim();
 }
 
+// Count-up al entrar en viewport (la animación de números que ya usaba el sitio).
+function AnimatedCounter({
+    value,
+    suffix = "",
+    locale,
+}: {
+    value: number;
+    suffix?: string;
+    locale: string;
+}) {
+    const ref = useRef<HTMLSpanElement>(null);
+    const inView = useInView(ref, { once: true, margin: "-50px" });
+    const count = useMotionValue(0);
+    const display = useTransform(
+        count,
+        (v) => Math.round(v).toLocaleString(locale) + suffix
+    );
+
+    useEffect(() => {
+        if (inView) {
+            animate(count, value, { duration: 2.5, ease: [0.22, 1, 0.36, 1] });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [inView, value]);
+
+    return <motion.span ref={ref}>{display}</motion.span>;
+}
+
 export default function Home() {
     const { language } = useI18n();
     const c = COPY[language];
@@ -388,9 +423,7 @@ export default function Home() {
             example: true,
         }));
 
-    const totalPlayersLabel = totalPlayers.toLocaleString(
-        language === "es" ? "es-AR" : "pt-BR"
-    );
+    const statsLocale = language === "es" ? "es-AR" : "pt-BR";
 
     return (
         <div className="min-h-screen text-white">
@@ -409,7 +442,7 @@ export default function Home() {
             `}</style>
 
             {/* ── Hero ───────────────────────────────────────────── */}
-            <section className="relative flex min-h-[calc(100dvh-72px)] items-center justify-center overflow-hidden py-20">
+            <section className="relative flex min-h-[calc(100dvh-88px)] items-center justify-center overflow-hidden py-20">
                 <div className="absolute inset-0 z-0">
                     <div
                         className="absolute inset-x-0 top-0 h-[55vh]"
@@ -467,7 +500,20 @@ export default function Home() {
                         {c.stats.map(([value, label], i) => (
                             <div key={label} className="text-center">
                                 <div className="text-2xl font-bold text-white md:text-3xl">
-                                    {i === 1 ? totalPlayersLabel : value}
+                                    {i === 0 ? (
+                                        <AnimatedCounter
+                                            value={parseInt(value, 10)}
+                                            suffix="k+"
+                                            locale={statsLocale}
+                                        />
+                                    ) : i === 1 ? (
+                                        <AnimatedCounter
+                                            value={totalPlayers}
+                                            locale={statsLocale}
+                                        />
+                                    ) : (
+                                        value
+                                    )}
                                 </div>
                                 <div className="mt-1 text-sm text-white/50">
                                     {label}
@@ -618,7 +664,7 @@ export default function Home() {
             </section>
 
             {/* ── Marcas + Pros (uma só box) ─────────────────────── */}
-            <section className="py-24">
+            <section id="players" className="py-24">
                 <div className="container mx-auto max-w-6xl px-6">
                     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
                         <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-[rgb(var(--acc-rgb)_/_0.10)] blur-3xl" />

@@ -25,12 +25,73 @@ const TikTokIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+const FOUNDERS = [
+    {
+        name: "Blxckoutz",
+        handle: "@BLXCKOUTZ",
+        url: "https://x.com/blxckoutz",
+        avatar: "/images/avatars/blxckoutz.png",
+        flag: "/images/flags/br.png",
+    },
+    {
+        name: "Gorilon",
+        handle: "@GORILONFN",
+        url: "https://x.com/gorilonfn",
+        avatar: "/images/avatars/gorilon.jpg",
+        flag: "/images/flags/ar.png",
+    },
+];
+
 export function Footer() {
     const { t } = useI18n();
 
     return (
         <footer className="border-t border-white/5 py-10">
             <div className="container mx-auto max-w-6xl px-6">
+                {/* Fundadores */}
+                <div className="mb-10 flex flex-col items-center gap-4 border-b border-white/5 pb-10">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/30">
+                        Fundadores
+                    </span>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        {FOUNDERS.map((f) => (
+                            <a
+                                key={f.handle}
+                                href={f.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 transition-colors hover:border-primary/35"
+                            >
+                                <span className="relative shrink-0">
+                                    <img
+                                        src={f.avatar}
+                                        alt={f.name}
+                                        className="h-9 w-9 rounded-lg border border-white/10 object-cover"
+                                    />
+                                    <img
+                                        src={f.flag}
+                                        alt=""
+                                        className="absolute -bottom-1 -right-1 w-3.5 rounded-sm border border-black/60"
+                                    />
+                                </span>
+                                <span className="flex flex-col leading-tight">
+                                    <span className="flex items-center gap-1 text-sm font-bold text-white">
+                                        {f.handle}
+                                        <img
+                                            src="/images/icons/verified.png"
+                                            alt="Verified"
+                                            className="h-3 w-3"
+                                        />
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wider text-white/40 transition-colors group-hover:text-primary/80">
+                                        Co-Owner
+                                    </span>
+                                </span>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                     <img
                         src="/images/logo_full.png"
