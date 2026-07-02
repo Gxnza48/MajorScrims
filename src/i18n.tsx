@@ -192,7 +192,7 @@ const translations: Record<Language, Translations> = {
     pt: {
         nav: {
             home: 'Início',
-            about: 'Sobre',
+            about: 'Sobre nós',
             players: 'Pro Players',
             tournaments: 'Torneios',
             leaderboard: 'Leaderboard',
@@ -375,7 +375,7 @@ const translations: Record<Language, Translations> = {
     es: {
         nav: {
             home: 'Inicio',
-            about: 'Sobre',
+            about: 'Nosotros',
             players: 'Pro Players',
             tournaments: 'Torneos',
             leaderboard: 'Leaderboard',

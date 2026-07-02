@@ -103,7 +103,7 @@ export function Footer() {
                     </p>
                     <div className="flex items-center gap-5">
                         <a
-                            href="https://x.com/MajorScrims"
+                            href="https://x.com/MajorScrims_"
                             target="_blank"
                             rel="noopener"
                             aria-label="X"
