@@ -51,12 +51,19 @@ const SOCIALS = [
 ];
 
 // ── Copy bilingüe (PT default; ES neutro-rioplatense) ──
+// Frase enviada por Faus (jul 2026). Dos párrafos.
 const COPY = {
     pt: {
-        phrase: "Somos a casa do Fortnite competitivo no Brasil e na LATAM.",
+        phrase: [
+            "A Major Scrims nasceu com uma missão clara: transformar em realidade o que muitos acreditam ser impossível.",
+            "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as oportunidades e as ferramentas certas.",
+        ],
     },
     es: {
-        phrase: "Somos la casa del Fortnite competitivo en Brasil y LATAM.",
+        phrase: [
+            "Major Scrims nació con una misión clara: convertir lo que muchos creen imposible en una realidad.",
+            "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las oportunidades y las herramientas correctas.",
+        ],
     },
 } as const;
 
@@ -106,9 +113,16 @@ export default function Nosotros() {
                     </div>
 
                     {/* ── Frase ─────────────────────────────────────── */}
-                    <p className="nm-rise nm-d1 mx-auto mt-12 max-w-3xl text-center text-2xl font-bold leading-snug text-[var(--h1)] md:text-3xl">
-                        {c.phrase}
-                    </p>
+                    <div className="nm-rise nm-d1 mx-auto mt-12 max-w-3xl space-y-5 text-center">
+                        {c.phrase.map((p, i) => (
+                            <p
+                                key={i}
+                                className="text-xl font-semibold leading-snug text-[var(--h1)] md:text-2xl"
+                            >
+                                {p}
+                            </p>
+                        ))}
+                    </div>
 
                     {/* ── Redes (3 iconos) ──────────────────────────── */}
                     <div className="nm-rise nm-d2 mt-9 flex items-center justify-center gap-4">
