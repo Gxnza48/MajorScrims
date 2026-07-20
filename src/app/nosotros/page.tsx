@@ -52,27 +52,64 @@ const SOCIALS = [
 ];
 
 // ── Copy bilingüe (PT default; ES neutro-rioplatense) ──
-// Frase enviada por Faus (jul 2026). Tres párrafos.
-const COPY = {
+// Frase enviada por Faus (jul 2026). Cada párrafo es un array de segmentos;
+// SOLO las palabras clave que marcó Faus van en negrita (b: true), el resto
+// en peso normal, para darle importancia a lo remarcado.
+type Seg = { t: string; b?: boolean };
+type NosCopy = { heroPre: string; heroAccent: string; phrase: Seg[][] };
+const COPY: Record<"pt" | "es", NosCopy> = {
     pt: {
         heroPre: "Unidos por uma só missão:",
         heroAccent: "levar a nossa região ao topo.",
         phrase: [
-            "A Major Scrims nasceu com uma missão clara: transformar em realidade o que muitos acreditam ser impossível.",
-            "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as oportunidades e as ferramentas certas.",
-            "Por isso construímos uma comunidade onde o talento encontra os treinos, as ferramentas e o nível competitivo para crescer. E juntos, dia após dia, levamos toda a nossa região ao topo.",
+            [
+                { t: "A " },
+                { t: "Major Scrims", b: true },
+                { t: " nasceu com uma " },
+                { t: "missão clara", b: true },
+                { t: ": transformar em realidade o que muitos acreditam ser impossível." },
+            ],
+            [
+                { t: "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as " },
+                { t: "oportunidades e as ferramentas certas.", b: true },
+            ],
+            [
+                { t: "Por isso construímos esse espaço onde " },
+                { t: "o talento treina", b: true },
+                { t: ", os " },
+                { t: "profissionais aperfeiçoam seu ofício", b: true },
+                { t: " e juntos mostram " },
+                { t: "do que a nossa região é feita", b: true },
+                { t: "." },
+            ],
         ],
     },
     es: {
         heroPre: "Unidos por una sola misión:",
         heroAccent: "llevar nuestra región a lo más alto.",
         phrase: [
-            "Major Scrims nació con una misión clara: convertir lo que muchos creen imposible en una realidad.",
-            "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las oportunidades y las herramientas correctas.",
-            "Por eso construimos una comunidad donde el talento encuentra las prácticas, las herramientas y el nivel competitivo para crecer. Y juntos, día a día, llevamos a toda nuestra región a lo más alto.",
+            [
+                { t: "Major Scrims", b: true },
+                { t: " nació con una " },
+                { t: "misión clara", b: true },
+                { t: ": convertir lo que muchos creen imposible en una realidad." },
+            ],
+            [
+                { t: "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las " },
+                { t: "oportunidades y las herramientas correctas.", b: true },
+            ],
+            [
+                { t: "Por eso construimos ese espacio donde " },
+                { t: "el talento practica", b: true },
+                { t: ", los " },
+                { t: "profesionales perfeccionan su oficio", b: true },
+                { t: " y juntos demuestran de " },
+                { t: "qué está hecha la región", b: true },
+                { t: "." },
+            ],
         ],
     },
-} as const;
+};
 
 export default function Nosotros() {
     const { language } = useI18n();
@@ -139,7 +176,7 @@ export default function Nosotros() {
             {/* ── Video (izq) + frase/redes (der) — sueltos, sin caja ── */}
             <section className="relative py-20 md:py-24">
                 <div className="container mx-auto max-w-[1360px] px-6">
-                    <div className="grid gap-8 md:gap-12 lg:grid-cols-[2.1fr_1fr] lg:items-center">
+                    <div className="grid gap-8 md:gap-12 lg:grid-cols-[1.9fr_1fr] lg:items-start">
                         {/* Video — más grande, a la izquierda */}
                         <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
                             <div className="relative aspect-video w-full">
@@ -157,12 +194,23 @@ export default function Nosotros() {
                         {/* Frase + redes — a la derecha */}
                         <div className="nm-rise nm-d2">
                             <div className="space-y-5">
-                                {c.phrase.map((p, i) => (
+                                {c.phrase.map((para, i) => (
                                     <p
                                         key={i}
-                                        className="text-lg font-semibold leading-snug text-[var(--h1)] md:text-xl lg:text-2xl"
+                                        className="text-lg leading-relaxed text-white/70 md:text-xl"
                                     >
-                                        {p}
+                                        {para.map((seg, j) =>
+                                            seg.b ? (
+                                                <strong
+                                                    key={j}
+                                                    className="font-bold text-white"
+                                                >
+                                                    {seg.t}
+                                                </strong>
+                                            ) : (
+                                                <span key={j}>{seg.t}</span>
+                                            )
+                                        )}
                                     </p>
                                 ))}
                             </div>
