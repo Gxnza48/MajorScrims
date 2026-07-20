@@ -115,8 +115,15 @@ export default function Nosotros() {
                     className="pointer-events-none absolute inset-0 bg-cover bg-bottom bg-no-repeat"
                     style={{ backgroundImage: "url('/images/nosotros-city.png')" }}
                 />
+                {/* Difuminado inferior: funde el skyline con la página (sin línea dura) */}
+                <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2"
+                    style={{
+                        background: "linear-gradient(to bottom, transparent, var(--bg2))",
+                    }}
+                />
 
-                <div className="relative z-10 mx-auto max-w-4xl px-6 pb-24 pt-[120px] text-center md:pb-32 md:pt-[172px]">
+                <div className="relative z-10 mx-auto max-w-4xl px-6 pb-20 pt-[108px] text-center md:pb-24 md:pt-[148px]">
                     <h1 className="nm-rise text-4xl font-bold leading-tight text-[var(--h1)] md:text-6xl">
                         {c.heroPre}{" "}
                         <span
