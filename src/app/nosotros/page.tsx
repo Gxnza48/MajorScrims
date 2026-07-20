@@ -4,9 +4,9 @@ import { Instagram, Twitter } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 /* ──────────────────────────────────────────────────────────────────
-   Nosotros / Sobre nós — versión clean (pedido de Faus, jul 2026):
-   solo el video de presentación, una frase y los 3 iconos de redes.
-   Se sacó todo lo demás (features, caja de redes, CTA Discord).
+   Nosotros / Sobre nós — panel con header titulado (fondo contrastante)
+   y cuerpo en dos columnas: video grande a la izquierda, frase + redes
+   a la derecha (pedido de Faus, jul 2026). En mobile se apila.
    El video se embebe directo desde Google Drive para no subir los
    ~475MB del archivo a nuestro hosting.
    ────────────────────────────────────────────────────────────────── */
@@ -54,12 +54,16 @@ const SOCIALS = [
 // Frase enviada por Faus (jul 2026). Dos párrafos.
 const COPY = {
     pt: {
+        kicker: "Sobre nós",
+        title: "Nossa missão",
         phrase: [
             "A Major Scrims nasceu com uma missão clara: transformar em realidade o que muitos acreditam ser impossível.",
             "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as oportunidades e as ferramentas certas.",
         ],
     },
     es: {
+        kicker: "Nosotros",
+        title: "Nuestra misión",
         phrase: [
             "Major Scrims nació con una misión clara: convertir lo que muchos creen imposible en una realidad.",
             "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las oportunidades y las herramientas correctas.",
@@ -97,47 +101,63 @@ export default function Nosotros() {
                     <div className="absolute -right-24 top-8 h-96 w-96 rounded-full bg-[var(--orb2)] blur-3xl" />
                 </div>
 
-                <div className="container relative z-10 mx-auto max-w-4xl px-6">
-                    {/* ── Video ─────────────────────────────────────── */}
-                    <div className="nm-rise mx-auto overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-                        <div className="relative aspect-video w-full">
-                            <iframe
-                                key={language}
-                                src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
-                                title="Major Scrims"
-                                allow="autoplay; fullscreen"
-                                allowFullScreen
-                                className="absolute inset-0 h-full w-full"
-                            />
-                        </div>
-                    </div>
-
-                    {/* ── Frase ─────────────────────────────────────── */}
-                    <div className="nm-rise nm-d1 mx-auto mt-12 max-w-3xl space-y-5 text-center">
-                        {c.phrase.map((p, i) => (
-                            <p
-                                key={i}
-                                className="text-xl font-semibold leading-snug text-[var(--h1)] md:text-2xl"
-                            >
-                                {p}
+                <div className="container relative z-10 mx-auto max-w-[1360px] px-6">
+                    <div className="nm-rise overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] shadow-2xl">
+                        {/* ── Header con fondo contrastante ─────────────── */}
+                        <div className="border-b border-white/10 bg-gradient-to-br from-[rgb(var(--acc-rgb)_/_0.16)] via-white/[0.03] to-transparent px-6 py-7 md:px-10 md:py-9">
+                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--acc)]">
+                                {c.kicker}
                             </p>
-                        ))}
-                    </div>
+                            <h2 className="mt-2 text-3xl font-bold leading-tight text-[var(--h1)] md:text-4xl">
+                                {c.title}
+                            </h2>
+                        </div>
 
-                    {/* ── Redes (3 iconos) ──────────────────────────── */}
-                    <div className="nm-rise nm-d2 mt-9 flex items-center justify-center gap-4">
-                        {SOCIALS.map(({ name, url, Icon }) => (
-                            <a
-                                key={name}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label={name}
-                                className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.4)] hover:text-[var(--acc)]"
-                            >
-                                <Icon className="h-5 w-5" />
-                            </a>
-                        ))}
+                        {/* ── Cuerpo: video (izq) + frase/redes (der) ───── */}
+                        <div className="grid gap-8 p-6 md:gap-12 md:p-10 lg:grid-cols-[1.8fr_1fr] lg:items-center">
+                            {/* Video — más grande, a la izquierda */}
+                            <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+                                <div className="relative aspect-video w-full">
+                                    <iframe
+                                        key={language}
+                                        src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
+                                        title="Major Scrims"
+                                        allow="autoplay; fullscreen"
+                                        allowFullScreen
+                                        className="absolute inset-0 h-full w-full"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Frase + redes — a la derecha */}
+                            <div className="nm-rise nm-d2">
+                                <div className="space-y-5">
+                                    {c.phrase.map((p, i) => (
+                                        <p
+                                            key={i}
+                                            className="text-lg font-semibold leading-snug text-[var(--h1)] md:text-xl lg:text-2xl"
+                                        >
+                                            {p}
+                                        </p>
+                                    ))}
+                                </div>
+
+                                <div className="mt-8 flex items-center gap-4">
+                                    {SOCIALS.map(({ name, url, Icon }) => (
+                                        <a
+                                            key={name}
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label={name}
+                                            className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.4)] hover:text-[var(--acc)]"
+                                        >
+                                            <Icon className="h-5 w-5" />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
