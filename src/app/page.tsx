@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
     ArrowRight,
+    ArrowUpRight,
     ChevronLeft,
     ChevronRight,
     ShieldCheck,
@@ -32,10 +33,12 @@ const BRAND_LOGOS = [
     {
         name: "Twitch",
         logo: "https://m.media-amazon.com/images/I/21kRx-CJsUL.png",
+        url: "https://x.com/MajorScrims_/status/2052899226183401664",
     },
     {
         name: "Fortnite",
         logo: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Fortnite_F_lettermark_logo.png",
+        url: "https://x.com/MajorScrims_/status/2071376771803439145",
     },
 ];
 
@@ -62,8 +65,8 @@ const COPY = {
         brandsTitle: "Marcas que confiaram na Major Scrims",
         brandsSubtitle: "Parcerias e colaborações oficiais nos últimos meses.",
         brandsDesc: [
-            "Parceria oficial para transmissões e eventos da comunidade.",
-            "Scrims e customs dentro do ecossistema competitivo oficial.",
+            "Torneios impulsionados pela Twitch.",
+            "Torneios com prêmios oficiais da Fortnite.",
         ],
         prosBadge: "Comunidade pro",
         prosTitle: "Quem treina na Major",
@@ -73,7 +76,7 @@ const COPY = {
         proPrev: "Jogador anterior",
         proNext: "Próximo jogador",
         proDot: (name: string) => `Ver ${name}`,
-        ctaTitle: "Pronto para evoluir?",
+        ctaTitle: "Pronto para mejorar?",
         ctaSubtitle:
             "Entre no Discord da Major Scrims e comece a treinar com os melhores do Brasil e LATAM hoje mesmo.",
         ctaButton: "Entrar no Discord",
@@ -95,8 +98,8 @@ const COPY = {
         brandsTitle: "Marcas que confiaron en Major Scrims",
         brandsSubtitle: "Alianzas y colaboraciones oficiales en los últimos meses.",
         brandsDesc: [
-            "Alianza oficial para transmisiones y eventos de la comunidad.",
-            "Scrims y customs dentro del ecosistema competitivo oficial.",
+            "Torneos impulsados por Twitch.",
+            "Torneos con premios oficiales de Fortnite.",
         ],
         prosBadge: "Comunidad pro",
         prosTitle: "Quiénes entrenan en Major",
@@ -106,7 +109,7 @@ const COPY = {
         proPrev: "Jugador anterior",
         proNext: "Jugador siguiente",
         proDot: (name: string) => `Ver ${name}`,
-        ctaTitle: "¿Listo para evolucionar?",
+        ctaTitle: "¿Listo para mejorar?",
         ctaSubtitle:
             "Entrá al Discord de Major Scrims y empezá a entrenar con los mejores de Brasil y LATAM hoy mismo.",
         ctaButton: "Entrar al Discord",
@@ -309,9 +312,12 @@ export default function Home() {
 
                                 <div className="flex flex-1 flex-col justify-center gap-5">
                                     {BRAND_LOGOS.map((brand, i) => (
-                                        <div
+                                        <a
                                             key={brand.name}
-                                            className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
+                                            href={brand.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.02] p-6 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.35)]"
                                         >
                                             <img
                                                 src={brand.logo}
@@ -319,7 +325,7 @@ export default function Home() {
                                                 loading="lazy"
                                                 className="h-12 w-12 flex-shrink-0 rounded-lg object-contain"
                                             />
-                                            <div>
+                                            <div className="flex-1">
                                                 <h3 className="mb-1 font-bold">
                                                     {brand.name}
                                                 </h3>
@@ -327,7 +333,11 @@ export default function Home() {
                                                     {c.brandsDesc[i]}
                                                 </p>
                                             </div>
-                                        </div>
+                                            <ArrowUpRight
+                                                size={18}
+                                                className="flex-shrink-0 text-white/30 transition-colors duration-300 group-hover:text-[var(--acc)]"
+                                            />
+                                        </a>
                                     ))}
                                 </div>
                             </div>
