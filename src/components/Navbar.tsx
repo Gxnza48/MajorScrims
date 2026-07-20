@@ -46,7 +46,7 @@ export function Navbar() {
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center gap-8">
                         <div className="flex items-center gap-6">
-                            <a href="/#players" className="text-[13px] font-semibold text-gray-400 hover:text-white transition-all hover:tracking-wider">{t.nav.players}</a>
+                            <Link href="/#players" className="text-[13px] font-semibold text-gray-400 hover:text-white transition-all hover:tracking-wider">{t.nav.players}</Link>
                             {SHOW_BLOG && (
                                 <Link href="/blog" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
                                     Blog
@@ -119,7 +119,7 @@ export function Navbar() {
                     >
                         <div className="glass-dark border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6 flex flex-col gap-6">
                             <div className="flex flex-col gap-4">
-                                <a href="/#players" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.players}</a>
+                                <Link href="/#players" onClick={() => setIsOpen(false)} className="text-lg font-bold text-gray-300 hover:text-primary transition-colors">{t.nav.players}</Link>
                                 {SHOW_BLOG && (
                                     <Link href="/blog" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">Blog</Link>
                                 )}

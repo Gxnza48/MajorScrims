@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 type Language = 'pt' | 'es';
 
@@ -568,8 +568,49 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'ms-language';
+
 export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [language, setLanguage] = useState<Language>('pt');
+    // Inicia siempre en 'pt' para que el render del servidor y el primer render
+    // del cliente coincidan (sin error de hidratación); el idioma guardado se
+    // restaura en el efecto de abajo apenas monta.
+    const [language, setLanguageState] = useState<Language>('pt');
+
+    // Restaurar el idioma elegido por el usuario (sobrevive a cambios de sección
+    // y a recargas completas de la página).
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved === 'pt' || saved === 'es') {
+                setLanguageState(saved);
+                document.documentElement.lang = saved;
+            }
+        } catch {
+            /* localStorage no disponible (SSR / modo privado) — se ignora */
+        }
+    }, []);
+
+    // Sincronizar el idioma entre pestañas abiertas.
+    useEffect(() => {
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === STORAGE_KEY && (e.newValue === 'pt' || e.newValue === 'es')) {
+                setLanguageState(e.newValue);
+                document.documentElement.lang = e.newValue;
+            }
+        };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, []);
+
+    const setLanguage = (lang: Language) => {
+        setLanguageState(lang);
+        try {
+            localStorage.setItem(STORAGE_KEY, lang);
+            document.documentElement.lang = lang;
+        } catch {
+            /* localStorage no disponible — el idioma igual cambia en memoria */
+        }
+    };
 
     const value = {
         language,
