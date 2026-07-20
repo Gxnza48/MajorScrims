@@ -72,8 +72,8 @@ export function Navbar() {
                             aria-label="Switch Language"
                         >
                             <img
-                                src={language === "pt" ? "/images/flags/br.png" : "/images/flags/ar.png"}
-                                alt={language === "pt" ? "Brazil Flag" : "Argentina Flag"}
+                                src={language === "pt" ? "/images/flags/br.png" : "/images/flags/es.svg"}
+                                alt={language === "pt" ? "Brazil Flag" : "Spain Flag"}
                                 className="w-5 h-auto rounded-sm object-cover transition-transform group-hover:scale-110"
                             />
                             <span className="text-[11px] font-bold uppercase text-gray-400 group-hover:text-white">{language}</span>
@@ -136,8 +136,8 @@ export function Navbar() {
                                     className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10 border border-white/10"
                                 >
                                     <img
-                                        src={language === "pt" ? "/images/flags/br.png" : "/images/flags/ar.png"}
-                                        alt={language === "pt" ? "Brazil Flag" : "Argentina Flag"}
+                                        src={language === "pt" ? "/images/flags/br.png" : "/images/flags/es.svg"}
+                                        alt={language === "pt" ? "Brazil Flag" : "Spain Flag"}
                                         className="w-6 h-auto rounded-sm object-cover"
                                     />
                                     <span className="text-sm font-black uppercase text-white">{language}</span>

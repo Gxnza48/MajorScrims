@@ -49,7 +49,7 @@ const glowBtn = { boxShadow: "var(--glow-btn)" } as React.CSSProperties;
 // ── Copy bilingüe (PT exacto al boceto aprobado; ES neutro-rioplatense) ──
 const COPY = {
     pt: {
-        heroBadge: "Mais de 58.000 jogadores confiam na Major",
+        heroBadge: "Mais de 61.000 jogadores confiam na Major",
         heroTitlePre: "Scrims & customs de elite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
@@ -57,7 +57,7 @@ const COPY = {
         heroCtaDiscord: "Entrar no Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
-            ["58k+", "Membros ativos"],
+            ["61k+", "Membros ativos"],
             ["", "Jogadores ranqueados"],
             ["24/7", "Customs e scrims"],
         ] as [string, string][],
@@ -82,7 +82,7 @@ const COPY = {
         ctaButton: "Entrar no Discord",
     },
     es: {
-        heroBadge: "Más de 58.000 jugadores confían en Major",
+        heroBadge: "Más de 61.000 jugadores confían en Major",
         heroTitlePre: "Scrims y customs de élite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
@@ -90,7 +90,7 @@ const COPY = {
         heroCtaDiscord: "Entrar al Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
-            ["58k+", "Miembros activos"],
+            ["61k+", "Miembros activos"],
             ["", "Jugadores rankeados"],
             ["24/7", "Customs y scrims"],
         ] as [string, string][],
