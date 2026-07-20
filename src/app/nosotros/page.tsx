@@ -54,16 +54,16 @@ const SOCIALS = [
 // Frase enviada por Faus (jul 2026). Dos párrafos.
 const COPY = {
     pt: {
-        kicker: "Sobre nós",
-        title: "Nossa missão",
+        heroPre: "Unidos por uma só missão:",
+        heroAccent: "levar a nossa região ao topo.",
         phrase: [
             "A Major Scrims nasceu com uma missão clara: transformar em realidade o que muitos acreditam ser impossível.",
             "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as oportunidades e as ferramentas certas.",
         ],
     },
     es: {
-        kicker: "Nosotros",
-        title: "Nuestra misión",
+        heroPre: "Unidos por una sola misión:",
+        heroAccent: "llevar nuestra región a lo más alto.",
         phrase: [
             "Major Scrims nació con una misión clara: convertir lo que muchos creen imposible en una realidad.",
             "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las oportunidades y las herramientas correctas.",
@@ -102,19 +102,29 @@ export default function Nosotros() {
                 </div>
 
                 <div className="container relative z-10 mx-auto max-w-[1360px] px-6">
-                    <div className="nm-rise overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] shadow-2xl">
-                        {/* ── Header con fondo contrastante ─────────────── */}
-                        <div className="border-b border-white/10 bg-gradient-to-br from-[rgb(var(--acc-rgb)_/_0.16)] via-white/[0.03] to-transparent px-6 py-7 md:px-10 md:py-9">
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--acc)]">
-                                {c.kicker}
-                            </p>
-                            <h2 className="mt-2 text-3xl font-bold leading-tight text-[var(--h1)] md:text-4xl">
-                                {c.title}
-                            </h2>
-                        </div>
+                    {/* ── Título principal con fondo contrastante ──────── */}
+                    <div className="nm-rise relative mb-12 overflow-hidden rounded-3xl border border-[rgb(var(--acc-rgb)_/_0.22)] px-6 py-14 text-center md:mb-16 md:px-12 md:py-20">
+                        <div
+                            className="pointer-events-none absolute inset-0"
+                            style={{
+                                background:
+                                    "radial-gradient(ellipse at 50% 0%, rgb(var(--acc-rgb) / 0.22), transparent 72%)",
+                            }}
+                        />
+                        <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--acc-rgb)_/_0.05)]" />
+                        <h1 className="relative z-10 mx-auto max-w-4xl text-3xl font-bold leading-tight text-[var(--h1)] md:text-5xl">
+                            {c.heroPre}{" "}
+                            <span
+                                className="text-[var(--acc)]"
+                                style={{ textShadow: "var(--glow-h1)" }}
+                            >
+                                {c.heroAccent}
+                            </span>
+                        </h1>
+                    </div>
 
-                        {/* ── Cuerpo: video (izq) + frase/redes (der) ───── */}
-                        <div className="grid gap-8 p-6 md:gap-12 md:p-10 lg:grid-cols-[1.8fr_1fr] lg:items-center">
+                    {/* ── Video (izq) + frase/redes (der) — sueltos, sin caja ── */}
+                    <div className="grid gap-8 md:gap-12 lg:grid-cols-[2.1fr_1fr] lg:items-center">
                             {/* Video — más grande, a la izquierda */}
                             <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
                                 <div className="relative aspect-video w-full">
@@ -159,7 +169,6 @@ export default function Nosotros() {
                             </div>
                         </div>
                     </div>
-                </div>
             </section>
         </div>
     );
