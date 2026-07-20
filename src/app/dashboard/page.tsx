@@ -194,8 +194,8 @@ export default function DashboardPage() {
                                 value={stats.avgKills}
                             />
                             <StatsCard
-                                title={t.dashboard.winRate}
-                                value={`${stats.winRate}%`}
+                                title={t.dashboard.points}
+                                value={totalScore}
                             />
                         </div>
                     </div>

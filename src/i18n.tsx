@@ -74,6 +74,7 @@ type Translations = {
         top3: string;
         avgKills: string;
         winRate: string;
+        points: string;
         kdRatio: string;
         avgPlacement: string;
         placementRate: string;
@@ -260,6 +261,7 @@ const translations: Record<Language, Translations> = {
             top3: 'Vezes no TOP 3',
             avgKills: 'Média de Abates / Partida',
             winRate: 'Taxa de Vitória',
+            points: 'Pontos',
             kdRatio: 'Ratio K/D',
             avgPlacement: 'Colocação Média',
             placementRate: 'Taxa de Colocação',
@@ -444,6 +446,7 @@ const translations: Record<Language, Translations> = {
             top3: 'Veces en el TOP 3',
             avgKills: 'Promedio de Bajas / Partida',
             winRate: 'Tasa de Victoria',
+            points: 'Puntos',
             kdRatio: 'Ratio K/D',
             avgPlacement: 'Posición Media',
             placementRate: 'Tasa de Posición',
