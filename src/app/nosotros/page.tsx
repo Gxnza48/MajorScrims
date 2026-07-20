@@ -4,9 +4,10 @@ import { Instagram, Twitter } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 /* ──────────────────────────────────────────────────────────────────
-   Nosotros / Sobre nós — panel con header titulado (fondo contrastante)
-   y cuerpo en dos columnas: video grande a la izquierda, frase + redes
-   a la derecha (pedido de Faus, jul 2026). En mobile se apila.
+   Nosotros / Sobre nós — banner hero full-width con skyline de fondo
+   (silueta de edificios + glow verde en el horizonte) que se mete
+   detrás del nav; debajo, video grande a la izquierda + frase/redes a
+   la derecha, sueltos (pedido de Faus, jul 2026). En mobile se apila.
    El video se embebe directo desde Google Drive para no subir los
    ~475MB del archivo a nuestro hosting.
    ────────────────────────────────────────────────────────────────── */
@@ -51,7 +52,7 @@ const SOCIALS = [
 ];
 
 // ── Copy bilingüe (PT default; ES neutro-rioplatense) ──
-// Frase enviada por Faus (jul 2026). Dos párrafos.
+// Frase enviada por Faus (jul 2026). Tres párrafos.
 const COPY = {
     pt: {
         heroPre: "Unidos por uma só missão:",
@@ -89,88 +90,93 @@ export default function Nosotros() {
                 .nm-d2 { animation-delay: .16s; }
             `}</style>
 
-            <section className="relative min-h-screen pb-28 pt-28 md:pt-36">
-                {/* Glow ambiental suave detrás del video */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[60vh]">
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background:
-                                "radial-gradient(ellipse at 50% 0%, var(--amb), transparent 65%)",
-                        }}
-                    />
-                    <div className="absolute -left-24 top-1/4 h-96 w-96 rounded-full bg-[var(--orb1)] blur-3xl" />
-                    <div className="absolute -right-24 top-8 h-96 w-96 rounded-full bg-[var(--orb2)] blur-3xl" />
+            {/* ── Hero banner full-width con skyline, pegado al nav ────── */}
+            {/* -mt-[88px] sube el banner detrás del nav (alto del nav = 88px),
+                y el pt del contenido baja el título para que no lo tape. */}
+            <section className="relative -mt-[88px] overflow-hidden">
+                {/* Gradiente base oscuro */}
+                <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "linear-gradient(to bottom, var(--bg1), var(--bg2))",
+                    }}
+                />
+                {/* Glow verde en el horizonte, detrás de la silueta */}
+                <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(120% 85% at 50% 100%, rgb(var(--acc-rgb) / 0.35), transparent 62%)",
+                    }}
+                />
+                {/* Skyline de edificios (silueta negra), anclado abajo y a lo ancho */}
+                <div
+                    className="pointer-events-none absolute inset-0 bg-cover bg-bottom bg-no-repeat"
+                    style={{ backgroundImage: "url('/images/nosotros-city.png')" }}
+                />
+
+                <div className="relative z-10 mx-auto max-w-4xl px-6 pb-24 pt-[120px] text-center md:pb-32 md:pt-[172px]">
+                    <h1 className="nm-rise text-4xl font-bold leading-tight text-[var(--h1)] md:text-6xl">
+                        {c.heroPre}{" "}
+                        <span
+                            className="text-[var(--acc)]"
+                            style={{ textShadow: "var(--glow-h1)" }}
+                        >
+                            {c.heroAccent}
+                        </span>
+                    </h1>
                 </div>
+            </section>
 
-                <div className="container relative z-10 mx-auto max-w-[1360px] px-6">
-                    {/* ── Título principal con fondo contrastante ──────── */}
-                    <div className="nm-rise relative mb-12 overflow-hidden rounded-3xl border border-[rgb(var(--acc-rgb)_/_0.22)] px-6 py-14 text-center md:mb-16 md:px-12 md:py-20">
-                        <div
-                            className="pointer-events-none absolute inset-0"
-                            style={{
-                                background:
-                                    "radial-gradient(ellipse at 50% 0%, rgb(var(--acc-rgb) / 0.22), transparent 72%)",
-                            }}
-                        />
-                        <div className="pointer-events-none absolute inset-0 bg-[rgb(var(--acc-rgb)_/_0.05)]" />
-                        <h1 className="relative z-10 mx-auto max-w-4xl text-3xl font-bold leading-tight text-[var(--h1)] md:text-5xl">
-                            {c.heroPre}{" "}
-                            <span
-                                className="text-[var(--acc)]"
-                                style={{ textShadow: "var(--glow-h1)" }}
-                            >
-                                {c.heroAccent}
-                            </span>
-                        </h1>
-                    </div>
-
-                    {/* ── Video (izq) + frase/redes (der) — sueltos, sin caja ── */}
+            {/* ── Video (izq) + frase/redes (der) — sueltos, sin caja ── */}
+            <section className="relative py-20 md:py-24">
+                <div className="container mx-auto max-w-[1360px] px-6">
                     <div className="grid gap-8 md:gap-12 lg:grid-cols-[2.1fr_1fr] lg:items-center">
-                            {/* Video — más grande, a la izquierda */}
-                            <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-                                <div className="relative aspect-video w-full">
-                                    <iframe
-                                        key={language}
-                                        src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
-                                        title="Major Scrims"
-                                        allow="autoplay; fullscreen"
-                                        allowFullScreen
-                                        className="absolute inset-0 h-full w-full"
-                                    />
-                                </div>
+                        {/* Video — más grande, a la izquierda */}
+                        <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+                            <div className="relative aspect-video w-full">
+                                <iframe
+                                    key={language}
+                                    src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
+                                    title="Major Scrims"
+                                    allow="autoplay; fullscreen"
+                                    allowFullScreen
+                                    className="absolute inset-0 h-full w-full"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Frase + redes — a la derecha */}
+                        <div className="nm-rise nm-d2">
+                            <div className="space-y-5">
+                                {c.phrase.map((p, i) => (
+                                    <p
+                                        key={i}
+                                        className="text-lg font-semibold leading-snug text-[var(--h1)] md:text-xl lg:text-2xl"
+                                    >
+                                        {p}
+                                    </p>
+                                ))}
                             </div>
 
-                            {/* Frase + redes — a la derecha */}
-                            <div className="nm-rise nm-d2">
-                                <div className="space-y-5">
-                                    {c.phrase.map((p, i) => (
-                                        <p
-                                            key={i}
-                                            className="text-lg font-semibold leading-snug text-[var(--h1)] md:text-xl lg:text-2xl"
-                                        >
-                                            {p}
-                                        </p>
-                                    ))}
-                                </div>
-
-                                <div className="mt-8 flex items-center gap-4">
-                                    {SOCIALS.map(({ name, url, Icon }) => (
-                                        <a
-                                            key={name}
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            aria-label={name}
-                                            className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.4)] hover:text-[var(--acc)]"
-                                        >
-                                            <Icon className="h-5 w-5" />
-                                        </a>
-                                    ))}
-                                </div>
+                            <div className="mt-8 flex items-center gap-4">
+                                {SOCIALS.map(({ name, url, Icon }) => (
+                                    <a
+                                        key={name}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={name}
+                                        className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/70 transition-colors duration-300 hover:border-[rgb(var(--acc-rgb)_/_0.4)] hover:text-[var(--acc)]"
+                                    >
+                                        <Icon className="h-5 w-5" />
+                                    </a>
+                                ))}
                             </div>
                         </div>
                     </div>
+                </div>
             </section>
         </div>
     );
