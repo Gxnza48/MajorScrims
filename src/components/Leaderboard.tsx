@@ -142,6 +142,10 @@ export function Leaderboard() {
             </p>
           </div>
         </div>
+
+        <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/60">
+          {t.leaderboard.description}
+        </p>
       </div>
 
       {/* ── Discord Banner ──────────────────────────────────── */}

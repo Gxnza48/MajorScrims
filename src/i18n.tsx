@@ -164,6 +164,7 @@ type Translations = {
         joinSquad: string;
     };
     leaderboard: {
+        description: string;
         loading: string;
         error: string;
         search: string;
@@ -349,6 +350,7 @@ const translations: Record<Language, Translations> = {
             joinSquad: 'Junte-se ao Squad',
         },
         leaderboard: {
+            description: 'Bem-vindos à tabela de ranks oficial da Major Scrims. Tua pontuação vai variar de acordo com teus resultados nos eventos diários. Compete dia após dia e escala na tabela até te coroares como o número um do servidor.',
             loading: 'CARREGANDO DADOS',
             error: 'ERRO AO CARREGAR DADOS',
             search: 'Buscar jogador...',
@@ -532,6 +534,7 @@ const translations: Record<Language, Translations> = {
             joinSquad: 'Únete al Squad',
         },
         leaderboard: {
+            description: 'Bienvenidos a la tabla de rangos oficial de Major Scrims. Tu puntuación variará en función de tus resultados en los eventos diarios. Compite día a día y escala en la tabla hasta coronarte como el número uno del servidor.',
             loading: 'CARGANDO DATOS',
             error: 'ERROR AL CARGAR DATOS',
             search: 'Buscar jugador...',
