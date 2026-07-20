@@ -59,6 +59,7 @@ const COPY = {
         phrase: [
             "A Major Scrims nasceu com uma missão clara: transformar em realidade o que muitos acreditam ser impossível.",
             "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as oportunidades e as ferramentas certas.",
+            "Por isso construímos uma comunidade onde o talento encontra os treinos, as ferramentas e o nível competitivo para crescer. E juntos, dia após dia, levamos toda a nossa região ao topo.",
         ],
     },
     es: {
@@ -67,6 +68,7 @@ const COPY = {
         phrase: [
             "Major Scrims nació con una misión clara: convertir lo que muchos creen imposible en una realidad.",
             "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las oportunidades y las herramientas correctas.",
+            "Por eso construimos una comunidad donde el talento encuentra las prácticas, las herramientas y el nivel competitivo para crecer. Y juntos, día a día, llevamos a toda nuestra región a lo más alto.",
         ],
     },
 } as const;
