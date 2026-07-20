@@ -26,7 +26,18 @@ import {
    La sección "Por qué entrenar en Major" vive ahora en /nosotros.
    ────────────────────────────────────────────────────────────────── */
 
-const PRO_PLAYERS = ["Cadu", "Fazer", "Gabzera", "k1nG", "Phzin", "Tisco"];
+// Pros del carrusel. El panel (/dashboard/players) edita nombre e imagen y los
+// guarda vía /api/players; la home los lee de esa API (ver useEffect abajo) para
+// reflejar los cambios. Esta lista es solo el fallback si la API no responde.
+type Pro = { name: string; img: string };
+const FALLBACK_PROS: Pro[] = [
+    { name: "k1nG", img: "/images/pro-players/k1nG.png" },
+    { name: "Phzin", img: "/images/pro-players/Phzin.png" },
+    { name: "Fazer", img: "/images/pro-players/Fazer.png" },
+    { name: "Cadu", img: "/images/pro-players/Cadu.png" },
+    { name: "Gabzera", img: "/images/pro-players/Gabzera.png" },
+    { name: "Tisco", img: "/images/pro-players/Tisco.png" },
+];
 
 // Logos de marcas (orden fijo; descripciones vienen de COPY por índice).
 const BRAND_LOGOS = [
@@ -162,6 +173,7 @@ export default function Home() {
     const [totalPlayers, setTotalPlayers] = useState(7700);
     const [proIndex, setProIndex] = useState(0);
     const [proPaused, setProPaused] = useState(false);
+    const [pros, setPros] = useState<Pro[]>(FALLBACK_PROS);
 
     useEffect(() => {
         fetch("/data.json")
@@ -174,19 +186,39 @@ export default function Home() {
             .catch(() => {});
     }, []);
 
+    // Pros desde el panel: refleja fotos/nombres editados en /dashboard/players.
+    useEffect(() => {
+        fetch("/api/players")
+            .then((r) => r.json())
+            .then((d) => {
+                if (Array.isArray(d?.players) && d.players.length > 0) {
+                    setPros(
+                        d.players.map((p: { name: string; img: string }) => ({
+                            name: p.name,
+                            img: p.img,
+                        }))
+                    );
+                    setProIndex(0);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     // Autoplay: avanza solo cada 4s; pausa en hover y reinicia el timer
     // siempre que cambia el índice (incluso al usar flechas/dots).
     useEffect(() => {
         if (proPaused) return;
         const id = setInterval(() => {
-            setProIndex((i) => (i + 1) % PRO_PLAYERS.length);
+            setProIndex((i) => (i + 1) % pros.length);
         }, 4000);
         return () => clearInterval(id);
-    }, [proPaused, proIndex]);
+    }, [proPaused, proIndex, pros.length]);
 
     const prevPro = () =>
-        setProIndex((i) => (i - 1 + PRO_PLAYERS.length) % PRO_PLAYERS.length);
-    const nextPro = () => setProIndex((i) => (i + 1) % PRO_PLAYERS.length);
+        setProIndex((i) => (i - 1 + pros.length) % pros.length);
+    const nextPro = () => setProIndex((i) => (i + 1) % pros.length);
+
+    const activePro = pros[proIndex] ?? pros[0];
 
     const statsLocale = language === "es" ? "es-AR" : "pt-BR";
 
@@ -367,13 +399,17 @@ export default function Home() {
                                             <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
                                             <img
                                                 key={proIndex}
-                                                src={`/images/pro-players/${PRO_PLAYERS[proIndex]}.png`}
-                                                alt={PRO_PLAYERS[proIndex]}
+                                                src={activePro.img}
+                                                alt={activePro.name}
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src =
+                                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23111'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                                                }}
                                                 className="nm-fade h-full w-full select-none object-cover object-center"
                                             />
                                             <div className="absolute bottom-0 left-0 z-20 w-full p-6">
                                                 <h3 className="text-2xl font-bold text-white">
-                                                    {PRO_PLAYERS[proIndex]}
+                                                    {activePro.name}
                                                 </h3>
                                                 <div className="mt-1.5 flex items-center gap-2">
                                                     <span className="h-2 w-2 rounded-full bg-[var(--acc)]" />
@@ -403,12 +439,12 @@ export default function Home() {
                                     </div>
 
                                     <div className="mt-5 flex items-center justify-center gap-2">
-                                        {PRO_PLAYERS.map((name, i) => (
+                                        {pros.map((p, i) => (
                                             <button
-                                                key={name}
+                                                key={p.name + i}
                                                 type="button"
                                                 onClick={() => setProIndex(i)}
-                                                aria-label={c.proDot(name)}
+                                                aria-label={c.proDot(p.name)}
                                                 className={`h-2 rounded-full transition-all ${
                                                     i === proIndex
                                                         ? "w-6 bg-[var(--acc)]"
