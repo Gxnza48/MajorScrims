@@ -59,8 +59,8 @@ const COPY = {
             ["24/7", "Customs e scrims"],
         ] as [string, string][],
         brandsBadge: "Parcerias",
-        brandsTitle: "Marcas que confiam na Major",
-        brandsSubtitle: "Parcerias e colaborações oficiais da comunidade.",
+        brandsTitle: "Marcas que confiaram na Major Scrims",
+        brandsSubtitle: "Parcerias e colaborações oficiais nos últimos meses.",
         brandsDesc: [
             "Parceria oficial para transmissões e eventos da comunidade.",
             "Scrims e customs dentro do ecossistema competitivo oficial.",
@@ -92,8 +92,8 @@ const COPY = {
             ["24/7", "Customs y scrims"],
         ] as [string, string][],
         brandsBadge: "Alianzas",
-        brandsTitle: "Marcas que confían en Major",
-        brandsSubtitle: "Alianzas y colaboraciones oficiales de la comunidad.",
+        brandsTitle: "Marcas que confiaron en Major Scrims",
+        brandsSubtitle: "Alianzas y colaboraciones oficiales en los últimos meses.",
         brandsDesc: [
             "Alianza oficial para transmisiones y eventos de la comunidad.",
             "Scrims y customs dentro del ecosistema competitivo oficial.",
