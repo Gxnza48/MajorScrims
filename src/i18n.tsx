@@ -66,6 +66,7 @@ type Translations = {
     dashboard: {
         title: string;
         welcome: string;
+        welcomeDesc: string;
         lifetimeStats: string;
         exampleData: string;
         totalMatches: string;
@@ -253,13 +254,14 @@ const translations: Record<Language, Translations> = {
         dashboard: {
             title: 'DASHBOARD',
             welcome: 'Bem-vindo de volta,',
+            welcomeDesc: 'Confira suas estatísticas de jogador e acompanhe seu desempenho nas Major Scrims',
             lifetimeStats: 'Estatísticas Gerais',
             exampleData: 'DADOS EXEMPLO',
             totalMatches: 'Partidas Totais',
-            totalKills: 'Abates Totais',
+            totalKills: 'Kills Totais',
             totalWins: 'Vitórias Totais',
             top3: 'Vezes no TOP 3',
-            avgKills: 'Média de Abates / Partida',
+            avgKills: 'Média de Kills / Partida',
             winRate: 'Taxa de Vitória',
             points: 'Pontos',
             kdRatio: 'Ratio K/D',
@@ -352,7 +354,7 @@ const translations: Record<Language, Translations> = {
             joinSquad: 'Junte-se ao Squad',
         },
         leaderboard: {
-            description: 'Bem-vindos à tabela de ranks oficial da Major Scrims. Tua pontuação vai variar de acordo com teus resultados nos eventos diários. Compete dia após dia e escala na tabela até te coroares como o número um do servidor.',
+            description: 'Bem-vindos à tabela de ranks oficial da Major Scrims. Tua pontuação vai variar de acordo com teus resultados nos eventos diários. Compete dia após dia e escala na tabela até te coroar como o número um do servidor.',
             loading: 'CARREGANDO DADOS',
             error: 'ERRO AO CARREGAR DADOS',
             search: 'Buscar jogador...',
@@ -438,13 +440,14 @@ const translations: Record<Language, Translations> = {
         dashboard: {
             title: 'PANEL DE CONTROL',
             welcome: 'Bienvenido de nuevo,',
+            welcomeDesc: 'Revisá tus estadísticas de jugador y dale un seguimiento a tu nivel en las Major Scrims',
             lifetimeStats: 'Estadísticas Generales',
             exampleData: 'DATOS DE EJEMPLO',
             totalMatches: 'Partidas Totales',
-            totalKills: 'Bajas Totales',
+            totalKills: 'Kills Totales',
             totalWins: 'Victorias Totales',
             top3: 'Veces en el TOP 3',
-            avgKills: 'Promedio de Bajas / Partida',
+            avgKills: 'Promedio de Kills / Partida',
             winRate: 'Tasa de Victoria',
             points: 'Puntos',
             kdRatio: 'Ratio K/D',

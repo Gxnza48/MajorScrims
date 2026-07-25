@@ -112,7 +112,7 @@ const FEATURES = [
     {
         icon: Swords,
         title: "Scrims diárias",
-        desc: "Treinos com lobbies equilibrados e nível competitivo real, todos os dias.",
+        desc: "Treinos com partidas equilibradas e nível competitivo real, todos os dias.",
     },
     {
         icon: Clock,
@@ -207,7 +207,7 @@ const EXAMPLE_POSTS: PostCard[] = [
         date: "05/06/2026",
         title: "Atualização das regras de scrims",
         snippet:
-            "Ajustes no formato das sessões noturnas e novas diretrizes de moderação para as lobbies competitivas.",
+            "Ajustes no formato das sessões noturnas e novas diretrizes de moderação para as partidas competitivas.",
         example: true,
     },
     {
@@ -428,7 +428,7 @@ export default function NewModelPage() {
 
                     <p className="nm-rise nm-d2 mx-auto mb-10 max-w-2xl text-lg text-white/70 md:text-xl">
                         A comunidade líder de treinos competitivos no Brasil e LATAM.
-                        Lobbies equilibrados, regras profissionais e atividade 24 horas
+                        Partidas equilibradas, regras profissionais e atividade 24 horas
                         por dia.
                     </p>
 
@@ -671,8 +671,8 @@ export default function NewModelPage() {
                                         Quem treina na Major
                                     </h2>
                                     <p className="text-white/70">
-                                        Jogadores profissionais e criadores de conteúdo
-                                        escolhem os nossos servidores.
+                                        Jogadores profissionais escolhem os nossos
+                                        servidores.
                                     </p>
                                 </div>
 

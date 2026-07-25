@@ -56,30 +56,44 @@ const SOCIALS = [
 // SOLO las palabras clave que marcó Faus van en negrita (b: true), el resto
 // en peso normal, para darle importancia a lo remarcado.
 type Seg = { t: string; b?: boolean };
-type NosCopy = { heroPre: string; heroAccent: string; phrase: Seg[][] };
+type NosCopy = {
+    heroPre: string;
+    heroAccent: string;
+    phrase: Seg[][];
+    videoCaption: string;
+};
 const COPY: Record<"pt" | "es", NosCopy> = {
     pt: {
         heroPre: "Unidos por uma só missão:",
         heroAccent: "levar a nossa região ao topo.",
+        videoCaption: "Gorilon e Blackoutz, Major Scrims Owners.",
         phrase: [
             [
                 { t: "A " },
                 { t: "Major Scrims", b: true },
-                { t: " nasceu com uma " },
+                { t: " surgiu com uma " },
                 { t: "missão clara", b: true },
-                { t: ": transformar em realidade o que muitos acreditam ser impossível." },
+                { t: ": revolucionar e transformar o " },
+                { t: "cenário competitivo do Brasil", b: true },
+                { t: ", criando um ambiente " },
+                { t: "justo, organizado", b: true },
+                { t: " e com as " },
+                { t: "melhores práticas possíveis", b: true },
+                { t: " para toda a comunidade." },
             ],
             [
                 { t: "Porque se destacar no mundo a partir do Brasil não depende de sorte, e sim de ter as " },
                 { t: "oportunidades e as ferramentas certas.", b: true },
             ],
             [
-                { t: "Por isso construímos esse espaço onde " },
-                { t: "o talento treina", b: true },
-                { t: ", os " },
-                { t: "profissionais aperfeiçoam seu ofício", b: true },
-                { t: " e juntos mostram " },
-                { t: "do que a nossa região é feita", b: true },
+                { t: "É por isso que criamos este espaço: um lugar onde " },
+                { t: "os profissionais treinam", b: true },
+                { t: " até atingirem seu " },
+                { t: "nível máximo", b: true },
+                { t: " e os " },
+                { t: "novos talentos se destacam", b: true },
+                { t: ". Ambos, unidos por um mesmo objetivo: " },
+                { t: "chegar ao topo", b: true },
                 { t: "." },
             ],
         ],
@@ -87,24 +101,33 @@ const COPY: Record<"pt" | "es", NosCopy> = {
     es: {
         heroPre: "Unidos por una sola misión:",
         heroAccent: "llevar nuestra región a lo más alto.",
+        videoCaption: "Gorilon y Blackoutz, Major Scrims Owners.",
         phrase: [
             [
                 { t: "Major Scrims", b: true },
                 { t: " nació con una " },
                 { t: "misión clara", b: true },
-                { t: ": convertir lo que muchos creen imposible en una realidad." },
+                { t: ": Revolucionar y transformar la " },
+                { t: "escena competitiva de Brasil", b: true },
+                { t: ", construyendo un entorno " },
+                { t: "justo, organizado", b: true },
+                { t: " y con la " },
+                { t: "mejor práctica posible", b: true },
+                { t: " para toda la comunidad." },
             ],
             [
                 { t: "Porque destacar sobre el mundo desde Brasil no depende de la suerte, sino de contar con las " },
                 { t: "oportunidades y las herramientas correctas.", b: true },
             ],
             [
-                { t: "Por eso construimos ese espacio donde " },
-                { t: "el talento practica", b: true },
-                { t: ", los " },
-                { t: "profesionales perfeccionan su oficio", b: true },
-                { t: " y juntos demuestran de " },
-                { t: "qué está hecha la región", b: true },
+                { t: "Por eso construimos este espacio: un lugar donde " },
+                { t: "los pros practican", b: true },
+                { t: " hasta alcanzar su " },
+                { t: "máximo nivel", b: true },
+                { t: " y los " },
+                { t: "nuevos talentos se dan a conocer", b: true },
+                { t: ". Ambos, unidos por un mismo objetivo: " },
+                { t: "llegar a lo más alto", b: true },
                 { t: "." },
             ],
         ],
@@ -177,18 +200,24 @@ export default function Nosotros() {
             <section className="relative py-20 md:py-24">
                 <div className="container mx-auto max-w-[1360px] px-6">
                     <div className="grid gap-8 md:gap-12 lg:grid-cols-[1.9fr_1fr] lg:items-start">
-                        {/* Video — más grande, a la izquierda */}
-                        <div className="nm-rise nm-d1 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-                            <div className="relative aspect-video w-full">
-                                <iframe
-                                    key={language}
-                                    src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
-                                    title="Major Scrims"
-                                    allow="autoplay; fullscreen"
-                                    allowFullScreen
-                                    className="absolute inset-0 h-full w-full"
-                                />
+                        {/* Video — más grande, a la izquierda, con pie de foto */}
+                        <div className="nm-rise nm-d1">
+                            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+                                <div className="relative aspect-video w-full">
+                                    <iframe
+                                        key={language}
+                                        src={`https://drive.google.com/file/d/${VIDEO_ID[language]}/preview`}
+                                        title="Major Scrims"
+                                        allow="autoplay; fullscreen"
+                                        allowFullScreen
+                                        className="absolute inset-0 h-full w-full"
+                                    />
+                                </div>
                             </div>
+                            <p className="mt-3 flex items-center gap-2 text-sm text-white/50">
+                                <span className="h-px w-6 bg-[rgb(var(--acc-rgb)_/_0.6)]" />
+                                {c.videoCaption}
+                            </p>
                         </div>
 
                         {/* Frase + redes — a la derecha */}

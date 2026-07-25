@@ -118,9 +118,12 @@ export default function DashboardPage() {
                                 <Zap size={16} className="text-primary" />
                                 <span className="text-sm font-medium text-primary">{t.dashboard.performance} {playerData ? t.dashboard.linked : t.dashboard.noData}</span>
                             </div>
-                            <h1 className="mb-4 text-3xl font-bold text-white md:text-5xl">
+                            <h1 className="mb-3 text-3xl font-bold text-white md:text-5xl">
                                 {t.dashboard.welcome} <span className="text-primary" style={{ textShadow: "0 0 36px rgba(34,217,98,0.45)" }}>{session.user?.name}</span>
                             </h1>
+                            <p className="mb-5 max-w-xl text-sm text-white/60 md:text-base">
+                                {t.dashboard.welcomeDesc}
+                            </p>
                             <div className="flex flex-wrap justify-center gap-8 md:justify-start">
                                 <div className="flex items-center gap-3">
                                     <Target size={18} className="text-white/40" />

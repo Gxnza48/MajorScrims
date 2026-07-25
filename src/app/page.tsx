@@ -64,7 +64,7 @@ const COPY = {
         heroTitlePre: "Scrims & customs de elite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
-            "A comunidade líder de treinos competitivos no Brasil e LATAM. Lobbies equilibrados, regras profissionais e atividade 24 horas por dia.",
+            "A comunidade líder de treinos competitivos no Brasil e LATAM. Partidas equilibradas, regras profissionais e atividade 24 horas por dia.",
         heroCtaDiscord: "Entrar no Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
@@ -82,7 +82,7 @@ const COPY = {
         prosBadge: "Comunidade pro",
         prosTitle: "Quem treina na Major",
         prosSubtitle:
-            "Jogadores profissionais e criadores de conteúdo escolhem os nossos servidores.",
+            "Jogadores profissionais escolhem os nossos servidores.",
         proLabel: "Pro player",
         proPrev: "Jogador anterior",
         proNext: "Próximo jogador",
@@ -97,7 +97,7 @@ const COPY = {
         heroTitlePre: "Scrims y customs de élite para",
         heroTitleAccent: "Fortnite competitivo",
         heroSubtitle:
-            "La comunidad líder de prácticas competitivas en Brasil y LATAM. Lobbies equilibrados, reglas profesionales y actividad las 24 horas.",
+            "La comunidad líder de prácticas competitivas en Brasil y LATAM. Partidas equilibradas, reglas profesionales y actividad las 24 horas.",
         heroCtaDiscord: "Entrar al Discord",
         heroCtaLeaderboard: "Ver leaderboard",
         stats: [
@@ -115,7 +115,7 @@ const COPY = {
         prosBadge: "Comunidad pro",
         prosTitle: "Quiénes entrenan en Major",
         prosSubtitle:
-            "Jugadores profesionales y creadores de contenido eligen nuestros servidores.",
+            "Jugadores profesionales eligen nuestros servidores.",
         proLabel: "Pro player",
         proPrev: "Jugador anterior",
         proNext: "Jugador siguiente",
@@ -173,7 +173,10 @@ export default function Home() {
     const [totalPlayers, setTotalPlayers] = useState(7700);
     const [proIndex, setProIndex] = useState(0);
     const [proPaused, setProPaused] = useState(false);
-    const [pros, setPros] = useState<Pro[]>(FALLBACK_PROS);
+    // null = todavía no respondió /api/players. Arrancamos vacío (no con el
+    // fallback) para no mostrar por 1-2s una foto vieja que el panel ya cambió:
+    // mientras carga se ve un placeholder y recién ahí aparece la foto real.
+    const [pros, setPros] = useState<Pro[] | null>(null);
 
     useEffect(() => {
         fetch("/data.json")
@@ -187,38 +190,52 @@ export default function Home() {
     }, []);
 
     // Pros desde el panel: refleja fotos/nombres editados en /dashboard/players.
+    // El fallback solo se usa si la API falla o viene vacía.
     useEffect(() => {
+        let alive = true;
         fetch("/api/players")
             .then((r) => r.json())
             .then((d) => {
-                if (Array.isArray(d?.players) && d.players.length > 0) {
-                    setPros(
-                        d.players.map((p: { name: string; img: string }) => ({
-                            name: p.name,
-                            img: p.img,
-                        }))
-                    );
-                    setProIndex(0);
-                }
+                if (!alive) return;
+                const list: Pro[] = Array.isArray(d?.players)
+                    ? d.players.map((p: { name: string; img: string }) => ({
+                          name: p.name,
+                          img: p.img,
+                      }))
+                    : [];
+                setPros(list.length > 0 ? list : FALLBACK_PROS);
+                setProIndex(0);
             })
-            .catch(() => {});
+            .catch(() => {
+                if (alive) setPros(FALLBACK_PROS);
+            });
+        return () => {
+            alive = false;
+        };
     }, []);
+
+    const proList = pros ?? [];
 
     // Autoplay: avanza solo cada 4s; pausa en hover y reinicia el timer
     // siempre que cambia el índice (incluso al usar flechas/dots).
     useEffect(() => {
-        if (proPaused) return;
+        if (proPaused || proList.length === 0) return;
         const id = setInterval(() => {
-            setProIndex((i) => (i + 1) % pros.length);
+            setProIndex((i) => (i + 1) % proList.length);
         }, 4000);
         return () => clearInterval(id);
-    }, [proPaused, proIndex, pros.length]);
+    }, [proPaused, proIndex, proList.length]);
 
-    const prevPro = () =>
-        setProIndex((i) => (i - 1 + pros.length) % pros.length);
-    const nextPro = () => setProIndex((i) => (i + 1) % pros.length);
+    const prevPro = () => {
+        if (proList.length === 0) return;
+        setProIndex((i) => (i - 1 + proList.length) % proList.length);
+    };
+    const nextPro = () => {
+        if (proList.length === 0) return;
+        setProIndex((i) => (i + 1) % proList.length);
+    };
 
-    const activePro = pros[proIndex] ?? pros[0];
+    const activePro = proList[proIndex] ?? proList[0];
 
     const statsLocale = language === "es" ? "es-AR" : "pt-BR";
 
@@ -396,28 +413,35 @@ export default function Home() {
                                         onMouseLeave={() => setProPaused(false)}
                                     >
                                         <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                                            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
-                                            <img
-                                                key={proIndex}
-                                                src={activePro.img}
-                                                alt={activePro.name}
-                                                onError={(e) => {
-                                                    (e.currentTarget as HTMLImageElement).src =
-                                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23111'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
-                                                }}
-                                                className="nm-fade h-full w-full select-none object-cover object-center"
-                                            />
-                                            <div className="absolute bottom-0 left-0 z-20 w-full p-6">
-                                                <h3 className="text-2xl font-bold text-white">
-                                                    {activePro.name}
-                                                </h3>
-                                                <div className="mt-1.5 flex items-center gap-2">
-                                                    <span className="h-2 w-2 rounded-full bg-[var(--acc)]" />
-                                                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">
-                                                        {c.proLabel}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            {activePro ? (
+                                                <>
+                                                    <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                                                    <img
+                                                        key={proIndex}
+                                                        src={activePro.img}
+                                                        alt={activePro.name}
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLImageElement).src =
+                                                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23111'%3E%3Crect width='100%25' height='100%25'/%3E%3C/svg%3E";
+                                                        }}
+                                                        className="nm-fade h-full w-full select-none object-cover object-center"
+                                                    />
+                                                    <div className="absolute bottom-0 left-0 z-20 w-full p-6">
+                                                        <h3 className="text-2xl font-bold text-white">
+                                                            {activePro.name}
+                                                        </h3>
+                                                        <div className="mt-1.5 flex items-center gap-2">
+                                                            <span className="h-2 w-2 rounded-full bg-[var(--acc)]" />
+                                                            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">
+                                                                {c.proLabel}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                /* Placeholder mientras carga /api/players */
+                                                <div className="absolute inset-0 animate-pulse bg-white/[0.04]" />
+                                            )}
                                         </div>
 
                                         <button
@@ -438,8 +462,8 @@ export default function Home() {
                                         </button>
                                     </div>
 
-                                    <div className="mt-5 flex items-center justify-center gap-2">
-                                        {pros.map((p, i) => (
+                                    <div className="mt-5 flex min-h-[8px] items-center justify-center gap-2">
+                                        {proList.map((p, i) => (
                                             <button
                                                 key={p.name + i}
                                                 type="button"
