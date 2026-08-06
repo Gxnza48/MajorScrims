@@ -14,7 +14,16 @@ export async function GET() {
     try {
         const session = await requireSession();
         if (!session) {
-            return NextResponse.json({ success: true, signedIn: false, epicName: "", isPro: false });
+            // proDetectionReady is reported even without a session: it says nothing
+            // about any user, only whether the Discord env vars are configured, and
+            // it is the only way to check that from outside without logging in.
+            return NextResponse.json({
+                success: true,
+                signedIn: false,
+                epicName: "",
+                isPro: false,
+                proDetectionReady: isProConfigured(),
+            });
         }
 
         const profile = await syncProfile(session);
