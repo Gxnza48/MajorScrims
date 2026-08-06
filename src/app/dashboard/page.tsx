@@ -6,7 +6,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { useI18n } from "@/i18n";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit, Users } from "lucide-react";
+import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit, Users, Trophy } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -223,6 +223,15 @@ export default function DashboardPage() {
                                         <h4 className="mb-3 text-lg font-bold text-white">Players Admin</h4>
                                         <p className="text-sm leading-relaxed text-white/60">
                                             Gestionar fotos y datos de los pro players de Major Scrims.
+                                        </p>
+                                    </div>
+                                </Link>
+                                <Link href="/dashboard/tournaments" className="block">
+                                    <div className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-8 transition-colors duration-300 hover:border-primary/35">
+                                        <Trophy className="mb-6 text-primary" size={32} />
+                                        <h4 className="mb-3 text-lg font-bold text-white">Torneos Admin</h4>
+                                        <p className="text-sm leading-relaxed text-white/60">
+                                            Cargar torneos, rondas y marcar los spots de caída en el mapa.
                                         </p>
                                     </div>
                                 </Link>

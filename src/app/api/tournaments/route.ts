@@ -1,144 +1,72 @@
-import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDB, requireAdminSession } from "@/lib/db";
+import { Tournament } from "@/lib/models/Tournament";
+import { toListDTO } from "@/lib/tournamentDTO";
+import { compareTournaments, slugify } from "@/lib/tournamentStatus";
 
-const API_KEY = '9be2d815df09018b59e55a220b1a376e9b10608df5cf4a89f214d154abfae376';
-const API_URL = 'https://prod.api-fortnite.com/api/v1/events/global';
+export const dynamic = "force-dynamic";
 
-// Simple in-memory cache
-let cachedData: { timestamp: number; data: Tournament[] } | null = null;
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+/** Public list. Admins can pass ?all=1 to also see unpublished drafts. */
+export async function GET(request: NextRequest) {
+    try {
+        await connectToDB();
 
-export interface Tournament {
-    title: string;
-    start: string;
-    end: string;
-    mode: string;
-    teamSize: string;
-    region: string;
-    status: 'Upcoming' | 'Live' | 'Completed';
-    poster: string;
+        const wantsAll = request.nextUrl.searchParams.get("all") === "1";
+        const isAdmin = wantsAll && (await requireAdminSession()) !== null;
+
+        const tournaments = await Tournament.find(isAdmin ? {} : { published: true });
+        const list = tournaments.map(toListDTO).sort((a, b) => compareTournaments(a, b));
+
+        return NextResponse.json({ success: true, tournaments: list });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    }
 }
 
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function POST(request: NextRequest) {
     try {
-        // 1. Check in-memory cache first
-        if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
-            return NextResponse.json(cachedData.data);
+        if (!(await requireAdminSession())) {
+            return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
         }
 
-        let rawData = null;
+        await connectToDB();
+        const body = await request.json();
+        const { name, poster, mode, teamSize, region, start, end, published } = body;
 
-        // 2. Try fetching from API
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-
-            const response = await fetch(API_URL, {
-                headers: { 'x-api-key': API_KEY },
-                cache: 'no-store',
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-                rawData = await response.json();
-            } else {
-                console.warn(`API Error: ${response.status} ${response.statusText}. Using fallback.`);
-            }
-        } catch (fetchError) {
-            console.warn('API Fetch failed or timed out. Using fallback.', fetchError);
+        if (!name?.trim() || !start || !end) {
+            return NextResponse.json(
+                { success: false, error: "Nombre, fecha de inicio y fecha de fin son requeridos." },
+                { status: 400 }
+            );
+        }
+        if (new Date(end) < new Date(start)) {
+            return NextResponse.json(
+                { success: false, error: "La fecha de fin no puede ser anterior a la de inicio." },
+                { status: 400 }
+            );
         }
 
-        // 3. Fallback to local JSON if API failed
-        if (!rawData) {
-            try {
-                const filePath = path.join(process.cwd(), 'tournaments.json');
-                const fileContent = await fs.readFile(filePath, 'utf-8');
-                rawData = JSON.parse(fileContent);
-                console.log('Loaded data from local fallback file.');
-            } catch (fileError) {
-                console.error('Failed to load fallback data:', fileError);
-                return NextResponse.json({ error: 'Failed to Fetch Tournaments' }, { status: 500 });
-            }
+        const baseSlug = slugify(body.slug || name) || "torneo";
+        let slug = baseSlug;
+        for (let i = 2; await Tournament.exists({ slug }); i++) {
+            slug = `${baseSlug}-${i}`;
         }
 
-        // 4. Normalize Data
-        const tournaments: Tournament[] = [];
-        const now = new Date();
-
-        if (Array.isArray(rawData)) {
-            rawData.forEach((group: any) => {
-                if (group.regions && group.regions.BR) {
-                    const brEvents = group.regions.BR;
-                    brEvents.forEach((event: any) => {
-                        const startDate = new Date(event.beginTime);
-                        const endDate = new Date(event.endTime);
-
-                        let status: 'Upcoming' | 'Live' | 'Completed' = 'Upcoming';
-                        if (now > endDate) {
-                            status = 'Completed';
-                        } else if (now >= startDate && now <= endDate) {
-                            status = 'Live';
-                        }
-
-                        // Determine Mode and Team Size
-                        const nameLower = (group.name || '').toLowerCase();
-                        const idLower = (event.eventId || '').toLowerCase();
-
-                        let mode = 'Build';
-                        if (nameLower.includes('zero build') || idLower.includes('zb')) {
-                            mode = 'Zero Build';
-                        } else if (nameLower.includes('reload')) {
-                            mode = 'Reload';
-                        }
-
-                        let teamSize = 'Solo';
-                        if (nameLower.includes('duo') || idLower.includes('duo')) {
-                            teamSize = 'Duos';
-                        } else if (nameLower.includes('trio') || idLower.includes('trio')) {
-                            teamSize = 'Trios';
-                        } else if (nameLower.includes('squad') || idLower.includes('squad')) {
-                            teamSize = 'Squads';
-                        }
-
-                        tournaments.push({
-                            title: group.name || event.name || 'Tournament',
-                            start: event.beginTime,
-                            end: event.endTime,
-                            mode,
-                            teamSize,
-                            region: 'BR',
-                            status,
-                            poster: group.poster || event.poster || '',
-                        });
-                    });
-                }
-            });
-        }
-
-        // 5. Sort
-        tournaments.sort((a, b) => {
-            if (a.status === 'Live' && b.status !== 'Live') return -1;
-            if (a.status !== 'Live' && b.status === 'Live') return 1;
-            if (a.status === 'Upcoming' && b.status === 'Upcoming') {
-                return new Date(a.start).getTime() - new Date(b.start).getTime();
-            }
-            return new Date(b.end).getTime() - new Date(a.end).getTime();
+        const tournament = await Tournament.create({
+            slug,
+            name: name.trim(),
+            poster: poster || "",
+            mode: mode || "Build",
+            teamSize: teamSize || "Solo",
+            region: region || "BR",
+            start: new Date(start),
+            end: new Date(end),
+            published: published !== false,
+            windows: [],
         });
 
-        // 6. Update Cache
-        cachedData = {
-            timestamp: Date.now(),
-            data: tournaments
-        };
-
-        return NextResponse.json(tournaments);
-
+        return NextResponse.json({ success: true, tournament: toListDTO(tournament) }, { status: 201 });
     } catch (error) {
-        console.error('Critical Error in Tournaments API:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }
 }

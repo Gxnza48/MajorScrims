@@ -57,6 +57,10 @@ export function Navbar() {
                                 {t.nav.about}
                                 <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
                             </Link>
+                            <Link href="/tournaments" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
+                                {t.nav.tournaments}
+                                <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
+                            </Link>
                             <Link href="/leaderboard" className="text-[13px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest group">
                                 {t.nav.leaderboard}
                                 <span className="block h-0.5 w-0 group-hover:w-full bg-primary transition-all duration-300"></span>
@@ -124,6 +128,7 @@ export function Navbar() {
                                     <Link href="/blog" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">Blog</Link>
                                 )}
                                 <Link href="/nosotros" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.about}</Link>
+                                <Link href="/tournaments" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.tournaments}</Link>
                                 <Link href="/leaderboard" onClick={() => setIsOpen(false)} className="text-xl font-black text-primary hover:text-primary/80 transition-colors tracking-tight">{t.nav.leaderboard}</Link>
                             </div>
 

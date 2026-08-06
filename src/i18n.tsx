@@ -31,6 +31,35 @@ type Translations = {
     tournaments: {
         title: string;
         subtitle: string;
+        badgeMaps: string;
+        badgeSpots: string;
+        search: string;
+        filterLabel: string;
+        all: string;
+        sectionAll: string;
+        loading: string;
+        empty: string;
+        emptySearch: string;
+        back: string;
+        windows: string;
+        noWindows: string;
+        teamsTitle: string;
+        noTeams: string;
+        mapTitle: string;
+        spotsTaken: string;
+        noZones: string;
+        free: string;
+        taken: string;
+        yourSpot: string;
+        claim: string;
+        release: string;
+        loginToClaim: string;
+        epicName: string;
+        epicNameHelp: string;
+        teammates: string;
+        teammatesHelp: string;
+        confirm: string;
+        cancel: string;
         status: {
             upcoming: string;
             live: string;
@@ -219,6 +248,35 @@ const translations: Record<Language, Translations> = {
         tournaments: {
             title: 'Torneios Oficiais',
             subtitle: 'Acompanhe os próximos campeonatos e eventos da região Brasil.',
+            badgeMaps: 'Mapas de queda interativos',
+            badgeSpots: 'Spots marcados pelos mods',
+            search: 'Buscar torneios...',
+            filterLabel: 'Estado:',
+            all: 'Todos',
+            sectionAll: 'Todos os torneios',
+            loading: 'Carregando torneios...',
+            empty: 'Ainda não há torneios publicados.',
+            emptySearch: 'Nenhum torneio corresponde à sua busca.',
+            back: 'Voltar aos torneios',
+            windows: 'Rodadas',
+            noWindows: 'Este torneio ainda não tem rodadas carregadas.',
+            teamsTitle: 'Times do torneio',
+            noTeams: 'Ninguém escolheu spot nesta rodada ainda.',
+            mapTitle: 'Mapa do torneio',
+            spotsTaken: 'spots ocupados',
+            noZones: 'O moderador ainda não marcou os spots desta rodada.',
+            free: 'Livre',
+            taken: 'Ocupado',
+            yourSpot: 'Seu spot',
+            claim: 'Escolher este spot',
+            release: 'Liberar meu spot',
+            loginToClaim: 'Entre para escolher o seu spot',
+            epicName: 'Nome da Epic Games',
+            epicNameHelp: 'O mesmo nome com que você joga o torneio.',
+            teammates: 'Companheiros',
+            teammatesHelp: 'Um nome por campo. Deixe vazio se for solo.',
+            confirm: 'Confirmar spot',
+            cancel: 'Cancelar',
             status: {
                 upcoming: 'Em Breve',
                 live: 'Ao Vivo',
@@ -405,6 +463,35 @@ const translations: Record<Language, Translations> = {
         tournaments: {
             title: 'Torneos Oficiales',
             subtitle: 'Sigue los próximos campeonatos y eventos de la región Brasil.',
+            badgeMaps: 'Mapas de caída interactivos',
+            badgeSpots: 'Spots marcados por los mods',
+            search: 'Buscar torneos...',
+            filterLabel: 'Estado:',
+            all: 'Todos',
+            sectionAll: 'Todos los torneos',
+            loading: 'Cargando torneos...',
+            empty: 'Todavía no hay torneos publicados.',
+            emptySearch: 'Ningún torneo coincide con tu búsqueda.',
+            back: 'Volver a torneos',
+            windows: 'Rondas',
+            noWindows: 'Este torneo todavía no tiene rondas cargadas.',
+            teamsTitle: 'Equipos del torneo',
+            noTeams: 'Nadie eligió spot en esta ronda todavía.',
+            mapTitle: 'Mapa del torneo',
+            spotsTaken: 'spots ocupados',
+            noZones: 'El moderador todavía no marcó los spots de esta ronda.',
+            free: 'Libre',
+            taken: 'Ocupado',
+            yourSpot: 'Tu spot',
+            claim: 'Elegir este spot',
+            release: 'Liberar mi spot',
+            loginToClaim: 'Iniciá sesión para elegir tu spot',
+            epicName: 'Nombre de Epic Games',
+            epicNameHelp: 'El mismo nombre con el que jugás el torneo.',
+            teammates: 'Compañeros',
+            teammatesHelp: 'Un nombre por campo. Dejalo vacío si vas solo.',
+            confirm: 'Confirmar spot',
+            cancel: 'Cancelar',
             status: {
                 upcoming: 'Próximamente',
                 live: 'En Vivo',
@@ -425,7 +512,7 @@ const translations: Record<Language, Translations> = {
             moderationDesc: 'Staff dedicado para banear griefers y mantener la calidad.',
         },
         footer: {
-            rights: 'Todos os derechos reservados.',
+            rights: 'Todos los derechos reservados.',
         },
         community: {
             title: '¿No tienes con quien jugar?',
