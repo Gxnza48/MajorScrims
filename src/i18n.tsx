@@ -64,6 +64,9 @@ type Translations = {
         qualified: string;
         adminOverride: string;
         notQualifiedHint: string;
+        finished: string;
+        finishedNotice: string;
+        finishedAdmin: string;
         status: {
             upcoming: string;
             live: string;
@@ -285,6 +288,9 @@ const translations: Record<Language, Translations> = {
             qualified: 'classificados',
             adminOverride: 'Você é admin: pode marcar spot mesmo assim, para testar.',
             notQualifiedHint: 'Esse nome da Epic não está na lista de classificados.',
+            finished: 'Torneio finalizado',
+            finishedNotice: 'Este torneio já terminou, então não dá mais para marcar spot.',
+            finishedAdmin: 'Este torneio já terminou. Você pode marcar spot mesmo assim porque é admin; para os jogadores está fechado até corrigir as datas.',
             status: {
                 upcoming: 'Em Breve',
                 live: 'Ao Vivo',
@@ -504,6 +510,9 @@ const translations: Record<Language, Translations> = {
             qualified: 'clasificados',
             adminOverride: 'Sos admin: podés marcarte igual, para probarlo.',
             notQualifiedHint: 'Ese nombre de Epic no está en la lista de clasificados.',
+            finished: 'Torneo finalizado',
+            finishedNotice: 'Este torneo ya terminó, así que no se puede marcar spot.',
+            finishedAdmin: 'Este torneo ya terminó. Podés marcarte igual porque sos admin; para los jugadores está cerrado hasta que corrijas las fechas.',
             status: {
                 upcoming: 'Próximamente',
                 live: 'En Vivo',

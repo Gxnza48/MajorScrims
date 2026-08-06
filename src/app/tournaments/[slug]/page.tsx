@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X } from "lucide-react";
+import { ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX } from "lucide-react";
 import { useI18n } from "@/i18n";
 import DropMap, { MapZone, MapClaim } from "@/components/tournaments/DropMap";
 import ClaimSpotModal from "@/components/tournaments/ClaimSpotModal";
@@ -114,6 +114,11 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
         !!selectedZone && selectedZoneClaims.length >= (selectedZone.capacity ?? 1);
 
     const totalCapacity = (activeWindow?.zones ?? []).reduce((sum, z) => sum + (z.capacity ?? 1), 0);
+
+    // A finished tournament stops accepting spots - except for admins, who need to
+    // be able to test a tournament whose dates have not been corrected yet.
+    const isFinished = tournament?.status === "Completed";
+    const claimsClosed = isFinished && !viewer.isAdmin;
 
     const formatRange = () => {
         if (!tournament) return "";
@@ -321,6 +326,23 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 )}
                             </div>
 
+                            {isFinished && (
+                                <div
+                                    className={`mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 ${viewer.isAdmin
+                                        ? "border-amber-400/25 bg-amber-400/[0.07]"
+                                        : "border-white/10 bg-white/[0.03]"
+                                        }`}
+                                >
+                                    <CalendarX
+                                        size={15}
+                                        className={`mt-0.5 shrink-0 ${viewer.isAdmin ? "text-amber-400" : "text-white/40"}`}
+                                    />
+                                    <p className="text-xs leading-relaxed text-white/60">
+                                        {viewer.isAdmin ? t.tournaments.finishedAdmin : t.tournaments.finishedNotice}
+                                    </p>
+                                </div>
+                            )}
+
                             {tournament.restricted && (
                                 <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                                     <Users size={15} className="mt-0.5 shrink-0 text-primary" />
@@ -428,11 +450,15 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                 setClaimError("");
                                                 setShowClaim(true);
                                             }}
-                                            disabled={selectedZoneIsFull || tournament.status === "Completed"}
+                                            disabled={selectedZoneIsFull || claimsClosed}
                                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             <MapPin size={15} />
-                                            {selectedZoneIsFull ? t.tournaments.taken : t.tournaments.claim}
+                                            {claimsClosed
+                                                ? t.tournaments.finished
+                                                : selectedZoneIsFull
+                                                    ? t.tournaments.taken
+                                                    : t.tournaments.claim}
                                         </button>
                                     )}
                                 </div>

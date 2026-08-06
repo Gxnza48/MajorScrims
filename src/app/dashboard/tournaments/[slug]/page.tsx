@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX } from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel } from "@/components/tournaments/DropMap";
 
 interface WindowRow {
@@ -18,6 +18,8 @@ interface Detail {
     slug: string;
     name: string;
     teamSize: string;
+    status: string;
+    published: boolean;
     participants: string[];
     windows: WindowRow[];
 }
@@ -247,6 +249,24 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         </Link>
                     </div>
                 </div>
+
+                {/* The imported templates carry the snapshot's old dates, so they land
+                    already finished - which silently blocks every player from claiming. */}
+                {detail.status === "Completed" && (
+                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
+                        <CalendarX size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                        <p className="text-sm leading-relaxed text-white/70">
+                            <span className="font-bold text-amber-400">Este torneo figura como finalizado.</span>{" "}
+                            Mientras la fecha de fin esté en el pasado, los jugadores no van a poder marcar su spot
+                            (vos sí, porque sos admin). Si es un torneo que todavía se va a jugar, corregí las
+                            fechas desde{" "}
+                            <Link href="/dashboard/tournaments" className="font-bold text-primary hover:underline">
+                                el listado de torneos
+                            </Link>
+                            .
+                        </p>
+                    </div>
+                )}
 
                 {(error || notice) && (
                     <div

@@ -23,9 +23,14 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
         if (!tournament) {
             return NextResponse.json({ success: false, error: "Torneo no encontrado" }, { status: 404 });
         }
-        if (getStatus(tournament.start, tournament.end) === "Completed") {
+        // Admins bypass this too, same as the qualified-players check, so a mod can
+        // test the flow on a tournament whose dates have not been fixed yet.
+        if (
+            getStatus(tournament.start, tournament.end) === "Completed" &&
+            !isAdminId(session.user.id)
+        ) {
             return NextResponse.json(
-                { success: false, error: "Este torneo ya terminó." },
+                { success: false, error: "Este torneo ya terminó, no se pueden marcar spots." },
                 { status: 409 }
             );
         }
