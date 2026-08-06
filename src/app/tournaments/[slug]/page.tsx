@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX } from "lucide-react";
+import { ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/i18n";
 import DropMap, { MapZone, MapClaim } from "@/components/tournaments/DropMap";
 import ClaimSpotModal from "@/components/tournaments/ClaimSpotModal";
@@ -28,9 +28,19 @@ interface TournamentDetail {
     start: string;
     end: string;
     status: string;
-    restricted: boolean;
-    participants: string[];
+    qualifiedCount: number;
     windows: WindowDTO[];
+}
+
+type BlockReason = "not-signed-in" | "finished" | "no-list" | "not-qualified" | null;
+
+interface Viewer {
+    signedIn: boolean;
+    isAdmin: boolean;
+    isPro: boolean;
+    epicName: string;
+    canClaim: boolean;
+    blockedBecause: BlockReason;
 }
 
 interface Claim extends MapClaim {
@@ -44,9 +54,13 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
 
     const [tournament, setTournament] = useState<TournamentDetail | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
-    const [viewer, setViewer] = useState<{ signedIn: boolean; isAdmin: boolean }>({
+    const [viewer, setViewer] = useState<Viewer>({
         signedIn: false,
         isAdmin: false,
+        isPro: false,
+        epicName: "",
+        canClaim: false,
+        blockedBecause: null,
     });
     const [notFound, setNotFound] = useState(false);
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
@@ -115,10 +129,17 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
 
     const totalCapacity = (activeWindow?.zones ?? []).reduce((sum, z) => sum + (z.capacity ?? 1), 0);
 
-    // A finished tournament stops accepting spots - except for admins, who need to
-    // be able to test a tournament whose dates have not been corrected yet.
-    const isFinished = tournament?.status === "Completed";
-    const claimsClosed = isFinished && !viewer.isAdmin;
+    // The server already decided whether this viewer may claim and why not; the
+    // page only renders that answer so button and API can never disagree.
+    const blocked = viewer.blockedBecause;
+    const claimsClosed = !viewer.canClaim;
+
+    const blockMessage: Record<Exclude<BlockReason, null>, string> = {
+        "not-signed-in": t.tournaments.loginToClaim,
+        finished: t.tournaments.finishedNotice,
+        "no-list": t.tournaments.blockedNoList,
+        "not-qualified": t.tournaments.blockedNotQualified,
+    };
 
     const formatRange = () => {
         if (!tournament) return "";
@@ -326,34 +347,28 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 )}
                             </div>
 
-                            {isFinished && (
-                                <div
-                                    className={`mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 ${viewer.isAdmin
-                                        ? "border-amber-400/25 bg-amber-400/[0.07]"
-                                        : "border-white/10 bg-white/[0.03]"
-                                        }`}
-                                >
-                                    <CalendarX
-                                        size={15}
-                                        className={`mt-0.5 shrink-0 ${viewer.isAdmin ? "text-amber-400" : "text-white/40"}`}
-                                    />
-                                    <p className="text-xs leading-relaxed text-white/60">
-                                        {viewer.isAdmin ? t.tournaments.finishedAdmin : t.tournaments.finishedNotice}
-                                    </p>
+                            {/* One honest explanation instead of a mute disabled button. */}
+                            {blocked && (
+                                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                                    {blocked === "finished" ? (
+                                        <CalendarX size={15} className="mt-0.5 shrink-0 text-white/40" />
+                                    ) : blocked === "not-signed-in" ? (
+                                        <LogIn size={15} className="mt-0.5 shrink-0 text-primary" />
+                                    ) : (
+                                        <Users size={15} className="mt-0.5 shrink-0 text-primary" />
+                                    )}
+                                    <p className="text-xs leading-relaxed text-white/60">{blockMessage[blocked]}</p>
                                 </div>
                             )}
 
-                            {tournament.restricted && (
-                                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                                    <Users size={15} className="mt-0.5 shrink-0 text-primary" />
+                            {viewer.isAdmin && (
+                                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
+                                    <ShieldCheck size={15} className="mt-0.5 shrink-0 text-amber-400" />
                                     <p className="text-xs leading-relaxed text-white/60">
-                                        {t.tournaments.onlyQualified}{" "}
+                                        {t.tournaments.adminOverride}{" "}
                                         <span className="text-white/40">
-                                            ({tournament.participants.length} {t.tournaments.qualified})
+                                            ({tournament.qualifiedCount} {t.tournaments.qualified})
                                         </span>
-                                        {viewer.isAdmin && (
-                                            <span className="ml-1 text-primary">{t.tournaments.adminOverride}</span>
-                                        )}
                                     </p>
                                 </div>
                             )}
@@ -429,7 +444,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                         </p>
                                     </div>
 
-                                    {authStatus !== "authenticated" ? (
+                                    {blocked === "not-signed-in" ? (
                                         <Link
                                             href="/login"
                                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
@@ -454,11 +469,13 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             <MapPin size={15} />
-                                            {claimsClosed
+                                            {blocked === "finished"
                                                 ? t.tournaments.finished
-                                                : selectedZoneIsFull
-                                                    ? t.tournaments.taken
-                                                    : t.tournaments.claim}
+                                                : claimsClosed
+                                                    ? t.tournaments.blockedLabel
+                                                    : selectedZoneIsFull
+                                                        ? t.tournaments.taken
+                                                        : t.tournaments.claim}
                                         </button>
                                     )}
                                 </div>
@@ -472,9 +489,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                 <ClaimSpotModal
                     zoneLabel={selectedZone.label}
                     teamSize={tournament.teamSize}
-                    participants={tournament.participants}
-                    enforceQualified={tournament.restricted && !viewer.isAdmin}
-                    defaultEpicName={myClaim?.epicName || savedEpicName || session?.user?.name || ""}
+                    defaultEpicName={myClaim?.epicName || viewer.epicName || savedEpicName || session?.user?.name || ""}
                     saving={saving}
                     error={claimError}
                     onConfirm={handleClaim}

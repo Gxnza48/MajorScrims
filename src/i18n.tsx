@@ -63,7 +63,14 @@ type Translations = {
         onlyQualified: string;
         qualified: string;
         adminOverride: string;
-        notQualifiedHint: string;
+        blockedNoList: string;
+        blockedNotQualified: string;
+        blockedLabel: string;
+        proBadge: string;
+        epicCardTitle: string;
+        epicCardDesc: string;
+        save: string;
+        saved: string;
         finished: string;
         finishedNotice: string;
         finishedAdmin: string;
@@ -287,7 +294,14 @@ const translations: Record<Language, Translations> = {
             onlyQualified: 'Só os jogadores classificados podem marcar spot. Os demais veem onde os pros caem.',
             qualified: 'classificados',
             adminOverride: 'Você é admin: pode marcar spot mesmo assim, para testar.',
-            notQualifiedHint: 'Esse nome da Epic não está na lista de classificados.',
+            blockedNoList: 'A lista de classificados deste torneio ainda não foi publicada. Assim que os moderadores marcarem quem passou, você vai poder escolher o seu spot.',
+            blockedNotQualified: 'Você não está entre os classificados deste torneio. Se você classificou, avise um moderador e confira que o seu nome da Epic no painel seja o mesmo com que joga.',
+            blockedLabel: 'Não disponível',
+            proBadge: 'Pro',
+            epicCardTitle: 'Seu nome da Epic',
+            epicCardDesc: 'Os moderadores usam este nome para te identificar quando marcam quem classificou para um torneio. Deixe-o igual ao que você usa para jogar.',
+            save: 'Salvar',
+            saved: 'Salvo',
             finished: 'Torneio finalizado',
             finishedNotice: 'Este torneio já terminou, então não dá mais para marcar spot.',
             finishedAdmin: 'Este torneio já terminou. Você pode marcar spot mesmo assim porque é admin; para os jogadores está fechado até corrigir as datas.',
@@ -509,7 +523,14 @@ const translations: Record<Language, Translations> = {
             onlyQualified: 'Solo los jugadores clasificados pueden marcar spot. El resto ve dónde caen los pros.',
             qualified: 'clasificados',
             adminOverride: 'Sos admin: podés marcarte igual, para probarlo.',
-            notQualifiedHint: 'Ese nombre de Epic no está en la lista de clasificados.',
+            blockedNoList: 'Todavía no está publicada la lista de clasificados de este torneo. Cuando los moderadores marquen quiénes pasaron, vas a poder elegir tu spot.',
+            blockedNotQualified: 'No figurás entre los clasificados de este torneo. Si clasificaste, avisale a un moderador y revisá que tu nombre de Epic en el panel sea el mismo con el que jugás.',
+            blockedLabel: 'No disponible',
+            proBadge: 'Pro',
+            epicCardTitle: 'Tu nombre de Epic',
+            epicCardDesc: 'Los moderadores usan este nombre para identificarte cuando marcan quiénes clasificaron a un torneo. Dejalo igual al que usás para jugar.',
+            save: 'Guardar',
+            saved: 'Guardado',
             finished: 'Torneo finalizado',
             finishedNotice: 'Este torneo ya terminó, así que no se puede marcar spot.',
             finishedAdmin: 'Este torneo ya terminó. Podés marcarte igual porque sos admin; para los jugadores está cerrado hasta que corrijas las fechas.',

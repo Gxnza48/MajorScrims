@@ -1,26 +1,59 @@
-import { NextResponse } from "next/server";
-import { connectToDB, requireSession } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDB, requireSession, isAdminId } from "@/lib/db";
 import { UserProfile } from "@/lib/models/UserProfile";
+import { syncProfile } from "@/lib/userProfile";
+import { isProConfigured } from "@/lib/discord";
 
 export const dynamic = "force-dynamic";
 
-/** The Epic name the player last claimed with, used to prefill the claim modal. */
+/**
+ * The signed-in user's own profile. Also the moment we refresh their PRO role
+ * from Discord, so the badge and the tournament roster stay current.
+ */
 export async function GET() {
     try {
         const session = await requireSession();
-        if (!session) return NextResponse.json({ success: true, epicName: "" });
-
-        // When the Epic provider is live its name wins over anything typed before.
-        if (session.user.epicName) {
-            return NextResponse.json({ success: true, epicName: session.user.epicName, fromEpic: true });
+        if (!session) {
+            return NextResponse.json({ success: true, signedIn: false, epicName: "", isPro: false });
         }
 
-        await connectToDB();
-        const profile = await UserProfile.findOne({ discordId: session.user.id });
+        const profile = await syncProfile(session);
 
-        return NextResponse.json({ success: true, epicName: profile?.epicName || "" });
+        return NextResponse.json({
+            success: true,
+            signedIn: true,
+            epicName: profile.epicName || "",
+            isPro: profile.isPro,
+            isAdmin: isAdminId(session.user.id),
+            // false means nobody can be detected as PRO yet - the env vars are missing
+            proDetectionReady: isProConfigured(),
+        });
     } catch {
-        // A missing profile must never block the claim flow.
-        return NextResponse.json({ success: true, epicName: "" });
+        // A profile problem must never block the rest of the page.
+        return NextResponse.json({ success: true, signedIn: true, epicName: "", isPro: false });
+    }
+}
+
+/** Lets a player save the Epic name moderators use to identify them. */
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await requireSession();
+        if (!session) {
+            return NextResponse.json({ success: false, error: "Necesitás iniciar sesión." }, { status: 401 });
+        }
+
+        const { epicName } = await request.json();
+        const clean = String(epicName ?? "").trim().slice(0, 60);
+
+        await connectToDB();
+        const profile = await UserProfile.findOneAndUpdate(
+            { discordId: session.user.id },
+            { discordId: session.user.id, epicName: clean, discordName: session.user.name || "" },
+            { upsert: true, new: true }
+        );
+
+        return NextResponse.json({ success: true, epicName: profile.epicName });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }
 }

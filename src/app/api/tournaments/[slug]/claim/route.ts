@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectToDB, requireSession, isAdminId } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
 import { SpotClaim } from "@/lib/models/SpotClaim";
 import { UserProfile } from "@/lib/models/UserProfile";
-import { toClaimDTO, isQualified } from "@/lib/tournamentDTO";
-import { getStatus } from "@/lib/tournamentStatus";
+import { toClaimDTO } from "@/lib/tournamentDTO";
+import { claimBlockReason } from "@/lib/claimRules";
 
 export const dynamic = "force-dynamic";
 
@@ -23,17 +24,6 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
         if (!tournament) {
             return NextResponse.json({ success: false, error: "Torneo no encontrado" }, { status: 404 });
         }
-        // Admins bypass this too, same as the qualified-players check, so a mod can
-        // test the flow on a tournament whose dates have not been fixed yet.
-        if (
-            getStatus(tournament.start, tournament.end) === "Completed" &&
-            !isAdminId(session.user.id)
-        ) {
-            return NextResponse.json(
-                { success: false, error: "Este torneo ya terminó, no se pueden marcar spots." },
-                { status: 409 }
-            );
-        }
 
         const body = await request.json();
         const windowId = String(body.windowId || "");
@@ -50,20 +40,35 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             );
         }
 
-        // Only players who qualified may take a spot. Admins bypass it so a mod
-        // can test the flow; everyone else can still see the map, just not claim.
-        if (!isAdminId(session.user.id) && !isQualified(tournament.participants, epicName)) {
+        // Same rule the page rendered, evaluated again here - the UI is only a hint.
+        const blocked = claimBlockReason({
+            isAdmin: isAdminId(session.user.id),
+            signedIn: true,
+            discordId: session.user.id,
+            epicName,
+            start: tournament.start,
+            end: tournament.end,
+            qualifiedIds: tournament.qualifiedIds ?? [],
+            participants: tournament.participants ?? [],
+        });
+
+        if (blocked) {
+            const messages: Record<string, string> = {
+                finished: "Este torneo ya terminó, no se pueden marcar spots.",
+                "no-list": "Todavía no está publicada la lista de clasificados de este torneo.",
+                "not-qualified":
+                    "No figurás entre los clasificados de este torneo. Si clasificaste, avisale a un moderador y revisá que tu nombre de Epic sea exactamente el que usás para jugar.",
+                "not-signed-in": "Necesitás iniciar sesión.",
+            };
             return NextResponse.json(
-                {
-                    success: false,
-                    error: "Solo los jugadores clasificados pueden marcar un spot en este torneo. Si clasificaste, revisá que el nombre de Epic sea exactamente el mismo con el que jugás.",
-                    notQualified: true,
-                },
-                { status: 403 }
+                { success: false, error: messages[blocked], blockedBecause: blocked },
+                { status: blocked === "finished" ? 409 : 403 }
             );
         }
 
-        const targetWindow = tournament.windows.id(windowId);
+        const validIds =
+            mongoose.Types.ObjectId.isValid(windowId) && mongoose.Types.ObjectId.isValid(zoneId);
+        const targetWindow = validIds ? tournament.windows.id(windowId) : null;
         const zone = targetWindow?.zones.id(zoneId);
         if (!targetWindow || !zone) {
             return NextResponse.json({ success: false, error: "Ese spot ya no existe." }, { status: 404 });
@@ -143,6 +148,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
         }
 
         const { claimId } = await request.json();
+        // A malformed id must read as "already gone", not blow up with a 500.
+        if (!mongoose.Types.ObjectId.isValid(String(claimId ?? ""))) {
+            return NextResponse.json({ success: false, error: "Ese spot ya está libre." }, { status: 404 });
+        }
+
         const claim = await SpotClaim.findOne({ _id: claimId, tournamentId: tournament._id });
         if (!claim) {
             return NextResponse.json({ success: false, error: "Ese spot ya está libre." }, { status: 404 });

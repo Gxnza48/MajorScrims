@@ -9,6 +9,7 @@ export function UserMenu() {
     const { t } = useI18n();
     const { data: session } = useSession();
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isPro, setIsPro] = useState(false);
 
     useEffect(() => {
         if (session?.user) {
@@ -16,8 +17,15 @@ export function UserMenu() {
                 .then(res => res.json())
                 .then(data => setIsAdmin(data.isAdmin === true))
                 .catch(() => {});
+            // /api/me/profile is also what refreshes the PRO role from Discord
+            fetch("/api/me/profile")
+                .then(res => res.json())
+                .then(data => setIsPro(data.isPro === true))
+                .catch(() => {});
         }
     }, [session]);
+
+    const role = isAdmin ? "Admin" : isPro ? t.tournaments.proBadge : "Member";
 
     if (!session?.user) return null;
 
@@ -33,8 +41,8 @@ export function UserMenu() {
                 )}
                 <div className="hidden md:block text-right">
                     <p className="text-sm font-medium text-white">{session.user.name}</p>
-                    <p className={`text-xs font-semibold ${isAdmin ? "text-primary" : "text-white/40"}`}>
-                        {isAdmin ? "Admin" : "Member"}
+                    <p className={`text-xs font-semibold ${isAdmin || isPro ? "text-primary" : "text-white/40"}`}>
+                        {role}
                     </p>
                 </div>
             </div>

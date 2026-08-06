@@ -29,9 +29,14 @@ export interface ITournament extends Document {
     end: Date;
     published: boolean;
     /**
-     * Epic names of the players who qualified. While it is empty anyone signed in
-     * can take a spot; once a moderator fills it, only these players (and admins)
-     * can - everybody else still sees the map, they just cannot claim.
+     * Discord ids a moderator ticked from the roster: the players who qualified.
+     * Nobody but an admin can claim a spot until this has at least one entry.
+     */
+    qualifiedIds: string[];
+    /**
+     * Escape hatch for a player who qualified but has never signed in, so the
+     * moderator cannot tick them yet: pre-authorise them by Epic name and the
+     * claim goes through when they finally do sign in.
      */
     participants: string[];
     windows: Types.DocumentArray<IWindow & Document>;
@@ -63,6 +68,7 @@ const TournamentSchema = new Schema<ITournament>(
         start: { type: Date, required: true },
         end: { type: Date, required: true },
         published: { type: Boolean, default: true },
+        qualifiedIds: { type: [String], default: [] },
         participants: { type: [String], default: [] },
         windows: { type: [WindowSchema], default: [] },
     },

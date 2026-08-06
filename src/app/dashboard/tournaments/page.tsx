@@ -21,7 +21,7 @@ interface TournamentRow {
     status: string;
     published: boolean;
     windowCount: number;
-    restricted: boolean;
+    qualifiedCount: number;
 }
 
 interface Form {
@@ -429,11 +429,18 @@ export default function TournamentsAdminPage() {
                                                         <EyeOff size={10} /> borrador
                                                     </span>
                                                 )}
-                                                {t.restricted && (
-                                                    <span className="inline-flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-[11px] font-bold uppercase text-white/50">
-                                                        <Users size={10} /> clasificados
-                                                    </span>
-                                                )}
+                                                {/* An empty qualified list means nobody can claim - flag it loudly */}
+                                                <span
+                                                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold uppercase ${t.qualifiedCount > 0
+                                                        ? "bg-white/10 text-white/50"
+                                                        : "bg-red-500/15 text-red-400"
+                                                        }`}
+                                                >
+                                                    <Users size={10} />
+                                                    {t.qualifiedCount > 0
+                                                        ? `${t.qualifiedCount} clasificados`
+                                                        : "sin clasificados"}
+                                                </span>
                                             </div>
                                             <p className="mt-1 text-xs text-white/50">
                                                 {t.status} · {t.mode} · {t.teamSize} · {t.region} ·{" "}

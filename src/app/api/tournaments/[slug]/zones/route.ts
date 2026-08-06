@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         }
 
         await tournament.save();
-        return NextResponse.json({ success: true, tournament: toDetailDTO(tournament) });
+        return NextResponse.json({ success: true, tournament: toDetailDTO(tournament, true) });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }

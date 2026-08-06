@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { User, Shield, Zap, Target, TrendingUp, Info, FileEdit, Users, Trophy } from "lucide-react";
 import Link from "next/link";
+import { EpicNameCard } from "@/components/EpicNameCard";
 
 export const dynamic = "force-dynamic";
 
@@ -237,6 +238,8 @@ export default function DashboardPage() {
                                 </Link>
                             </>
                         )}
+
+                        <EpicNameCard />
 
                         {/* Tip card */}
                         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 transition-colors duration-300 hover:border-primary/35">

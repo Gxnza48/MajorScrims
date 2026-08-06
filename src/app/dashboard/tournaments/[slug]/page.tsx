@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX } from "lucide-react";
+import {
+    ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Search,
+} from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel } from "@/components/tournaments/DropMap";
 
 interface WindowRow {
@@ -20,8 +22,17 @@ interface Detail {
     teamSize: string;
     status: string;
     published: boolean;
+    qualifiedIds: string[];
     participants: string[];
     windows: WindowRow[];
+}
+
+interface RosterUser {
+    discordId: string;
+    discordName: string;
+    avatarUrl: string;
+    epicName: string;
+    isPro: boolean;
 }
 
 interface Claim extends MapClaim {
@@ -56,7 +67,13 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [windowDrafts, setWindowDrafts] = useState<{ id?: string; label: string; startsAt: string }[]>([]);
     const [savingWindows, setSavingWindows] = useState(false);
 
-    // Qualified players: one Epic name per line
+    // Who qualified: ticked from the roster, plus an Epic-name escape hatch for
+    // players who qualified but have never signed in (so they are not listed yet).
+    const [roster, setRoster] = useState<RosterUser[]>([]);
+    const [proDetectionReady, setProDetectionReady] = useState(true);
+    const [qualifiedIds, setQualifiedIds] = useState<string[]>([]);
+    const [rosterQuery, setRosterQuery] = useState("");
+    const [onlyPros, setOnlyPros] = useState(true);
     const [participantsText, setParticipantsText] = useState("");
     const [savingParticipants, setSavingParticipants] = useState(false);
 
@@ -71,6 +88,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setDetail(data.tournament);
             setClaims(data.claims);
             setParticipantsText((data.tournament.participants ?? []).join("\n"));
+            setQualifiedIds(data.tournament.qualifiedIds ?? []);
             setWindowDrafts(
                 data.tournament.windows.map((w: WindowRow) => ({
                     id: w.id,
@@ -94,6 +112,21 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         if (status === "unauthenticated") router.push("/login");
         else if (status === "authenticated") load();
     }, [status, router, load]);
+
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        fetch("/api/roster")
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                setRoster(data.users);
+                setProDetectionReady(data.proDetectionReady);
+                // without the Discord env vars nobody is flagged as pro, so showing
+                // only pros would render an empty and very confusing list
+                if (!data.proDetectionReady) setOnlyPros(false);
+            })
+            .catch(() => { });
+    }, [status]);
 
     const selectWindow = (id: string) => {
         if (dirty && !confirm("Tenés cambios sin guardar en el mapa. ¿Descartarlos?")) return;
@@ -181,7 +214,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         setSavingWindows(false);
     };
 
-    const saveParticipants = async () => {
+    const saveQualified = async () => {
         setSavingParticipants(true);
         setError("");
         setNotice("");
@@ -193,16 +226,19 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             const res = await fetch(`/api/tournaments/${params.slug}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ participants: list }),
+                body: JSON.stringify({ qualifiedIds, participants: list }),
             });
             const data = await res.json();
             if (data.success) {
                 setDetail(data.tournament);
                 setParticipantsText((data.tournament.participants ?? []).join("\n"));
+                setQualifiedIds(data.tournament.qualifiedIds ?? []);
+                const total =
+                    (data.tournament.qualifiedIds?.length ?? 0) + (data.tournament.participants?.length ?? 0);
                 setNotice(
-                    data.tournament.participants.length > 0
-                        ? `${data.tournament.participants.length} clasificados guardados. Solo ellos pueden marcar spot.`
-                        : "Lista vacía: cualquier usuario con sesión puede marcar spot."
+                    total > 0
+                        ? `${total} clasificados guardados. Solo ellos pueden marcar spot.`
+                        : "Lista vacía: por ahora nadie va a poder marcar spot en este torneo."
                 );
             } else {
                 setError(data.error || "No se pudo guardar la lista.");
@@ -212,6 +248,11 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         }
         setSavingParticipants(false);
     };
+
+    const toggleQualified = (discordId: string) =>
+        setQualifiedIds(prev =>
+            prev.includes(discordId) ? prev.filter(id => id !== discordId) : [...prev, discordId]
+        );
 
     if (status === "loading" || !detail) {
         return (
@@ -227,6 +268,18 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
     const selectedZone = zones.find(z => z.id === selectedZoneId) ?? null;
     const windowClaims = claims.filter(c => c.windowId === activeWindowId);
+
+    const preAuthorized = participantsText.split("\n").map(n => n.trim()).filter(Boolean);
+    const totalQualified = qualifiedIds.length + preAuthorized.length;
+
+    const rosterNeedle = rosterQuery.trim().toLowerCase();
+    const visibleRoster = roster.filter(u => {
+        // never hide someone already ticked, or the moderator could not untick them
+        const ticked = qualifiedIds.includes(u.discordId);
+        if (!ticked && onlyPros && !u.isPro) return false;
+        if (!rosterNeedle) return true;
+        return `${u.discordName} ${u.epicName}`.toLowerCase().includes(rosterNeedle);
+    });
 
     return (
         <div className="min-h-screen text-white">
@@ -350,37 +403,143 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                             Jugadores clasificados
                         </h2>
                         <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${detail.participants.length > 0
-                                ? "bg-primary/15 text-primary"
-                                : "bg-white/10 text-white/50"
+                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${totalQualified > 0 ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
                                 }`}
                         >
-                            {detail.participants.length > 0
-                                ? `${detail.participants.length} clasificados`
-                                : "abierto a todos"}
+                            {totalQualified > 0 ? `${totalQualified} clasificados` : "nadie puede marcarse"}
                         </span>
                     </div>
 
                     <p className="mb-4 text-xs leading-relaxed text-white/50">
-                        Un nombre de Epic por línea. Solo estos jugadores pueden marcar su spot; el resto
-                        entra igual y ve dónde caen los pros, pero no puede reclamar.{" "}
-                        <span className="text-white/70">
-                            Si dejás la lista vacía, cualquier usuario con sesión puede marcarse.
-                        </span>{" "}
-                        Los admins siempre pueden marcarse, para poder probarlo.
+                        Verificá en la web oficial de Fortnite quiénes clasificaron y tildalos acá. Solo ellos
+                        pueden marcar su spot; el resto entra igual y ve dónde caen los pros, pero no puede
+                        reclamar. Los admins siempre pueden marcarse, para poder probarlo.
                     </p>
 
-                    <textarea
-                        value={participantsText}
-                        onChange={e => setParticipantsText(e.target.value)}
-                        rows={8}
-                        spellCheck={false}
-                        placeholder={"Peterbot\nPollo\nRew\nModa"}
-                        className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
-                    />
+                    {/* The strict rule Gonza chose makes an empty list a dead tournament,
+                        so it has to be impossible to miss. */}
+                    {totalQualified === 0 && (
+                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3">
+                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-400" />
+                            <p className="text-xs leading-relaxed text-white/70">
+                                <span className="font-bold text-red-400">Todavía no tildaste a nadie.</span>{" "}
+                                Mientras la lista esté vacía ningún jugador va a poder marcar su spot en este
+                                torneo.
+                            </p>
+                        </div>
+                    )}
+
+                    {!proDetectionReady && (
+                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
+                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                            <p className="text-xs leading-relaxed text-white/70">
+                                Falta configurar <code className="text-amber-400">MAJOR_SCRIMS_GUILD_ID</code> y{" "}
+                                <code className="text-amber-400">DISCORD_PRO_ROLE_ID</code> en Vercel, así que
+                                todavía no se puede saber quién tiene el rol PRO en Discord. Mientras tanto la
+                                lista muestra a todos los usuarios que entraron a la web.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Roster picker */}
+                    <div className="mb-3 flex flex-wrap items-center gap-3">
+                        <div className="relative min-w-[200px] flex-1">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                            <input
+                                type="search"
+                                value={rosterQuery}
+                                onChange={e => setRosterQuery(e.target.value)}
+                                placeholder="Buscar por nombre de Discord o de Epic..."
+                                className="w-full rounded-lg border border-white/10 bg-white/[0.03] py-2 pl-9 pr-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40"
+                            />
+                        </div>
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-white/60">
+                            <input
+                                type="checkbox"
+                                checked={onlyPros}
+                                onChange={e => setOnlyPros(e.target.checked)}
+                                className="h-4 w-4 accent-[#22D962]"
+                            />
+                            Solo con rol PRO
+                        </label>
+                    </div>
+
+                    <div className="max-h-80 overflow-y-auto rounded-xl border border-white/10">
+                        {visibleRoster.length === 0 ? (
+                            <p className="px-4 py-8 text-center text-sm text-white/50">
+                                {roster.length === 0
+                                    ? "Todavía no entró nadie a la web. Apenas un pro inicie sesión una vez, aparece acá."
+                                    : "Ningún usuario coincide con la búsqueda."}
+                            </p>
+                        ) : (
+                            <ul className="divide-y divide-white/5">
+                                {visibleRoster.map(u => (
+                                    <li key={u.discordId}>
+                                        <label
+                                            className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${qualifiedIds.includes(u.discordId)
+                                                ? "bg-primary/[0.08]"
+                                                : "hover:bg-white/[0.03]"
+                                                }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={qualifiedIds.includes(u.discordId)}
+                                                onChange={() => toggleQualified(u.discordId)}
+                                                aria-label={`Clasificar a ${u.discordName}`}
+                                                className="h-4 w-4 shrink-0 accent-[#22D962]"
+                                            />
+                                            {u.avatarUrl ? (
+                                                <img
+                                                    src={u.avatarUrl}
+                                                    alt=""
+                                                    className="h-7 w-7 shrink-0 rounded-full border border-white/10"
+                                                />
+                                            ) : (
+                                                <div className="h-7 w-7 shrink-0 rounded-full bg-white/10" />
+                                            )}
+                                            <span className="min-w-0 flex-1">
+                                                <span className="flex items-center gap-2">
+                                                    <span className="truncate text-sm font-medium text-white">
+                                                        {u.discordName}
+                                                    </span>
+                                                    {u.isPro && (
+                                                        <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-black uppercase text-primary">
+                                                            pro
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <span className="block truncate text-[11px] text-white/40">
+                                                    {u.epicName ? `Epic: ${u.epicName}` : "sin nombre de Epic cargado"}
+                                                </span>
+                                            </span>
+                                        </label>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    {/* Escape hatch */}
+                    <details className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+                        <summary className="cursor-pointer text-xs font-bold text-white/70">
+                            ¿Clasificó alguien que nunca entró a la web? Autorizalo por nombre de Epic
+                        </summary>
+                        <p className="mb-3 mt-3 text-xs leading-relaxed text-white/50">
+                            Un nombre de Epic por línea. Cuando esa persona entre por primera vez y ponga ese
+                            mismo nombre al marcar su spot, la va a dejar pasar.
+                        </p>
+                        <textarea
+                            value={participantsText}
+                            onChange={e => setParticipantsText(e.target.value)}
+                            rows={5}
+                            spellCheck={false}
+                            placeholder={"Peterbot\nPollo"}
+                            className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
+                        />
+                    </details>
 
                     <button
-                        onClick={saveParticipants}
+                        onClick={saveQualified}
                         disabled={savingParticipants}
                         className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
                     >

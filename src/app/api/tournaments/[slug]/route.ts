@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDB, requireAdminSession, requireSession, isAdminId } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
 import { SpotClaim } from "@/lib/models/SpotClaim";
+import { UserProfile } from "@/lib/models/UserProfile";
 import { toDetailDTO, toClaimDTO } from "@/lib/tournamentDTO";
+import { claimBlockReason } from "@/lib/claimRules";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +23,36 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
 
         const claims = await SpotClaim.find({ tournamentId: tournament._id });
         const session = await requireSession();
+        const isAdmin = isAdminId(session?.user.id);
+
+        // Resolve the viewer's own profile so the page can say exactly why they
+        // can or cannot claim, instead of a mute disabled button.
+        const profile = session
+            ? await UserProfile.findOne({ discordId: session.user.id })
+            : null;
+
+        const blockedBecause = claimBlockReason({
+            isAdmin,
+            signedIn: !!session,
+            discordId: session?.user.id,
+            epicName: profile?.epicName,
+            start: tournament.start,
+            end: tournament.end,
+            qualifiedIds: tournament.qualifiedIds ?? [],
+            participants: tournament.participants ?? [],
+        });
 
         return NextResponse.json({
             success: true,
-            tournament: toDetailDTO(tournament),
+            tournament: toDetailDTO(tournament, isAdmin),
             claims: claims.map(toClaimDTO),
-            // Lets the page show the right call to action without guessing.
             viewer: {
                 signedIn: !!session,
-                isAdmin: isAdminId(session?.user.id),
+                isAdmin,
+                isPro: profile?.isPro ?? false,
+                epicName: profile?.epicName ?? "",
+                canClaim: blockedBecause === null,
+                blockedBecause,
             },
         });
     } catch (error) {
@@ -55,7 +78,8 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         }
 
         const body = await request.json();
-        const { name, poster, mode, teamSize, region, start, end, published, windows, participants } = body;
+        const { name, poster, mode, teamSize, region, start, end, published, windows, participants, qualifiedIds } =
+            body;
 
         if (name !== undefined) tournament.name = String(name).trim();
         if (poster !== undefined) tournament.poster = poster;
@@ -65,6 +89,11 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         if (start !== undefined) tournament.start = new Date(start);
         if (end !== undefined) tournament.end = new Date(end);
         if (published !== undefined) tournament.published = !!published;
+        if (Array.isArray(qualifiedIds)) {
+            tournament.qualifiedIds = Array.from(
+                new Set(qualifiedIds.map((id: unknown) => String(id).trim()).filter(Boolean))
+            );
+        }
         if (Array.isArray(participants)) {
             // De-duplicate case-insensitively but keep the moderator's spelling.
             const seen = new Set<string>();
@@ -120,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         }
 
         await tournament.save();
-        return NextResponse.json({ success: true, tournament: toDetailDTO(tournament) });
+        return NextResponse.json({ success: true, tournament: toDetailDTO(tournament, true) });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }
