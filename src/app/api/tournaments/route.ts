@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB, requireAdminSession } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
+import { SpotClaim } from "@/lib/models/SpotClaim";
 import { toListDTO } from "@/lib/tournamentDTO";
 import { compareTournaments, slugify } from "@/lib/tournamentStatus";
 
@@ -66,6 +67,37 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true, tournament: toListDTO(tournament) }, { status: 201 });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    }
+}
+
+/**
+ * Bulk delete. The templates import drops ~44 rows at once, so removing them one
+ * by one is not a realistic workflow for a moderator.
+ */
+export async function DELETE(request: NextRequest) {
+    try {
+        if (!(await requireAdminSession())) {
+            return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+        }
+
+        await connectToDB();
+        const { slugs } = await request.json();
+
+        if (!Array.isArray(slugs) || slugs.length === 0) {
+            return NextResponse.json({ success: false, error: "No hay torneos seleccionados." }, { status: 400 });
+        }
+
+        const doomed = await Tournament.find({ slug: { $in: slugs } }).select("_id");
+        if (doomed.length === 0) {
+            return NextResponse.json({ success: false, error: "No se encontraron esos torneos." }, { status: 404 });
+        }
+
+        await SpotClaim.deleteMany({ tournamentId: { $in: doomed.map(t => t._id) } });
+        const result = await Tournament.deleteMany({ _id: { $in: doomed.map(t => t._id) } });
+
+        return NextResponse.json({ success: true, deleted: result.deletedCount ?? 0 });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }

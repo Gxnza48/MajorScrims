@@ -9,6 +9,8 @@ const TEAMMATE_SLOTS: Record<string, number> = { Solo: 0, Duos: 1, Trios: 2, Squ
 export default function ClaimSpotModal({
     zoneLabel,
     teamSize,
+    participants,
+    enforceQualified,
     defaultEpicName,
     saving,
     error,
@@ -17,6 +19,8 @@ export default function ClaimSpotModal({
 }: {
     zoneLabel: string;
     teamSize: string;
+    participants: string[];
+    enforceQualified: boolean;
     defaultEpicName: string;
     saving: boolean;
     error: string;
@@ -28,6 +32,13 @@ export default function ClaimSpotModal({
 
     const [epicName, setEpicName] = useState(defaultEpicName);
     const [teammates, setTeammates] = useState<string[]>(() => Array(slots).fill(""));
+
+    // Mirrors the server check so the player is told before submitting; the API
+    // enforces it regardless.
+    const typed = epicName.trim().toLowerCase();
+    const qualified =
+        !enforceQualified || participants.some(p => p.trim().toLowerCase() === typed);
+    const showNotQualified = enforceQualified && typed.length > 0 && !qualified;
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -71,6 +82,11 @@ export default function ClaimSpotModal({
                         autoFocus
                     />
                     <p className="mt-1 text-[11px] text-white/40">{t.tournaments.epicNameHelp}</p>
+                    {showNotQualified && (
+                        <p className="mt-1.5 text-[11px] font-medium text-amber-400">
+                            {t.tournaments.notQualifiedHint}
+                        </p>
+                    )}
                 </div>
 
                 {slots > 0 && (
@@ -101,7 +117,7 @@ export default function ClaimSpotModal({
                 <div className="mt-6 flex gap-3">
                     <button
                         onClick={() => onConfirm(epicName.trim(), teammates.map(n => n.trim()).filter(Boolean))}
-                        disabled={saving || !epicName.trim()}
+                        disabled={saving || !epicName.trim() || !qualified}
                         className="flex-1 rounded-lg bg-primary px-6 py-3 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B] disabled:opacity-50"
                     >
                         {saving ? "..." : t.tournaments.confirm}

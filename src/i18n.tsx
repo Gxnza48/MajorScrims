@@ -60,6 +60,10 @@ type Translations = {
         teammatesHelp: string;
         confirm: string;
         cancel: string;
+        onlyQualified: string;
+        qualified: string;
+        adminOverride: string;
+        notQualifiedHint: string;
         status: {
             upcoming: string;
             live: string;
@@ -277,6 +281,10 @@ const translations: Record<Language, Translations> = {
             teammatesHelp: 'Um nome por campo. Deixe vazio se for solo.',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
+            onlyQualified: 'Só os jogadores classificados podem marcar spot. Os demais veem onde os pros caem.',
+            qualified: 'classificados',
+            adminOverride: 'Você é admin: pode marcar spot mesmo assim, para testar.',
+            notQualifiedHint: 'Esse nome da Epic não está na lista de classificados.',
             status: {
                 upcoming: 'Em Breve',
                 live: 'Ao Vivo',
@@ -492,6 +500,10 @@ const translations: Record<Language, Translations> = {
             teammatesHelp: 'Un nombre por campo. Dejalo vacío si vas solo.',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
+            onlyQualified: 'Solo los jugadores clasificados pueden marcar spot. El resto ve dónde caen los pros.',
+            qualified: 'clasificados',
+            adminOverride: 'Sos admin: podés marcarte igual, para probarlo.',
+            notQualifiedHint: 'Ese nombre de Epic no está en la lista de clasificados.',
             status: {
                 upcoming: 'Próximamente',
                 live: 'En Vivo',

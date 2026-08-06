@@ -2,9 +2,11 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Trophy, MapPin, Download, EyeOff } from "lucide-react";
+import {
+    Plus, Edit, Trash2, ArrowLeft, Save, X, Trophy, MapPin, Download, Eye, EyeOff, Users,
+} from "lucide-react";
 
 interface TournamentRow {
     id: string;
@@ -19,6 +21,7 @@ interface TournamentRow {
     status: string;
     published: boolean;
     windowCount: number;
+    restricted: boolean;
 }
 
 interface Form {
@@ -68,6 +71,8 @@ export default function TournamentsAdminPage() {
     const [form, setForm] = useState<Form>(emptyForm);
     const [saving, setSaving] = useState(false);
     const [importing, setImporting] = useState(false);
+    const [busySlug, setBusySlug] = useState<string | null>(null);
+    const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
 
@@ -75,8 +80,15 @@ export default function TournamentsAdminPage() {
         try {
             const res = await fetch("/api/tournaments?all=1");
             const data = await res.json();
-            if (data.success) setRows(data.tournaments);
-            else setError(data.error || "No se pudieron cargar los torneos.");
+            if (data.success) {
+                setRows(data.tournaments);
+                // drop selections whose row no longer exists
+                setSelected(prev =>
+                    prev.filter(slug => data.tournaments.some((t: TournamentRow) => t.slug === slug))
+                );
+            } else {
+                setError(data.error || "No se pudieron cargar los torneos.");
+            }
         } catch {
             setError("Error de red al cargar los torneos.");
         }
@@ -87,6 +99,16 @@ export default function TournamentsAdminPage() {
         if (status === "unauthenticated") router.push("/login");
         else if (status === "authenticated") load();
     }, [status, router, load]);
+
+    // Esc closes the edit dialog
+    useEffect(() => {
+        if (!showForm) return;
+        const onKey = (e: KeyboardEvent) => e.key === "Escape" && cancelForm();
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [showForm]);
+
+    const allSelected = rows.length > 0 && selected.length === rows.length;
 
     const openAdd = () => {
         setEditingSlug(null);
@@ -141,6 +163,7 @@ export default function TournamentsAdminPage() {
             );
             const data = await res.json();
             if (data.success) {
+                setNotice(editingSlug ? "Torneo actualizado." : "Torneo creado.");
                 await load();
                 cancelForm();
             } else {
@@ -152,8 +175,36 @@ export default function TournamentsAdminPage() {
         setSaving(false);
     };
 
+    const togglePublished = async (t: TournamentRow) => {
+        setBusySlug(t.slug);
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch(`/api/tournaments/${t.slug}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ published: !t.published }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setNotice(
+                    !t.published
+                        ? `"${t.name}" ya es visible en la web.`
+                        : `"${t.name}" volvió a borrador.`
+                );
+                await load();
+            } else {
+                setError(data.error || "No se pudo cambiar la visibilidad.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setBusySlug(null);
+    };
+
     const handleDelete = async (t: TournamentRow) => {
         if (!confirm(`¿Eliminar "${t.name}"? Se borran también sus spots reclamados.`)) return;
+        setBusySlug(t.slug);
         try {
             const res = await fetch(`/api/tournaments/${t.slug}`, { method: "DELETE" });
             const data = await res.json();
@@ -162,6 +213,33 @@ export default function TournamentsAdminPage() {
         } catch {
             setError("Error de red.");
         }
+        setBusySlug(null);
+    };
+
+    const handleBulkDelete = async () => {
+        if (selected.length === 0) return;
+        if (!confirm(`¿Eliminar ${selected.length} torneos? Se borran también sus spots reclamados.`)) return;
+        setSaving(true);
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch("/api/tournaments", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ slugs: selected }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setNotice(`${data.deleted} torneos eliminados.`);
+                setSelected([]);
+                await load();
+            } else {
+                setError(data.error || "No se pudieron eliminar.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setSaving(false);
     };
 
     const handleImport = async (templates: boolean) => {
@@ -178,11 +256,10 @@ export default function TournamentsAdminPage() {
                     const parts = [
                         `Importados ${data.imported} torneos${templates ? " como borrador" : ""}.`,
                         data.skipped ? `${data.skipped} ya existían.` : "",
-                        // never let a silent cap look like full coverage
                         data.truncatedWindows
                             ? `${data.truncatedWindows} tenían más de ${data.maxWindows} rondas y se recortaron.`
                             : "",
-                        templates ? "Revisá las fechas antes de publicarlos." : "",
+                        templates ? "Revisá las fechas y hacelos visibles cuando estén listos." : "",
                     ];
                     setNotice(parts.filter(Boolean).join(" "));
                 } else {
@@ -202,6 +279,8 @@ export default function TournamentsAdminPage() {
         setImporting(false);
     };
 
+    const publishedCount = useMemo(() => rows.filter(t => t.published).length, [rows]);
+
     if (status === "loading" || isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -217,7 +296,7 @@ export default function TournamentsAdminPage() {
                     <div>
                         <Link
                             href="/dashboard"
-                            className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-primary"
+                            className="mb-5 flex w-fit items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-primary"
                         >
                             <ArrowLeft size={16} /> Volver al dashboard
                         </Link>
@@ -226,31 +305,203 @@ export default function TournamentsAdminPage() {
                             <span className="text-sm font-medium text-primary">Gestión de torneos</span>
                         </div>
                         <h1 className="text-3xl font-bold text-white md:text-4xl">Torneos</h1>
+                        {rows.length > 0 && (
+                            <p className="mt-2 text-sm text-white/50">
+                                {rows.length} cargados · {publishedCount} visibles en la web
+                            </p>
+                        )}
                     </div>
 
-                    {!showForm && (
-                        <button
-                            onClick={openAdd}
-                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B]"
-                        >
-                            <Plus size={20} /> Nuevo torneo
-                        </button>
-                    )}
+                    <button
+                        onClick={openAdd}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-bold text-[#04130A] transition-colors duration-300 hover:bg-[#43E97B]"
+                    >
+                        <Plus size={20} /> Nuevo torneo
+                    </button>
                 </div>
 
                 {(error || notice) && (
                     <div
                         className={`mb-6 rounded-lg border px-4 py-3 text-sm ${error
-                                ? "border-red-500/20 bg-red-500/10 text-red-400"
-                                : "border-primary/20 bg-primary/10 text-primary"
+                            ? "border-red-500/20 bg-red-500/10 text-red-400"
+                            : "border-primary/20 bg-primary/10 text-primary"
                             }`}
                     >
                         {error || notice}
                     </div>
                 )}
 
-                {showForm && (
-                    <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+                    {rows.length === 0 ? (
+                        <div className="py-16 text-center">
+                            <p className="mb-2 text-lg font-medium text-white/50">Todavía no hay torneos cargados.</p>
+                            <p className="mx-auto mb-6 max-w-md text-sm text-white/40">
+                                Podés crear uno a mano, o traer las plantillas de los torneos oficiales BR
+                                (nombre, poster, modo y rondas ya cargados) y solo corregir las fechas.
+                            </p>
+                            <button
+                                onClick={() => handleImport(true)}
+                                disabled={importing}
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:border-primary/40 disabled:opacity-50"
+                            >
+                                <Download size={16} /> {importing ? "Importando..." : "Traer plantillas de torneos BR"}
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Bulk toolbar */}
+                            <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-white/10 pb-4">
+                                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-white/70">
+                                    <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        onChange={e => setSelected(e.target.checked ? rows.map(t => t.slug) : [])}
+                                        className="h-4 w-4 accent-[#22D962]"
+                                    />
+                                    Seleccionar todos
+                                </label>
+
+                                {selected.length > 0 && (
+                                    <>
+                                        <span className="text-sm text-white/50">
+                                            {selected.length} seleccionado{selected.length === 1 ? "" : "s"}
+                                        </span>
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            disabled={saving}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-sm font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                                        >
+                                            <Trash2 size={15} />
+                                            {saving ? "Borrando..." : `Borrar seleccionados`}
+                                        </button>
+                                        <button
+                                            onClick={() => setSelected([])}
+                                            className="text-sm font-medium text-white/50 transition-colors hover:text-white"
+                                        >
+                                            Limpiar selección
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                {rows.map(t => (
+                                    <div
+                                        key={t.id}
+                                        className={`flex flex-col gap-4 rounded-xl border p-4 transition-colors sm:flex-row sm:items-center ${selected.includes(t.slug)
+                                            ? "border-primary/40 bg-primary/[0.06]"
+                                            : "border-white/10 bg-white/[0.02]"
+                                            }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selected.includes(t.slug)}
+                                            onChange={e =>
+                                                setSelected(prev =>
+                                                    e.target.checked
+                                                        ? [...prev, t.slug]
+                                                        : prev.filter(s => s !== t.slug)
+                                                )
+                                            }
+                                            aria-label={`Seleccionar ${t.name}`}
+                                            className="h-4 w-4 shrink-0 accent-[#22D962]"
+                                        />
+
+                                        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
+                                            {t.poster ? (
+                                                <img src={t.poster} alt="" className="h-full w-full object-cover" />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center">
+                                                    <Trophy size={20} className="text-white/20" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="truncate font-bold text-white">{t.name}</p>
+                                                {t.published ? (
+                                                    <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-0.5 text-[11px] font-bold uppercase text-primary">
+                                                        <Eye size={10} /> visible
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-[11px] font-bold uppercase text-white/50">
+                                                        <EyeOff size={10} /> borrador
+                                                    </span>
+                                                )}
+                                                {t.restricted && (
+                                                    <span className="inline-flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-[11px] font-bold uppercase text-white/50">
+                                                        <Users size={10} /> clasificados
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="mt-1 text-xs text-white/50">
+                                                {t.status} · {t.mode} · {t.teamSize} · {t.region} ·{" "}
+                                                {t.windowCount} {t.windowCount === 1 ? "ronda" : "rondas"}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex shrink-0 flex-wrap gap-2">
+                                            <button
+                                                onClick={() => togglePublished(t)}
+                                                disabled={busySlug === t.slug}
+                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-colors disabled:opacity-50 ${t.published
+                                                    ? "border-white/15 text-white/70 hover:border-white/30 hover:text-white"
+                                                    : "border-primary/40 text-primary hover:bg-primary/10"
+                                                    }`}
+                                            >
+                                                {t.published ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                {t.published ? "Ocultar" : "Hacer visible"}
+                                            </button>
+                                            <Link
+                                                href={`/dashboard/tournaments/${t.slug}`}
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
+                                            >
+                                                <MapPin size={14} /> Rondas y mapa
+                                            </Link>
+                                            <button
+                                                onClick={() => openEdit(t)}
+                                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white transition-colors hover:border-white/30 hover:bg-white/10"
+                                                aria-label={`Editar ${t.name}`}
+                                            >
+                                                <Edit size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(t)}
+                                                disabled={busySlug === t.slug}
+                                                className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                                                aria-label={`Eliminar ${t.name}`}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div className="pt-4">
+                                    <button
+                                        onClick={() => handleImport(true)}
+                                        disabled={importing}
+                                        className="inline-flex items-center gap-2 text-xs font-medium text-white/40 transition-colors hover:text-primary disabled:opacity-50"
+                                    >
+                                        <Download size={14} />{" "}
+                                        {importing ? "Importando..." : "Traer plantillas de torneos BR"}
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Dialog, not an inline panel: with dozens of rows an inline form opens
+                far above the viewport and reads as "the button does nothing". */}
+            {showForm && (
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+                    onMouseDown={e => e.target === e.currentTarget && cancelForm()}
+                >
+                    <div className="my-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-[#08190F] p-6 shadow-2xl md:p-8">
                         <div className="mb-6 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-white">
                                 {editingSlug ? "Editar torneo" : "Nuevo torneo"}
@@ -259,6 +510,12 @@ export default function TournamentsAdminPage() {
                                 <X size={20} />
                             </button>
                         </div>
+
+                        {error && (
+                            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                                {error}
+                            </div>
+                        )}
 
                         <div className="mb-4 grid gap-4 md:grid-cols-2">
                             <div className="md:col-span-2">
@@ -269,6 +526,7 @@ export default function TournamentsAdminPage() {
                                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                     className={inputClass}
                                     placeholder="EWC Reload Elite Series"
+                                    autoFocus
                                 />
                             </div>
                             <div className="md:col-span-2">
@@ -364,95 +622,8 @@ export default function TournamentsAdminPage() {
                             </button>
                         </div>
                     </div>
-                )}
-
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-                    {rows.length === 0 ? (
-                        <div className="py-16 text-center">
-                            <p className="mb-2 text-lg font-medium text-white/50">Todavía no hay torneos cargados.</p>
-                            <p className="mx-auto mb-6 max-w-md text-sm text-white/40">
-                                Podés crear uno a mano, o traer las plantillas de los torneos oficiales BR
-                                (nombre, poster, modo y rondas ya cargados) y solo corregir las fechas.
-                            </p>
-                            <button
-                                onClick={() => handleImport(true)}
-                                disabled={importing}
-                                className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:border-primary/40 disabled:opacity-50"
-                            >
-                                <Download size={16} /> {importing ? "Importando..." : "Traer plantillas de torneos BR"}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {rows.map(t => (
-                                <div
-                                    key={t.id}
-                                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center"
-                                >
-                                    <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
-                                        {t.poster ? (
-                                            <img src={t.poster} alt="" className="h-full w-full object-cover" />
-                                        ) : (
-                                            <div className="flex h-full w-full items-center justify-center">
-                                                <Trophy size={20} className="text-white/20" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className="truncate font-bold text-white">{t.name}</p>
-                                            {!t.published && (
-                                                <span className="inline-flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-[11px] font-bold uppercase text-white/50">
-                                                    <EyeOff size={10} /> borrador
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="mt-1 text-xs text-white/50">
-                                            {t.status} · {t.mode} · {t.teamSize} · {t.region} ·{" "}
-                                            {t.windowCount} {t.windowCount === 1 ? "ventana" : "ventanas"}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex shrink-0 gap-2">
-                                        <Link
-                                            href={`/dashboard/tournaments/${t.slug}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
-                                        >
-                                            <MapPin size={14} /> Ventanas y mapa
-                                        </Link>
-                                        <button
-                                            onClick={() => openEdit(t)}
-                                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white transition-colors hover:border-white/30 hover:bg-white/10"
-                                            aria-label={`Editar ${t.name}`}
-                                        >
-                                            <Edit size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(t)}
-                                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20"
-                                            aria-label={`Eliminar ${t.name}`}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <div className="pt-4">
-                                <button
-                                    onClick={() => handleImport(true)}
-                                    disabled={importing}
-                                    className="inline-flex items-center gap-2 text-xs font-medium text-white/40 transition-colors hover:text-primary disabled:opacity-50"
-                                >
-                                    <Download size={14} />{" "}
-                                    {importing ? "Importando..." : "Traer plantillas de torneos BR"}
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 }

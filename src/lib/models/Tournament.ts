@@ -28,6 +28,12 @@ export interface ITournament extends Document {
     start: Date;
     end: Date;
     published: boolean;
+    /**
+     * Epic names of the players who qualified. While it is empty anyone signed in
+     * can take a spot; once a moderator fills it, only these players (and admins)
+     * can - everybody else still sees the map, they just cannot claim.
+     */
+    participants: string[];
     windows: Types.DocumentArray<IWindow & Document>;
 }
 
@@ -57,6 +63,7 @@ const TournamentSchema = new Schema<ITournament>(
         start: { type: Date, required: true },
         end: { type: Date, required: true },
         published: { type: Boolean, default: true },
+        participants: { type: [String], default: [] },
         windows: { type: [WindowSchema], default: [] },
     },
     { timestamps: true }

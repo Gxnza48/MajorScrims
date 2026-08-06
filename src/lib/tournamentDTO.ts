@@ -42,7 +42,19 @@ export interface TournamentDTO {
     status: string;
     published: boolean;
     windowCount: number;
+    /** True once a moderator restricted claiming to the qualified players. */
+    restricted: boolean;
+    participants?: string[];
     windows?: WindowDTO[];
+}
+
+/** Case/space-insensitive match, so "peterbot " and "PeterBot" are the same player. */
+export const normalizeEpicName = (value: string) => value.trim().toLowerCase();
+
+export function isQualified(participants: string[] | undefined, epicName: string): boolean {
+    if (!participants || participants.length === 0) return true;
+    const target = normalizeEpicName(epicName);
+    return participants.some(p => normalizeEpicName(p) === target);
 }
 
 export function toListDTO(t: ITournament): TournamentDTO {
@@ -59,12 +71,14 @@ export function toListDTO(t: ITournament): TournamentDTO {
         status: getStatus(t.start, t.end),
         published: t.published,
         windowCount: t.windows?.length ?? 0,
+        restricted: (t.participants?.length ?? 0) > 0,
     };
 }
 
 export function toDetailDTO(t: ITournament): TournamentDTO {
     return {
         ...toListDTO(t),
+        participants: t.participants ?? [],
         windows: (t.windows ?? []).map(w => ({
             id: String(w._id),
             label: w.label,

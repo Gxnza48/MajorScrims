@@ -18,6 +18,7 @@ interface Detail {
     slug: string;
     name: string;
     teamSize: string;
+    participants: string[];
     windows: WindowRow[];
 }
 
@@ -53,6 +54,10 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [windowDrafts, setWindowDrafts] = useState<{ id?: string; label: string; startsAt: string }[]>([]);
     const [savingWindows, setSavingWindows] = useState(false);
 
+    // Qualified players: one Epic name per line
+    const [participantsText, setParticipantsText] = useState("");
+    const [savingParticipants, setSavingParticipants] = useState(false);
+
     const load = useCallback(async () => {
         try {
             const res = await fetch(`/api/tournaments/${params.slug}`);
@@ -63,6 +68,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             }
             setDetail(data.tournament);
             setClaims(data.claims);
+            setParticipantsText((data.tournament.participants ?? []).join("\n"));
             setWindowDrafts(
                 data.tournament.windows.map((w: WindowRow) => ({
                     id: w.id,
@@ -171,6 +177,38 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setError("Error de red.");
         }
         setSavingWindows(false);
+    };
+
+    const saveParticipants = async () => {
+        setSavingParticipants(true);
+        setError("");
+        setNotice("");
+        try {
+            const list = participantsText
+                .split("\n")
+                .map(n => n.trim())
+                .filter(Boolean);
+            const res = await fetch(`/api/tournaments/${params.slug}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ participants: list }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetail(data.tournament);
+                setParticipantsText((data.tournament.participants ?? []).join("\n"));
+                setNotice(
+                    data.tournament.participants.length > 0
+                        ? `${data.tournament.participants.length} clasificados guardados. Solo ellos pueden marcar spot.`
+                        : "Lista vacía: cualquier usuario con sesión puede marcar spot."
+                );
+            } else {
+                setError(data.error || "No se pudo guardar la lista.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setSavingParticipants(false);
     };
 
     if (status === "loading" || !detail) {
@@ -283,6 +321,51 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                     <p className="mt-3 text-[11px] text-white/40">
                         Borrar una ronda elimina también sus spots y los reclamos de esa ronda.
                     </p>
+                </div>
+
+                {/* Qualified players */}
+                <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">
+                            Jugadores clasificados
+                        </h2>
+                        <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${detail.participants.length > 0
+                                ? "bg-primary/15 text-primary"
+                                : "bg-white/10 text-white/50"
+                                }`}
+                        >
+                            {detail.participants.length > 0
+                                ? `${detail.participants.length} clasificados`
+                                : "abierto a todos"}
+                        </span>
+                    </div>
+
+                    <p className="mb-4 text-xs leading-relaxed text-white/50">
+                        Un nombre de Epic por línea. Solo estos jugadores pueden marcar su spot; el resto
+                        entra igual y ve dónde caen los pros, pero no puede reclamar.{" "}
+                        <span className="text-white/70">
+                            Si dejás la lista vacía, cualquier usuario con sesión puede marcarse.
+                        </span>{" "}
+                        Los admins siempre pueden marcarse, para poder probarlo.
+                    </p>
+
+                    <textarea
+                        value={participantsText}
+                        onChange={e => setParticipantsText(e.target.value)}
+                        rows={8}
+                        spellCheck={false}
+                        placeholder={"Peterbot\nPollo\nRew\nModa"}
+                        className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
+                    />
+
+                    <button
+                        onClick={saveParticipants}
+                        disabled={savingParticipants}
+                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
+                    >
+                        <Save size={15} /> {savingParticipants ? "..." : "Guardar clasificados"}
+                    </button>
                 </div>
 
                 {/* Zones */}

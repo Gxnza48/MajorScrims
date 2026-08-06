@@ -3,7 +3,7 @@ import { connectToDB, requireSession, isAdminId } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
 import { SpotClaim } from "@/lib/models/SpotClaim";
 import { UserProfile } from "@/lib/models/UserProfile";
-import { toClaimDTO } from "@/lib/tournamentDTO";
+import { toClaimDTO, isQualified } from "@/lib/tournamentDTO";
 import { getStatus } from "@/lib/tournamentStatus";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +42,19 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             return NextResponse.json(
                 { success: false, error: "Ingresá tu nombre de Epic Games." },
                 { status: 400 }
+            );
+        }
+
+        // Only players who qualified may take a spot. Admins bypass it so a mod
+        // can test the flow; everyone else can still see the map, just not claim.
+        if (!isAdminId(session.user.id) && !isQualified(tournament.participants, epicName)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Solo los jugadores clasificados pueden marcar un spot en este torneo. Si clasificaste, revisá que el nombre de Epic sea exactamente el mismo con el que jugás.",
+                    notQualified: true,
+                },
+                { status: 403 }
             );
         }
 

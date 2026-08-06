@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDB, requireAdminSession } from "@/lib/db";
+import { connectToDB, requireAdminSession, requireSession, isAdminId } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
 import { SpotClaim } from "@/lib/models/SpotClaim";
 import { toDetailDTO, toClaimDTO } from "@/lib/tournamentDTO";
@@ -20,11 +20,17 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
         }
 
         const claims = await SpotClaim.find({ tournamentId: tournament._id });
+        const session = await requireSession();
 
         return NextResponse.json({
             success: true,
             tournament: toDetailDTO(tournament),
             claims: claims.map(toClaimDTO),
+            // Lets the page show the right call to action without guessing.
+            viewer: {
+                signedIn: !!session,
+                isAdmin: isAdminId(session?.user.id),
+            },
         });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
@@ -49,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         }
 
         const body = await request.json();
-        const { name, poster, mode, teamSize, region, start, end, published, windows } = body;
+        const { name, poster, mode, teamSize, region, start, end, published, windows, participants } = body;
 
         if (name !== undefined) tournament.name = String(name).trim();
         if (poster !== undefined) tournament.poster = poster;
@@ -59,6 +65,19 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         if (start !== undefined) tournament.start = new Date(start);
         if (end !== undefined) tournament.end = new Date(end);
         if (published !== undefined) tournament.published = !!published;
+        if (Array.isArray(participants)) {
+            // De-duplicate case-insensitively but keep the moderator's spelling.
+            const seen = new Set<string>();
+            tournament.participants = participants
+                .map((p: unknown) => String(p).trim())
+                .filter(Boolean)
+                .filter(p => {
+                    const key = p.toLowerCase();
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+        }
 
         if (new Date(tournament.end) < new Date(tournament.start)) {
             return NextResponse.json(

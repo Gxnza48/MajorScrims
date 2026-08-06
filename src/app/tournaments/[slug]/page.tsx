@@ -28,6 +28,8 @@ interface TournamentDetail {
     start: string;
     end: string;
     status: string;
+    restricted: boolean;
+    participants: string[];
     windows: WindowDTO[];
 }
 
@@ -42,6 +44,10 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
 
     const [tournament, setTournament] = useState<TournamentDetail | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
+    const [viewer, setViewer] = useState<{ signedIn: boolean; isAdmin: boolean }>({
+        signedIn: false,
+        isAdmin: false,
+    });
     const [notFound, setNotFound] = useState(false);
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
     const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -63,6 +69,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             }
             setTournament(data.tournament);
             setClaims(data.claims);
+            if (data.viewer) setViewer(data.viewer);
             setActiveWindowId(prev => prev ?? data.tournament.windows[0]?.id ?? null);
         } catch {
             setNotFound(true);
@@ -314,6 +321,21 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 )}
                             </div>
 
+                            {tournament.restricted && (
+                                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                                    <Users size={15} className="mt-0.5 shrink-0 text-primary" />
+                                    <p className="text-xs leading-relaxed text-white/60">
+                                        {t.tournaments.onlyQualified}{" "}
+                                        <span className="text-white/40">
+                                            ({tournament.participants.length} {t.tournaments.qualified})
+                                        </span>
+                                        {viewer.isAdmin && (
+                                            <span className="ml-1 text-primary">{t.tournaments.adminOverride}</span>
+                                        )}
+                                    </p>
+                                </div>
+                            )}
+
                             <DropMap
                                 zones={activeWindow.zones}
                                 claims={windowClaims}
@@ -424,6 +446,8 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                 <ClaimSpotModal
                     zoneLabel={selectedZone.label}
                     teamSize={tournament.teamSize}
+                    participants={tournament.participants}
+                    enforceQualified={tournament.restricted && !viewer.isAdmin}
                     defaultEpicName={myClaim?.epicName || savedEpicName || session?.user?.name || ""}
                     saving={saving}
                     error={claimError}
