@@ -36,6 +36,8 @@ export async function GET() {
             isAdmin: isAdminId(session.user.id),
             // false means nobody can be detected as PRO yet - the env vars are missing
             proDetectionReady: isProConfigured(),
+            // why the last Discord lookup did or did not resolve
+            proCheckReason: profile.proCheckReason || null,
         });
     } catch {
         // A profile problem must never block the rest of the page.

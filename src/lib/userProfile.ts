@@ -31,9 +31,11 @@ export async function syncProfile(session: Session): Promise<IUserProfile> {
 
     const stale = !profile.proCheckedAt || now.getTime() - profile.proCheckedAt.getTime() > PRO_TTL_MS;
     if (stale) {
-        const isPro = await checkIsPro(session.accessToken);
-        if (isPro !== null) {
-            profile.isPro = isPro;
+        const check = await checkIsPro(session.accessToken);
+        profile.proCheckReason = check.status ? `${check.reason}:${check.status}` : check.reason;
+        profile.proCheckAttemptedAt = now;
+        if (check.isPro !== null) {
+            profile.isPro = check.isPro;
             profile.proCheckedAt = now;
         }
     }

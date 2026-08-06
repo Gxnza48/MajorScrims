@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-    ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Search,
+    ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Search, Info,
 } from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel } from "@/components/tournaments/DropMap";
 
@@ -71,6 +71,8 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     // players who qualified but have never signed in (so they are not listed yet).
     const [roster, setRoster] = useState<RosterUser[]>([]);
     const [proDetectionReady, setProDetectionReady] = useState(true);
+    const [proCount, setProCount] = useState(0);
+    const [checkReasons, setCheckReasons] = useState<Record<string, number>>({});
     const [qualifiedIds, setQualifiedIds] = useState<string[]>([]);
     const [rosterQuery, setRosterQuery] = useState("");
     const [onlyPros, setOnlyPros] = useState(true);
@@ -121,9 +123,11 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                 if (!data.success) return;
                 setRoster(data.users);
                 setProDetectionReady(data.proDetectionReady);
-                // without the Discord env vars nobody is flagged as pro, so showing
-                // only pros would render an empty and very confusing list
-                if (!data.proDetectionReady) setOnlyPros(false);
+                setProCount(data.proCount ?? 0);
+                setCheckReasons(data.checkReasons ?? {});
+                // Filtering to pros when none are flagged yet renders an empty list
+                // that reads like a bug, so only enable it once there is something.
+                if (!data.proCount) setOnlyPros(false);
             })
             .catch(() => { });
     }, [status]);
@@ -268,6 +272,12 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
     const selectedZone = zones.find(z => z.id === selectedZoneId) ?? null;
     const windowClaims = claims.filter(c => c.windowId === activeWindowId);
+
+    // Discord access tokens last a week and we do not refresh them, so a long-lived
+    // session cannot be used to read roles until the user signs in again.
+    const staleTokens = Object.entries(checkReasons)
+        .filter(([reason]) => reason.startsWith("token-rejected") || reason === "no-token")
+        .reduce((sum, [, n]) => sum + n, 0);
 
     const preAuthorized = participantsText.split("\n").map(n => n.trim()).filter(Boolean);
     const totalQualified = qualifiedIds.length + preAuthorized.length;
@@ -429,7 +439,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         </div>
                     )}
 
-                    {!proDetectionReady && (
+                    {!proDetectionReady ? (
                         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
                             <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
                             <p className="text-xs leading-relaxed text-white/70">
@@ -438,6 +448,35 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                                 todavía no se puede saber quién tiene el rol PRO en Discord. Mientras tanto la
                                 lista muestra a todos los usuarios que entraron a la web.
                             </p>
+                        </div>
+                    ) : (
+                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                            <Info size={16} className="mt-0.5 shrink-0 text-primary" />
+                            <div className="text-xs leading-relaxed text-white/60">
+                                <p>
+                                    El rol PRO se lee de Discord{" "}
+                                    <span className="text-white/80">cuando cada jugador entra a la web</span>, no
+                                    desde el servidor entero. Por eso acá solo aparecen los que ya iniciaron
+                                    sesión al menos una vez: hoy son{" "}
+                                    <span className="font-bold text-white">{roster.length}</span>, de los cuales{" "}
+                                    <span className="font-bold text-primary">{proCount}</span> tienen el rol PRO.
+                                </p>
+                                {staleTokens > 0 && (
+                                    <p className="mt-1.5 text-amber-400">
+                                        {staleTokens} {staleTokens === 1 ? "usuario tiene" : "usuarios tienen"} el
+                                        token de Discord vencido (dura una semana y no lo renovamos). Hasta que
+                                        cierren sesión y vuelvan a entrar no podemos leerles el rol.
+                                    </p>
+                                )}
+                                {Object.keys(checkReasons).length > 0 && (
+                                    <p className="mt-1.5 text-white/35">
+                                        Diagnóstico:{" "}
+                                        {Object.entries(checkReasons)
+                                            .map(([r, n]) => `${r}=${n}`)
+                                            .join(" · ")}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -466,11 +505,31 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
                     <div className="max-h-80 overflow-y-auto rounded-xl border border-white/10">
                         {visibleRoster.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-white/50">
-                                {roster.length === 0
-                                    ? "Todavía no entró nadie a la web. Apenas un pro inicie sesión una vez, aparece acá."
-                                    : "Ningún usuario coincide con la búsqueda."}
-                            </p>
+                            <div className="px-4 py-8 text-center">
+                                {roster.length === 0 ? (
+                                    <p className="text-sm text-white/50">
+                                        Todavía no entró nadie a la web. Apenas un pro inicie sesión una vez,
+                                        aparece acá.
+                                    </p>
+                                ) : onlyPros ? (
+                                    <>
+                                        <p className="mb-3 text-sm text-white/50">
+                                            Ninguno de los {roster.length} usuarios que entraron figura con el rol
+                                            PRO todavía.
+                                        </p>
+                                        <button
+                                            onClick={() => setOnlyPros(false)}
+                                            className="rounded-lg border border-white/15 px-4 py-2 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
+                                        >
+                                            Mostrar a todos igual
+                                        </button>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-white/50">
+                                        Ningún usuario coincide con la búsqueda.
+                                    </p>
+                                )}
+                            </div>
                         ) : (
                             <ul className="divide-y divide-white/5">
                                 {visibleRoster.map(u => (

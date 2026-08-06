@@ -17,6 +17,9 @@ export interface IUserProfile extends Document {
     /** Mirrors the PRO role in the Major Scrims Discord (see src/lib/discord.ts). */
     isPro: boolean;
     proCheckedAt?: Date;
+    /** Outcome of the last Discord lookup, so "nobody is a pro" is diagnosable. */
+    proCheckReason?: string;
+    proCheckAttemptedAt?: Date;
     lastSeenAt?: Date;
 }
 
@@ -29,6 +32,8 @@ const UserProfileSchema = new Schema<IUserProfile>(
         epicAccountId: { type: String },
         isPro: { type: Boolean, default: false, index: true },
         proCheckedAt: { type: Date },
+        proCheckReason: { type: String },
+        proCheckAttemptedAt: { type: Date },
         lastSeenAt: { type: Date },
     },
     { timestamps: true }
