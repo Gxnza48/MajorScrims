@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, MapPin, ChevronDown, AlertTriangle, Swords } from "lucide-react";
 import { useI18n } from "@/i18n";
-
-const TEAMMATE_SLOTS: Record<string, number> = { Solo: 0, Duos: 1, Trios: 2, Squads: 3 };
+import { teammateSlots } from "@/lib/teamFormat";
 
 export interface TeammateOption {
     discordId: string;
@@ -142,15 +141,18 @@ export default function ClaimSpotModal({
     occupiedBy: string[];
     saving: boolean;
     error: string;
-    onConfirm: (epicName: string, teammates: string[], disputeNote: string) => void;
+    onConfirm: (epicName: string, teammates: string[]) => void;
     onClose: () => void;
 }) {
     const { t } = useI18n();
-    const slots = TEAMMATE_SLOTS[teamSize] ?? 0;
+    const slots = teammateSlots(teamSize);
 
     const [epicName, setEpicName] = useState(defaultEpicName);
     const [teammates, setTeammates] = useState<string[]>(() => Array(slots).fill(""));
-    const [disputeNote, setDisputeNote] = useState("");
+
+    // In a duos/trios tournament the team takes the spot, so the partner is
+    // required: confirming with half a team is what has to be impossible.
+    const missingTeammates = teammates.slice(0, slots).filter(n => !n.trim()).length;
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -221,6 +223,7 @@ export default function ClaimSpotModal({
                     <div className="mb-2">
                         <label className="mb-2 block text-sm text-white/70">
                             {slots === 1 ? t.tournaments.duo : t.tournaments.teammates}
+                            <span className="ml-1 text-primary">*</span>
                         </label>
                         <div className="space-y-2">
                             {Array.from({ length: slots }).map((_, i) => (
@@ -244,34 +247,22 @@ export default function ClaimSpotModal({
                                 />
                             ))}
                         </div>
-                        <p className="mt-1 text-[11px] text-white/40">{t.tournaments.teammatePickerHelp}</p>
-                    </div>
-                )}
-
-                {isDispute && (
-                    <div className="mt-4">
-                        <label className="mb-2 block text-sm text-white/70">{t.tournaments.disputeReason}</label>
-                        <input
-                            type="text"
-                            value={disputeNote}
-                            onChange={e => setDisputeNote(e.target.value)}
-                            className={inputClass}
-                            maxLength={200}
-                            placeholder={t.tournaments.disputeReasonPlaceholder}
-                        />
+                        <p className="mt-1 text-[11px] text-white/40">
+                            {missingTeammates > 0
+                                ? slots === 1
+                                    ? t.tournaments.duoRequired
+                                    : t.tournaments.teammatesRequired
+                                : t.tournaments.teammatePickerHelp}
+                        </p>
                     </div>
                 )}
 
                 <div className="mt-6 flex gap-3">
                     <button
                         onClick={() =>
-                            onConfirm(
-                                epicName.trim(),
-                                teammates.map(n => n.trim()).filter(Boolean),
-                                disputeNote.trim()
-                            )
+                            onConfirm(epicName.trim(), teammates.map(n => n.trim()).filter(Boolean))
                         }
-                        disabled={saving || !epicName.trim()}
+                        disabled={saving || !epicName.trim() || missingTeammates > 0}
                         className={`flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 font-bold transition-colors duration-300 disabled:opacity-50 ${isDispute
                             ? "bg-red-500 text-white hover:bg-red-600"
                             : "bg-primary text-[#04130A] hover:bg-[#43E97B]"

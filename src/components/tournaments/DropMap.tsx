@@ -20,9 +20,15 @@ export interface MapClaim {
     discordId: string;
     epicName: string;
     teammates: string[];
+    /** Discord ids of the teammates: a duo marks the spot for both of them. */
+    teammateIds?: string[];
     /** Team that took an already-full zone: the zone is contested. */
     disputed?: boolean;
 }
+
+/** True when the viewer is in this team, as captain or as a picked teammate. */
+export const claimBelongsTo = (claim: MapClaim, discordId?: string | null) =>
+    !!discordId && (claim.discordId === discordId || (claim.teammateIds ?? []).includes(discordId));
 
 /** One team as it reads on the map: "Peterbot + Pollo". */
 export const teamLabel = (claim: MapClaim) =>
@@ -145,20 +151,21 @@ export default function DropMap({
             {zones.map((zone, index) => {
                 const zoneClaims = claimsFor(zone.id);
                 const capacity = zone.capacity ?? 1;
-                const isMine = zoneClaims.some(c => c.discordId && c.discordId === myDiscordId);
+                const isMine = zoneClaims.some(c => claimBelongsTo(c, myDiscordId));
                 const isTaken = zoneClaims.length > 0;
                 const isDisputed = isZoneDisputed(zoneClaims, capacity);
                 const isSelected = selectedZoneId === zone.id;
 
-                // Dark and semi transparent everywhere so the names read on top of
-                // the map; a taken spot goes darker still, and a contested one red.
+                // Green means you can drop there (or that it is your team's spot),
+                // dark means somebody else took it, red means it is contested.
+                // All fills stay translucent so the map reads underneath.
                 const tone = isDisputed
-                    ? "border-red-500 bg-black/75"
+                    ? "border-red-500 bg-red-500/35"
                     : isMine
-                        ? "border-primary bg-black/70"
+                        ? "border-primary bg-primary/45"
                         : isTaken
                             ? "border-white/25 bg-black/70"
-                            : "border-white/50 bg-black/40 hover:border-primary hover:bg-black/55";
+                            : "border-primary/60 bg-primary/25 hover:border-primary hover:bg-primary/35";
 
                 return (
                     <button
@@ -189,7 +196,7 @@ export default function DropMap({
                         </span>
                         <span
                             data-zone="1"
-                            className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white sm:line-clamp-3 sm:block sm:text-[11px]"
+                            className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:line-clamp-3 sm:block sm:text-[11px]"
                         >
                             {mode === "edit" || zoneClaims.length === 0
                                 ? zone.label

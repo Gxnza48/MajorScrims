@@ -7,7 +7,9 @@ import {
     ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck, Swords, Info,
 } from "lucide-react";
 import { useI18n } from "@/i18n";
-import DropMap, { MapZone, MapClaim, teamLabel, isZoneDisputed } from "@/components/tournaments/DropMap";
+import DropMap, {
+    MapZone, MapClaim, teamLabel, isZoneDisputed, claimBelongsTo,
+} from "@/components/tournaments/DropMap";
 import ClaimSpotModal, { TeammateOption } from "@/components/tournaments/ClaimSpotModal";
 
 const POLL_MS = 10000;
@@ -56,8 +58,8 @@ interface Viewer {
 interface Claim extends MapClaim {
     windowId: string;
     discordName: string;
+    teammateIds: string[];
     disputed: boolean;
-    disputeNote: string;
 }
 
 export default function TournamentDetailPage({ params }: { params: { slug: string } }) {
@@ -135,13 +137,14 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
         [claims, activeWindowId]
     );
 
-    const myClaim = windowClaims.find(c => c.discordId === myDiscordId) ?? null;
+    // A duo shares one claim: the partner sees it as theirs and can release it.
+    const isMyTeam = (c: Claim) => claimBelongsTo(c, myDiscordId);
+    const myClaim = windowClaims.find(isMyTeam) ?? null;
     const selectedZone = activeWindow?.zones.find(z => z.id === selectedZoneId) ?? null;
     const selectedZoneClaims = windowClaims.filter(c => c.zoneId === selectedZoneId);
     const selectedZoneIsFull =
         !!selectedZone && selectedZoneClaims.length >= (selectedZone.capacity ?? 1);
 
-    const totalCapacity = (activeWindow?.zones ?? []).reduce((sum, z) => sum + (z.capacity ?? 1), 0);
     const disputedCount = windowClaims.filter(c => c.disputed).length;
 
     // The server already decided whether this viewer may claim and why not; the
@@ -173,7 +176,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             : `${start.toLocaleDateString(locale, opts)} - ${end.toLocaleDateString(locale, { ...opts, year: "numeric" })}`;
     };
 
-    const handleClaim = async (epicName: string, teammates: string[], disputeNote: string) => {
+    const handleClaim = async (epicName: string, teammates: string[]) => {
         if (!selectedZone || !activeWindowId) return;
         setSaving(true);
         setClaimError("");
@@ -190,7 +193,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                     // the flag is how the player confirms they meant to take a
                     // spot somebody else already has.
                     dispute: selectedZoneIsFull,
-                    disputeNote,
                 }),
             });
             const data = await res.json();
@@ -346,7 +348,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                     <ul className="divide-y divide-white/5">
                                         {windowClaims.map(claim => {
                                             const zone = activeWindow.zones.find(z => z.id === claim.zoneId);
-                                            const mine = claim.discordId === myDiscordId;
+                                            const mine = isMyTeam(claim);
                                             return (
                                                 <li
                                                     key={claim.id}
@@ -378,11 +380,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                                 </span>
                                                             )}
                                                         </p>
-                                                        {claim.disputed && claim.disputeNote && (
-                                                            <p className="mt-0.5 truncate text-[11px] italic text-white/35">
-                                                                “{claim.disputeNote}”
-                                                            </p>
-                                                        )}
                                                     </div>
 
                                                     <div className="flex shrink-0 items-center gap-1.5">
@@ -424,9 +421,10 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 </h2>
                                 {activeWindow.zones.length > 0 && (
                                     <div className="flex flex-wrap items-center gap-2">
+                                        {/* Teams, not spots: a duo is one team on one spot. */}
                                         <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70">
                                             <Users size={12} className="text-primary" />
-                                            {windowClaims.length} / {totalCapacity} {t.tournaments.spotsTaken}
+                                            {windowClaims.length} {t.tournaments.teamsMarked}
                                         </span>
                                         {disputedCount > 0 && (
                                             <span className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400">
@@ -479,7 +477,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                                     {activeWindow.zones.map((zone, index) => {
                                         const zoneClaims = windowClaims.filter(c => c.zoneId === zone.id);
-                                        const mine = zoneClaims.some(c => c.discordId === myDiscordId);
+                                        const mine = zoneClaims.some(isMyTeam);
                                         const taken = zoneClaims.length > 0;
                                         const contested = isZoneDisputed(zoneClaims, zone.capacity ?? 1);
                                         return (
@@ -670,7 +668,15 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                 <ClaimSpotModal
                     zoneLabel={selectedZone.label}
                     teamSize={tournament.teamSize}
-                    defaultEpicName={myClaim?.epicName || viewer.epicName || savedEpicName || session?.user?.name || ""}
+                    // never the captain's name: myClaim can be the spot a duo
+                    // partner marked this viewer into.
+                    defaultEpicName={
+                        (myClaim?.discordId === myDiscordId ? myClaim?.epicName : "") ||
+                        viewer.epicName ||
+                        savedEpicName ||
+                        session?.user?.name ||
+                        ""
+                    }
                     teammateOptions={teammateOptions}
                     isDispute={selectedZoneIsFull}
                     occupiedBy={selectedZoneClaims.map(teamLabel)}

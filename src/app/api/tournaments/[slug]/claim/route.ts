@@ -6,6 +6,7 @@ import { SpotClaim } from "@/lib/models/SpotClaim";
 import { UserProfile } from "@/lib/models/UserProfile";
 import { toClaimDTO } from "@/lib/tournamentDTO";
 import { claimBlockReason } from "@/lib/claimRules";
+import { teammateSlots } from "@/lib/teamFormat";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,37 @@ async function settleDisputes(
 
     const stale = remaining.filter(c => c.disputed).map(c => c._id);
     if (stale.length) {
-        await SpotClaim.updateMany({ _id: { $in: stale } }, { disputed: false, disputeNote: "" });
+        await SpotClaim.updateMany({ _id: { $in: stale } }, { disputed: false });
     }
+}
+
+/**
+ * Turns the names picked in the duo dropdown into Discord ids, so marking a
+ * spot marks the whole team: the partner is taken as well and cannot claim
+ * somewhere else. Names typed by hand that match a qualified player resolve
+ * too; anything else stays a plain name on the claim.
+ */
+async function resolveTeammateIds(
+    qualifiedIds: string[],
+    teammates: string[],
+    selfDiscordId: string
+): Promise<string[]> {
+    if (!teammates.length || !qualifiedIds.length) return [];
+
+    const profiles = await UserProfile.find({ discordId: { $in: qualifiedIds } });
+    const key = (v: string) => v.trim().toLowerCase();
+    const ids: string[] = [];
+
+    for (const name of teammates) {
+        const needle = key(name);
+        const match = profiles.find(
+            p => key(p.epicName || "") === needle || key(p.discordName || "") === needle
+        );
+        if (match && match.discordId !== selfDiscordId && !ids.includes(match.discordId)) {
+            ids.push(match.discordId);
+        }
+    }
+    return ids;
 }
 
 /** A player (or team captain) takes a drop zone for one window. */
@@ -56,11 +86,26 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             : [];
         // The player pressed "disputar" knowing the zone was already taken.
         const wantsDispute = body.dispute === true;
-        const disputeNote = String(body.disputeNote || "").trim().slice(0, 200);
 
         if (!epicName) {
             return NextResponse.json(
                 { success: false, error: "Ingresá tu nombre de Epic Games." },
+                { status: 400 }
+            );
+        }
+
+        // In a duos/trios/squads tournament the team is what takes the spot, so
+        // the partner is not optional: without it we would mark half a team.
+        const slots = teammateSlots(tournament.teamSize);
+        if (teammates.length < slots) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error:
+                        slots === 1
+                            ? "Elegí a tu dúo antes de marcar el spot."
+                            : `Este torneo es ${tournament.teamSize}: elegí a tus ${slots} compañeros antes de marcar el spot.`,
+                },
                 { status: 400 }
             );
         }
@@ -99,21 +144,49 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             return NextResponse.json({ success: false, error: "Ese spot ya no existe." }, { status: 404 });
         }
 
-        // One zone per player per window: bail out instead of silently moving them.
+        // One zone per player per window - including the spot a duo partner
+        // already marked them into, otherwise the same player lands twice.
         const own = await SpotClaim.findOne({
             tournamentId: tournament._id,
             windowId,
-            discordId: session.user.id,
+            $or: [{ discordId: session.user.id }, { teammateIds: session.user.id }],
         });
         if (own) {
+            const markedByPartner = own.discordId !== session.user.id;
             return NextResponse.json(
                 {
                     success: false,
-                    error: "Ya tenés un spot en esta ventana. Liberalo antes de elegir otro.",
+                    error: markedByPartner
+                        ? `${own.epicName} ya te marcó en un spot de esta ronda. Liberalo antes de elegir otro.`
+                        : "Ya tenés un spot en esta ventana. Liberalo antes de elegir otro.",
                     claimId: String(own._id),
                 },
                 { status: 409 }
             );
+        }
+
+        const teammateIds = await resolveTeammateIds(
+            tournament.qualifiedIds ?? [],
+            teammates,
+            session.user.id
+        );
+
+        // The partner is being marked too, so they must be free as well.
+        if (teammateIds.length) {
+            const partnerBusy = await SpotClaim.findOne({
+                tournamentId: tournament._id,
+                windowId,
+                $or: [{ discordId: { $in: teammateIds } }, { teammateIds: { $in: teammateIds } }],
+            });
+            if (partnerBusy) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: `Tu compañero ya está marcado en esta ronda con ${partnerBusy.epicName}. Tiene que liberar ese spot primero.`,
+                    },
+                    { status: 409 }
+                );
+            }
         }
 
         const capacity = zone.capacity ?? 1;
@@ -149,8 +222,8 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
                 discordName: session.user.name || "",
                 epicName,
                 teammates,
+                teammateIds,
                 disputed: isDispute,
-                disputeNote: isDispute ? disputeNote : "",
             });
         } catch (err) {
             // The unique index is the real guard against two simultaneous claims.
@@ -203,7 +276,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
             return NextResponse.json({ success: false, error: "Ese spot ya está libre." }, { status: 404 });
         }
 
-        if (claim.discordId !== session.user.id && !isAdminId(session.user.id)) {
+        // Either member of the team can release it, plus any admin.
+        const isOwnTeam =
+            claim.discordId === session.user.id || (claim.teammateIds ?? []).includes(session.user.id);
+        if (!isOwnTeam && !isAdminId(session.user.id)) {
             return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
         }
 

@@ -7,15 +7,20 @@ export interface ISpotClaim extends Document {
     discordId: string;
     discordName: string;
     epicName: string;
+    /** Display names of the rest of the team, in the order they were picked. */
     teammates: string[];
+    /**
+     * Discord ids of the teammates that were picked from the qualified list.
+     * This is what makes a duo count as marked: the partner cannot take another
+     * spot, sees the spot as theirs, and can release it.
+     */
+    teammateIds: string[];
     /**
      * True when this team took a zone that was already at capacity: they are
      * disputing it. The zone then renders red until a moderator resolves it by
      * removing one of the teams (see the DELETE handler in the claim route).
      */
     disputed: boolean;
-    /** Optional reason the disputing team typed, for the moderator. */
-    disputeNote: string;
     createdAt: Date;
 }
 
@@ -28,8 +33,8 @@ const SpotClaimSchema = new Schema<ISpotClaim>(
         discordName: { type: String, default: "" },
         epicName: { type: String, required: true },
         teammates: { type: [String], default: [] },
+        teammateIds: { type: [String], default: [], index: true },
         disputed: { type: Boolean, default: false },
-        disputeNote: { type: String, default: "" },
     },
     { timestamps: true }
 );

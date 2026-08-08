@@ -60,15 +60,16 @@ type Translations = {
         teammatesHelp: string;
         duo: string;
         duoPlaceholder: string;
+        duoRequired: string;
+        teammatesRequired: string;
         teammatePickerHelp: string;
         teammatePickerEmpty: string;
+        teamsMarked: string;
         confirm: string;
         cancel: string;
         disputeTitle: string;
         disputeTakenBy: string;
         disputeWarning: string;
-        disputeReason: string;
-        disputeReasonPlaceholder: string;
         disputeConfirm: string;
         disputeBadge: string;
         disputeHint: string;
@@ -311,15 +312,16 @@ const translations: Record<Language, Translations> = {
             teammatesHelp: 'Um nome por campo. Deixe vazio se for solo.',
             duo: 'Seu duo',
             duoPlaceholder: 'Escolha ou digite o seu duo',
+            duoRequired: 'Escolha o seu duo: os dois ficam marcados neste spot.',
+            teammatesRequired: 'Escolha todos os seus companheiros: o time inteiro fica marcado neste spot.',
             teammatePickerHelp: 'Escolha da lista de classificados ou digite o nome à mão.',
             teammatePickerEmpty: 'Ainda não há classificados carregados. Digite o nome à mão.',
+            teamsMarked: 'times marcados',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
             disputeTitle: 'Disputar este spot',
             disputeTakenBy: 'Este spot já foi marcado por:',
             disputeWarning: 'Se você disputar, o spot fica marcado em vermelho para todos e um moderador decide quem cai ali.',
-            disputeReason: 'Motivo (opcional)',
-            disputeReasonPlaceholder: 'Nós marcamos primeiro no Discord',
             disputeConfirm: 'Disputar spot',
             disputeBadge: 'Em disputa',
             disputeHint: 'Este spot já está ocupado. Você pode disputá-lo: ele fica vermelho até um moderador resolver.',
@@ -560,15 +562,16 @@ const translations: Record<Language, Translations> = {
             teammatesHelp: 'Un nombre por campo. Dejalo vacío si vas solo.',
             duo: 'Tu dúo',
             duoPlaceholder: 'Elegí o escribí a tu dúo',
+            duoRequired: 'Elegí a tu dúo: quedan marcados los dos en este spot.',
+            teammatesRequired: 'Elegí a todos tus compañeros: queda marcado el equipo entero en este spot.',
             teammatePickerHelp: 'Elegilo de la lista de clasificados o escribí el nombre a mano.',
             teammatePickerEmpty: 'Todavía no hay clasificados cargados. Escribí el nombre a mano.',
+            teamsMarked: 'teams marcados',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
             disputeTitle: 'Disputar este spot',
             disputeTakenBy: 'Este spot ya lo marcó:',
             disputeWarning: 'Si lo disputás, el spot queda marcado en rojo para todos y un moderador decide quién cae ahí.',
-            disputeReason: 'Motivo (opcional)',
-            disputeReasonPlaceholder: 'Lo marcamos primero en el Discord',
             disputeConfirm: 'Disputar spot',
             disputeBadge: 'En disputa',
             disputeHint: 'Este spot ya está ocupado. Podés disputarlo: queda en rojo hasta que un moderador lo resuelva.',

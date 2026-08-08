@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel, teamLabel } from "@/components/tournaments/DropMap";
 import SpotTemplatePanel from "@/components/tournaments/SpotTemplatePanel";
+import { teammateSlots } from "@/lib/teamFormat";
+
+const TEAM_SIZES = ["Solo", "Duos", "Trios", "Squads"];
 
 interface WindowRow {
     id: string;
@@ -47,7 +50,6 @@ interface RosterUser {
 
 interface Claim extends MapClaim {
     windowId: string;
-    disputeNote?: string;
 }
 
 function toInputValue(iso: string): string {
@@ -78,7 +80,8 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [windowDrafts, setWindowDrafts] = useState<{ id?: string; label: string; startsAt: string }[]>([]);
     const [savingWindows, setSavingWindows] = useState(false);
 
-    // Public info: the description and the prize pool table under the map.
+    // Public info: format, description and the prize pool table under the map.
+    const [teamSize, setTeamSize] = useState("Solo");
     const [description, setDescription] = useState("");
     const [prizePool, setPrizePool] = useState("");
     const [prizes, setPrizes] = useState<PrizeRow[]>([]);
@@ -111,6 +114,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setDescription(data.tournament.description ?? "");
             setPrizePool(data.tournament.prizePool ?? "");
             setPrizes(data.tournament.prizes ?? []);
+            setTeamSize(data.tournament.teamSize || "Solo");
             setWindowDrafts(
                 data.tournament.windows.map((w: WindowRow) => ({
                     id: w.id,
@@ -268,6 +272,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    teamSize,
                     description,
                     prizePool,
                     prizes: prizes.filter(p => p.place.trim()),
@@ -277,7 +282,11 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             if (data.success) {
                 setDetail(data.tournament);
                 setPrizes(data.tournament.prizes ?? []);
-                setNotice("Descripción y premios guardados.");
+                setNotice(
+                    teammateSlots(teamSize) > 0
+                        ? `Guardado. Al marcar spot cada jugador va a tener que elegir a su ${teammateSlots(teamSize) === 1 ? "dúo" : "equipo"}.`
+                        : "Guardado. En formato Solo no se pide compañero al marcar el spot."
+                );
             } else {
                 setError(data.error || "No se pudo guardar la información.");
             }
@@ -442,8 +451,33 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                 {/* Description + prize pool: both are shown on the public page. */}
                 <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
                     <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-white/80">
-                        Descripción y premios
+                        Formato, descripción y premios
                     </h2>
+
+                    {/* The format is what turns the duo picker on: in Solo nobody is
+                        asked for a teammate, which reads as "the duo thing is missing". */}
+                    <div className="mb-5 flex flex-wrap items-end gap-3">
+                        <div className="w-full sm:w-48">
+                            <label className="mb-1.5 block text-xs text-white/60">Formato</label>
+                            <select
+                                value={teamSize}
+                                onChange={e => setTeamSize(e.target.value)}
+                                className={inputClass}
+                            >
+                                {TEAM_SIZES.map(s => (
+                                    <option key={s} value={s} className="bg-[#0B1F14]">
+                                        {s}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <p className="flex items-start gap-1.5 pb-2 text-[11px] leading-relaxed text-white/45 sm:max-w-md">
+                            <Users size={13} className="mt-0.5 shrink-0 text-primary" />
+                            {teammateSlots(teamSize) > 0
+                                ? `Al marcar el spot, cada jugador tiene que elegir a ${teammateSlots(teamSize) === 1 ? "su dúo" : `sus ${teammateSlots(teamSize)} compañeros`} de la lista de clasificados y quedan marcados todos juntos en el mismo spot.`
+                                : "En Solo no se pide compañero. Poné Duos para que cada jugador elija a su dúo al marcar el spot."}
+                        </p>
+                    </div>
 
                     <label className="mb-1.5 block text-xs text-white/60">
                         Descripción del torneo (se muestra arriba del mapa)
@@ -526,7 +560,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                             disabled={savingInfo}
                             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
                         >
-                            <Save size={15} /> {savingInfo ? "..." : "Guardar descripción y premios"}
+                            <Save size={15} /> {savingInfo ? "..." : "Guardar formato, descripción y premios"}
                         </button>
                     </div>
                 </div>
@@ -912,11 +946,6 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                                                             </span>
                                                         )}
                                                     </p>
-                                                    {claim.disputeNote && (
-                                                        <p className="mt-0.5 truncate text-[11px] italic text-white/35">
-                                                            “{claim.disputeNote}”
-                                                        </p>
-                                                    )}
                                                 </div>
                                                 <button
                                                     onClick={() => removeClaim(claim)}

@@ -27,9 +27,10 @@ export interface ClaimDTO {
     discordName: string;
     epicName: string;
     teammates: string[];
+    /** Discord ids of the teammates, so both members see the spot as theirs. */
+    teammateIds: string[];
     /** This team took a zone that was already full: the zone is contested. */
     disputed: boolean;
-    disputeNote: string;
     createdAt: string;
 }
 
@@ -118,8 +119,8 @@ export function toClaimDTO(c: ISpotClaim): ClaimDTO {
         discordName: c.discordName || "",
         epicName: c.epicName,
         teammates: c.teammates ?? [],
+        teammateIds: c.teammateIds ?? [],
         disputed: !!c.disputed,
-        disputeNote: c.disputeNote || "",
         createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : "",
     };
 }
