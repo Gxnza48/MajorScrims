@@ -58,8 +58,28 @@ type Translations = {
         epicNameHelp: string;
         teammates: string;
         teammatesHelp: string;
+        duo: string;
+        duoPlaceholder: string;
+        teammatePickerHelp: string;
+        teammatePickerEmpty: string;
         confirm: string;
         cancel: string;
+        disputeTitle: string;
+        disputeTakenBy: string;
+        disputeWarning: string;
+        disputeReason: string;
+        disputeReasonPlaceholder: string;
+        disputeConfirm: string;
+        disputeBadge: string;
+        disputeHint: string;
+        removeTeam: string;
+        removeTeamConfirm: string;
+        adminCanRemove: string;
+        infoTitle: string;
+        prizesTitle: string;
+        prizePoolLabel: string;
+        prizePlace: string;
+        prizeAmount: string;
         onlyQualified: string;
         qualified: string;
         adminOverride: string;
@@ -289,8 +309,28 @@ const translations: Record<Language, Translations> = {
             epicNameHelp: 'O mesmo nome com que você joga o torneio.',
             teammates: 'Companheiros',
             teammatesHelp: 'Um nome por campo. Deixe vazio se for solo.',
+            duo: 'Seu duo',
+            duoPlaceholder: 'Escolha ou digite o seu duo',
+            teammatePickerHelp: 'Escolha da lista de classificados ou digite o nome à mão.',
+            teammatePickerEmpty: 'Ainda não há classificados carregados. Digite o nome à mão.',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
+            disputeTitle: 'Disputar este spot',
+            disputeTakenBy: 'Este spot já foi marcado por:',
+            disputeWarning: 'Se você disputar, o spot fica marcado em vermelho para todos e um moderador decide quem cai ali.',
+            disputeReason: 'Motivo (opcional)',
+            disputeReasonPlaceholder: 'Nós marcamos primeiro no Discord',
+            disputeConfirm: 'Disputar spot',
+            disputeBadge: 'Em disputa',
+            disputeHint: 'Este spot já está ocupado. Você pode disputá-lo: ele fica vermelho até um moderador resolver.',
+            removeTeam: 'Tirar',
+            removeTeamConfirm: 'Tirar este time do spot?',
+            adminCanRemove: 'Como admin você pode tirar qualquer time do seu spot com o X.',
+            infoTitle: 'Info do torneio',
+            prizesTitle: 'Premiação',
+            prizePoolLabel: 'Prize pool',
+            prizePlace: 'Posição',
+            prizeAmount: 'Prêmio',
             onlyQualified: 'Só os jogadores classificados podem marcar spot. Os demais veem onde os pros caem.',
             qualified: 'classificados',
             adminOverride: 'Você é admin: pode marcar spot mesmo assim, para testar.',
@@ -518,8 +558,28 @@ const translations: Record<Language, Translations> = {
             epicNameHelp: 'El mismo nombre con el que jugás el torneo.',
             teammates: 'Compañeros',
             teammatesHelp: 'Un nombre por campo. Dejalo vacío si vas solo.',
+            duo: 'Tu dúo',
+            duoPlaceholder: 'Elegí o escribí a tu dúo',
+            teammatePickerHelp: 'Elegilo de la lista de clasificados o escribí el nombre a mano.',
+            teammatePickerEmpty: 'Todavía no hay clasificados cargados. Escribí el nombre a mano.',
             confirm: 'Confirmar spot',
             cancel: 'Cancelar',
+            disputeTitle: 'Disputar este spot',
+            disputeTakenBy: 'Este spot ya lo marcó:',
+            disputeWarning: 'Si lo disputás, el spot queda marcado en rojo para todos y un moderador decide quién cae ahí.',
+            disputeReason: 'Motivo (opcional)',
+            disputeReasonPlaceholder: 'Lo marcamos primero en el Discord',
+            disputeConfirm: 'Disputar spot',
+            disputeBadge: 'En disputa',
+            disputeHint: 'Este spot ya está ocupado. Podés disputarlo: queda en rojo hasta que un moderador lo resuelva.',
+            removeTeam: 'Sacar',
+            removeTeamConfirm: '¿Sacar a este equipo del spot?',
+            adminCanRemove: 'Como admin podés sacar a cualquier equipo de su spot con la X.',
+            infoTitle: 'Info del torneo',
+            prizesTitle: 'Premios',
+            prizePoolLabel: 'Prize pool',
+            prizePlace: 'Puesto',
+            prizeAmount: 'Premio',
             onlyQualified: 'Solo los jugadores clasificados pueden marcar spot. El resto ve dónde caen los pros.',
             qualified: 'clasificados',
             adminOverride: 'Sos admin: podés marcarte igual, para probarlo.',

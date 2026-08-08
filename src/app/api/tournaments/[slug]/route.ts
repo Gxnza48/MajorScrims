@@ -8,6 +8,53 @@ import { claimBlockReason } from "@/lib/claimRules";
 
 export const dynamic = "force-dynamic";
 
+const MAX_PRIZE_ROWS = 40;
+
+export interface TeammateOption {
+    discordId: string;
+    discordName: string;
+    epicName: string;
+}
+
+/**
+ * The players the claiming team can pick as duo/trio partners: exactly the ones
+ * the moderator marked as qualified for this tournament. Only sent to someone
+ * who may claim - for everyone else the qualified list stays admin-only.
+ */
+async function teammateOptionsFor(
+    tournament: { qualifiedIds?: string[]; participants?: string[] },
+    selfDiscordId: string,
+    selfEpicName: string
+): Promise<TeammateOption[]> {
+    const ids = (tournament.qualifiedIds ?? []).filter(id => id && id !== selfDiscordId);
+    const profiles = ids.length ? await UserProfile.find({ discordId: { $in: ids } }) : [];
+
+    const options: TeammateOption[] = profiles.map(p => ({
+        discordId: p.discordId,
+        discordName: p.discordName || "",
+        epicName: p.epicName || "",
+    }));
+
+    // Pre-authorised players who never signed in only exist as an Epic name.
+    for (const name of tournament.participants ?? []) {
+        options.push({ discordId: "", discordName: "", epicName: name });
+    }
+
+    const seen = new Set([selfEpicName.trim().toLowerCase()].filter(Boolean));
+    return options
+        .filter(o => {
+            const key = (o.epicName || o.discordName).trim().toLowerCase();
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .sort((a, b) =>
+            (a.epicName || a.discordName).localeCompare(b.epicName || b.discordName, "es", {
+                sensitivity: "base",
+            })
+        );
+}
+
 /** Detail + every claim, so the page renders the map in a single round trip. */
 export async function GET(_request: NextRequest, { params }: { params: { slug: string } }) {
     try {
@@ -42,6 +89,11 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
             participants: tournament.participants ?? [],
         });
 
+        const teammateOptions =
+            session && blockedBecause === null
+                ? await teammateOptionsFor(tournament, session.user.id, profile?.epicName ?? "")
+                : [];
+
         return NextResponse.json({
             success: true,
             tournament: toDetailDTO(tournament, isAdmin),
@@ -54,6 +106,7 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
                 canClaim: blockedBecause === null,
                 blockedBecause,
             },
+            teammateOptions,
         });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
@@ -78,8 +131,10 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         }
 
         const body = await request.json();
-        const { name, poster, mode, teamSize, region, start, end, published, windows, participants, qualifiedIds } =
-            body;
+        const {
+            name, poster, mode, teamSize, region, start, end, published, windows, participants,
+            qualifiedIds, description, prizePool, prizes,
+        } = body;
 
         if (name !== undefined) tournament.name = String(name).trim();
         if (poster !== undefined) tournament.poster = poster;
@@ -89,6 +144,17 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         if (start !== undefined) tournament.start = new Date(start);
         if (end !== undefined) tournament.end = new Date(end);
         if (published !== undefined) tournament.published = !!published;
+        if (description !== undefined) tournament.description = String(description).slice(0, 8000);
+        if (prizePool !== undefined) tournament.prizePool = String(prizePool).trim().slice(0, 80);
+        if (Array.isArray(prizes)) {
+            tournament.prizes = prizes
+                .filter(p => p && String(p.place ?? "").trim())
+                .slice(0, MAX_PRIZE_ROWS)
+                .map(p => ({
+                    place: String(p.place).trim().slice(0, 60),
+                    prize: String(p.prize ?? "").trim().slice(0, 60),
+                })) as never;
+        }
         if (Array.isArray(qualifiedIds)) {
             tournament.qualifiedIds = Array.from(
                 new Set(qualifiedIds.map((id: unknown) => String(id).trim()).filter(Boolean))

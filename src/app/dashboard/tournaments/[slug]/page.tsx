@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
     ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Search, Info,
+    Trophy, X, Users,
 } from "lucide-react";
-import DropMap, { MapZone, MapClaim, ZoneEditorPanel } from "@/components/tournaments/DropMap";
+import DropMap, { MapZone, MapClaim, ZoneEditorPanel, teamLabel } from "@/components/tournaments/DropMap";
+import SpotTemplatePanel from "@/components/tournaments/SpotTemplatePanel";
 
 interface WindowRow {
     id: string;
@@ -16,12 +18,20 @@ interface WindowRow {
     zones: MapZone[];
 }
 
+interface PrizeRow {
+    place: string;
+    prize: string;
+}
+
 interface Detail {
     slug: string;
     name: string;
     teamSize: string;
     status: string;
     published: boolean;
+    description: string;
+    prizePool: string;
+    prizes: PrizeRow[];
     qualifiedIds: string[];
     participants: string[];
     windows: WindowRow[];
@@ -37,6 +47,7 @@ interface RosterUser {
 
 interface Claim extends MapClaim {
     windowId: string;
+    disputeNote?: string;
 }
 
 function toInputValue(iso: string): string {
@@ -67,6 +78,12 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [windowDrafts, setWindowDrafts] = useState<{ id?: string; label: string; startsAt: string }[]>([]);
     const [savingWindows, setSavingWindows] = useState(false);
 
+    // Public info: the description and the prize pool table under the map.
+    const [description, setDescription] = useState("");
+    const [prizePool, setPrizePool] = useState("");
+    const [prizes, setPrizes] = useState<PrizeRow[]>([]);
+    const [savingInfo, setSavingInfo] = useState(false);
+
     // Who qualified: ticked from the roster, plus an Epic-name escape hatch for
     // players who qualified but have never signed in (so they are not listed yet).
     const [roster, setRoster] = useState<RosterUser[]>([]);
@@ -91,6 +108,9 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setClaims(data.claims);
             setParticipantsText((data.tournament.participants ?? []).join("\n"));
             setQualifiedIds(data.tournament.qualifiedIds ?? []);
+            setDescription(data.tournament.description ?? "");
+            setPrizePool(data.tournament.prizePool ?? "");
+            setPrizes(data.tournament.prizes ?? []);
             setWindowDrafts(
                 data.tournament.windows.map((w: WindowRow) => ({
                     id: w.id,
@@ -188,6 +208,83 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setError("Error de red.");
         }
         setSaving(false);
+    };
+
+    /** One PUT per round: the zones endpoint works on a single window at a time. */
+    const applyTemplateToAllRounds = async (templateZones: MapZone[]) => {
+        if (!detail) return;
+        const payload = templateZones.map(z => ({
+            label: z.label,
+            x: z.x,
+            y: z.y,
+            w: z.w,
+            h: z.h,
+            capacity: z.capacity,
+        }));
+
+        for (const w of detail.windows) {
+            const res = await fetch(`/api/tournaments/${params.slug}/zones`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ windowId: w.id, zones: payload }),
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || `No se pudieron guardar los spots de ${w.label}.`);
+        }
+
+        await load();
+    };
+
+    const removeClaim = async (claim: Claim) => {
+        if (!confirm(`¿Sacar a ${teamLabel(claim)} de su spot?`)) return;
+        setSaving(true);
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch(`/api/tournaments/${params.slug}/claim`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ claimId: claim.id }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setNotice(`${teamLabel(claim)} quedó fuera del spot.`);
+                await load();
+            } else {
+                setError(data.error || "No se pudo sacar al equipo.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setSaving(false);
+    };
+
+    const saveInfo = async () => {
+        setSavingInfo(true);
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch(`/api/tournaments/${params.slug}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    description,
+                    prizePool,
+                    prizes: prizes.filter(p => p.place.trim()),
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetail(data.tournament);
+                setPrizes(data.tournament.prizes ?? []);
+                setNotice("Descripción y premios guardados.");
+            } else {
+                setError(data.error || "No se pudo guardar la información.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setSavingInfo(false);
     };
 
     const saveWindows = async () => {
@@ -341,6 +438,98 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         {error || notice}
                     </div>
                 )}
+
+                {/* Description + prize pool: both are shown on the public page. */}
+                <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                    <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-white/80">
+                        Descripción y premios
+                    </h2>
+
+                    <label className="mb-1.5 block text-xs text-white/60">
+                        Descripción del torneo (se muestra arriba del mapa)
+                    </label>
+                    <textarea
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        rows={5}
+                        maxLength={8000}
+                        placeholder={"Formato, horarios, reglas, cómo se juega la final...\nLos saltos de línea se respetan."}
+                        className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm leading-relaxed text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
+                    />
+
+                    <div className="mt-5 flex flex-wrap items-end gap-3">
+                        <div className="w-full sm:w-64">
+                            <label className="mb-1.5 block text-xs text-white/60">
+                                Prize pool total (texto libre)
+                            </label>
+                            <input
+                                type="text"
+                                value={prizePool}
+                                onChange={e => setPrizePool(e.target.value)}
+                                className={inputClass}
+                                placeholder="R$ 10.000"
+                            />
+                        </div>
+                        <p className="flex items-center gap-1.5 pb-2 text-[11px] text-white/40">
+                            <Trophy size={13} className="text-primary" /> La tabla se muestra abajo de todo en el
+                            mapa del torneo.
+                        </p>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                        {prizes.map((row, i) => (
+                            <div key={i} className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={row.place}
+                                    onChange={e =>
+                                        setPrizes(prev =>
+                                            prev.map((p, j) => (j === i ? { ...p, place: e.target.value } : p))
+                                        )
+                                    }
+                                    className={`${inputClass} sm:w-48`}
+                                    placeholder={`${i + 1}°`}
+                                />
+                                <input
+                                    type="text"
+                                    value={row.prize}
+                                    onChange={e =>
+                                        setPrizes(prev =>
+                                            prev.map((p, j) => (j === i ? { ...p, prize: e.target.value } : p))
+                                        )
+                                    }
+                                    className={inputClass}
+                                    placeholder="R$ 3.000"
+                                />
+                                <button
+                                    onClick={() => setPrizes(prev => prev.filter((_, j) => j !== i))}
+                                    aria-label={`Quitar puesto ${i + 1}`}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400 transition-colors hover:bg-red-500/20"
+                                >
+                                    <Trash2 size={15} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                            onClick={() =>
+                                setPrizes(prev => [...prev, { place: `${prev.length + 1}°`, prize: "" }])
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:border-primary/40"
+                        >
+                            <Plus size={15} /> Agregar puesto
+                        </button>
+                        <button
+                            onClick={saveInfo}
+                            disabled={savingInfo}
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
+                        >
+                            <Save size={15} /> {savingInfo ? "..." : "Guardar descripción y premios"}
+                        </button>
+                    </div>
+                </div>
 
                 {/* Windows */}
                 <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
@@ -644,6 +833,18 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                             ))}
                         </div>
 
+                        <SpotTemplatePanel
+                            zones={zones}
+                            roundCount={detail.windows.length}
+                            busy={saving}
+                            onApply={next => {
+                                setZones(next);
+                                setSelectedZoneId(null);
+                                setDirty(true);
+                            }}
+                            onApplyToAllRounds={applyTemplateToAllRounds}
+                        />
+
                         <p className="mb-4 text-xs text-white/50">
                             Arrastrá sobre el mapa para dibujar un spot. Hacé clic en un spot existente para
                             renombrarlo, cambiarle el cupo o borrarlo.
@@ -678,6 +879,58 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                             {zones.length} {zones.length === 1 ? "spot marcado" : "spots marcados"}
                             {windowClaims.length > 0 && ` · ${windowClaims.length} reclamados por jugadores`}
                         </p>
+
+                        {/* Taking a team off a spot: also how a dispute gets resolved. */}
+                        {windowClaims.length > 0 && (
+                            <div className="mt-5 border-t border-white/10 pt-5">
+                                <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                                    <Users size={14} className="text-primary" /> Equipos anotados en esta ronda (
+                                    {windowClaims.length})
+                                </h3>
+                                <ul className="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/10">
+                                    {windowClaims.map(claim => {
+                                        const savedZones =
+                                            detail.windows.find(w => w.id === activeWindowId)?.zones ?? [];
+                                        const zone = savedZones.find(z => z.id === claim.zoneId);
+                                        return (
+                                            <li
+                                                key={claim.id}
+                                                className={`flex items-center justify-between gap-3 px-4 py-2.5 ${claim.disputed ? "bg-red-500/[0.07]" : ""
+                                                    }`}
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-medium text-white">
+                                                        {teamLabel(claim)}
+                                                    </p>
+                                                    <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/40">
+                                                        <span className="truncate">
+                                                            {zone?.label ?? "spot borrado"}
+                                                        </span>
+                                                        {claim.disputed && (
+                                                            <span className="shrink-0 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-black uppercase text-red-400">
+                                                                en disputa
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    {claim.disputeNote && (
+                                                        <p className="mt-0.5 truncate text-[11px] italic text-white/35">
+                                                            “{claim.disputeNote}”
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => removeClaim(claim)}
+                                                    disabled={saving}
+                                                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-[11px] font-bold text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
+                                                >
+                                                    <X size={12} /> Sacar
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

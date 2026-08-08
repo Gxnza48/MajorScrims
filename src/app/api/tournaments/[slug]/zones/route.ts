@@ -3,10 +3,9 @@ import { connectToDB, requireAdminSession } from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
 import { SpotClaim } from "@/lib/models/SpotClaim";
 import { toDetailDTO } from "@/lib/tournamentDTO";
+import { sanitizeZone } from "@/lib/mapZones";
 
 export const dynamic = "force-dynamic";
-
-const clamp01 = (n: number) => Math.min(1, Math.max(0, Number(n) || 0));
 
 /**
  * Saves the drop zones a moderator drew for one window. Zones are reconciled by
@@ -37,21 +36,8 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         const keptIds: string[] = [];
 
         for (const incoming of zones) {
-            const x = clamp01(incoming.x);
-            const y = clamp01(incoming.y);
-            const w = clamp01(incoming.w);
-            const h = clamp01(incoming.h);
-            if (w <= 0 || h <= 0) continue;
-
-            const patch = {
-                label: String(incoming.label || "Spot").trim().slice(0, 60),
-                x,
-                y,
-                // keep the rect inside the image even if the drag ran off the edge
-                w: Math.min(w, 1 - x),
-                h: Math.min(h, 1 - y),
-                capacity: Math.max(1, Number(incoming.capacity) || 1),
-            };
+            const patch = sanitizeZone(incoming);
+            if (!patch) continue;
 
             const existing = incoming.id ? target.zones.id(incoming.id) : null;
             if (existing) {

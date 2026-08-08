@@ -18,6 +18,13 @@ export interface IWindow {
     zones: Types.DocumentArray<IZone & Document>;
 }
 
+/** One row of the prize pool table shown under the map. */
+export interface IPrize {
+    _id: Types.ObjectId;
+    place: string;
+    prize: string;
+}
+
 export interface ITournament extends Document {
     slug: string;
     name: string;
@@ -28,6 +35,11 @@ export interface ITournament extends Document {
     start: Date;
     end: Date;
     published: boolean;
+    /** Free text a moderator writes from the panel: rules, format, horarios. */
+    description: string;
+    /** Headline number ("R$ 10.000"), kept as text so any currency works. */
+    prizePool: string;
+    prizes: Types.DocumentArray<IPrize & Document>;
     /**
      * Discord ids a moderator ticked from the roster: the players who qualified.
      * Nobody but an admin can claim a spot until this has at least one entry.
@@ -57,6 +69,11 @@ const WindowSchema = new Schema<IWindow>({
     zones: { type: [ZoneSchema], default: [] },
 });
 
+const PrizeSchema = new Schema<IPrize>({
+    place: { type: String, required: true },
+    prize: { type: String, default: "" },
+});
+
 const TournamentSchema = new Schema<ITournament>(
     {
         slug: { type: String, required: true, unique: true, index: true },
@@ -68,6 +85,9 @@ const TournamentSchema = new Schema<ITournament>(
         start: { type: Date, required: true },
         end: { type: Date, required: true },
         published: { type: Boolean, default: true },
+        description: { type: String, default: "" },
+        prizePool: { type: String, default: "" },
+        prizes: { type: [PrizeSchema], default: [] },
         qualifiedIds: { type: [String], default: [] },
         participants: { type: [String], default: [] },
         windows: { type: [WindowSchema], default: [] },

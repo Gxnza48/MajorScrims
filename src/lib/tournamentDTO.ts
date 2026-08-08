@@ -27,6 +27,15 @@ export interface ClaimDTO {
     discordName: string;
     epicName: string;
     teammates: string[];
+    /** This team took a zone that was already full: the zone is contested. */
+    disputed: boolean;
+    disputeNote: string;
+    createdAt: string;
+}
+
+export interface PrizeDTO {
+    place: string;
+    prize: string;
 }
 
 export interface TournamentDTO {
@@ -42,6 +51,11 @@ export interface TournamentDTO {
     status: string;
     published: boolean;
     windowCount: number;
+    /** Headline prize ("R$ 10.000"); the breakdown only travels in the detail. */
+    prizePool: string;
+    /** Detail only - long text, no reason to ship it with the whole list. */
+    description?: string;
+    prizes?: PrizeDTO[];
     /** How many players a moderator marked as qualified. 0 = nobody can claim yet. */
     qualifiedCount: number;
     /** Admin-only: the actual roster selection, for the moderator UI. */
@@ -64,6 +78,7 @@ export function toListDTO(t: ITournament): TournamentDTO {
         status: getStatus(t.start, t.end),
         published: t.published,
         windowCount: t.windows?.length ?? 0,
+        prizePool: t.prizePool || "",
         qualifiedCount: (t.qualifiedIds?.length ?? 0) + (t.participants?.length ?? 0),
     };
 }
@@ -72,6 +87,8 @@ export function toListDTO(t: ITournament): TournamentDTO {
 export function toDetailDTO(t: ITournament, forAdmin = false): TournamentDTO {
     return {
         ...toListDTO(t),
+        description: t.description || "",
+        prizes: (t.prizes ?? []).map(p => ({ place: p.place, prize: p.prize || "" })),
         ...(forAdmin
             ? { qualifiedIds: t.qualifiedIds ?? [], participants: t.participants ?? [] }
             : {}),
@@ -101,5 +118,8 @@ export function toClaimDTO(c: ISpotClaim): ClaimDTO {
         discordName: c.discordName || "",
         epicName: c.epicName,
         teammates: c.teammates ?? [],
+        disputed: !!c.disputed,
+        disputeNote: c.disputeNote || "",
+        createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : "",
     };
 }

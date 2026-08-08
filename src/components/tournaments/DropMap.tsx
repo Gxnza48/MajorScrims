@@ -20,7 +20,17 @@ export interface MapClaim {
     discordId: string;
     epicName: string;
     teammates: string[];
+    /** Team that took an already-full zone: the zone is contested. */
+    disputed?: boolean;
 }
+
+/** One team as it reads on the map: "Peterbot + Pollo". */
+export const teamLabel = (claim: MapClaim) =>
+    [claim.epicName, ...(claim.teammates ?? [])].filter(Boolean).join(" + ");
+
+/** A zone is contested while more teams sit on it than it holds. */
+export const isZoneDisputed = (claims: MapClaim[], capacity: number) =>
+    claims.length > Math.max(1, capacity) || claims.some(c => c.disputed);
 
 interface Props {
     zones: MapZone[];
@@ -39,7 +49,7 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 /** Local-only ids for zones the moderator just drew; the server assigns real ones on save. */
 let draftCounter = 0;
-const nextDraftId = () => `draft-${++draftCounter}`;
+export const nextDraftId = () => `draft-${++draftCounter}`;
 
 export default function DropMap({
     zones,
@@ -134,15 +144,21 @@ export default function DropMap({
 
             {zones.map((zone, index) => {
                 const zoneClaims = claimsFor(zone.id);
+                const capacity = zone.capacity ?? 1;
                 const isMine = zoneClaims.some(c => c.discordId && c.discordId === myDiscordId);
-                const isFull = zoneClaims.length >= (zone.capacity ?? 1);
+                const isTaken = zoneClaims.length > 0;
+                const isDisputed = isZoneDisputed(zoneClaims, capacity);
                 const isSelected = selectedZoneId === zone.id;
 
-                const tone = isMine
-                    ? "border-primary bg-primary/25"
-                    : isFull
-                        ? "border-red-400/80 bg-red-500/15"
-                        : "border-white/70 bg-white/5 hover:border-primary hover:bg-primary/10";
+                // Dark and semi transparent everywhere so the names read on top of
+                // the map; a taken spot goes darker still, and a contested one red.
+                const tone = isDisputed
+                    ? "border-red-500 bg-black/75"
+                    : isMine
+                        ? "border-primary bg-black/70"
+                        : isTaken
+                            ? "border-white/25 bg-black/70"
+                            : "border-white/50 bg-black/40 hover:border-primary hover:bg-black/55";
 
                 return (
                     <button
@@ -160,26 +176,33 @@ export default function DropMap({
                             height: `${zone.h * 100}%`,
                         }}
                         className={`absolute flex items-center justify-center border-2 transition-colors ${tone} ${isSelected ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent" : ""
-                            }`}
+                            } ${isDisputed ? "ring-1 ring-red-500/50" : ""}`}
                     >
                         {/* The number stays legible at any size; on phones the text below
                             has no room, so the numbered list under the map is the key. */}
                         <span
                             data-zone="1"
-                            className="pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/85 text-[9px] font-black text-white ring-1 ring-white/40"
+                            className={`pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white ring-1 ${isDisputed ? "bg-red-600 ring-red-300/60" : "bg-black/85 ring-white/40"
+                                }`}
                         >
                             {index + 1}
                         </span>
                         <span
                             data-zone="1"
-                            className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:line-clamp-3 sm:block sm:text-[11px]"
+                            className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white sm:line-clamp-3 sm:block sm:text-[11px]"
                         >
                             {mode === "edit" || zoneClaims.length === 0
                                 ? zone.label
-                                : zoneClaims
-                                    .map(c => [c.epicName, ...c.teammates].filter(Boolean).join(" "))
-                                    .join(" / ")}
+                                : zoneClaims.map(teamLabel).join(" · ")}
                         </span>
+                        {isDisputed && mode !== "edit" && (
+                            <span
+                                data-zone="1"
+                                className="pointer-events-none absolute -bottom-1.5 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-red-600 px-1.5 py-[1px] text-[8px] font-black uppercase tracking-wide text-white sm:block"
+                            >
+                                en disputa
+                            </span>
+                        )}
                     </button>
                 );
             })}

@@ -10,6 +10,28 @@ import { claimBlockReason } from "@/lib/claimRules";
 export const dynamic = "force-dynamic";
 
 const MAX_TEAMMATES = 3;
+/** How many teams may pile onto one zone beyond its capacity before we stop it. */
+const MAX_DISPUTES_PER_ZONE = 4;
+
+/**
+ * A zone is only contested while more teams sit on it than it holds. After a
+ * moderator (or a player) removes one, the survivors may fit again - in that
+ * case the red flag has to come off, otherwise the zone stays red forever.
+ */
+async function settleDisputes(
+    tournamentId: mongoose.Types.ObjectId,
+    windowId: string,
+    zoneId: string,
+    capacity: number
+) {
+    const remaining = await SpotClaim.find({ tournamentId, windowId, zoneId }).sort({ createdAt: 1 });
+    if (remaining.length > capacity) return;
+
+    const stale = remaining.filter(c => c.disputed).map(c => c._id);
+    if (stale.length) {
+        await SpotClaim.updateMany({ _id: { $in: stale } }, { disputed: false, disputeNote: "" });
+    }
+}
 
 /** A player (or team captain) takes a drop zone for one window. */
 export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
@@ -32,6 +54,9 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
         const teammates: string[] = Array.isArray(body.teammates)
             ? body.teammates.map((n: unknown) => String(n).trim()).filter(Boolean).slice(0, MAX_TEAMMATES)
             : [];
+        // The player pressed "disputar" knowing the zone was already taken.
+        const wantsDispute = body.dispute === true;
+        const disputeNote = String(body.disputeNote || "").trim().slice(0, 200);
 
         if (!epicName) {
             return NextResponse.json(
@@ -91,10 +116,25 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             );
         }
 
+        const capacity = zone.capacity ?? 1;
         const taken = await SpotClaim.countDocuments({ tournamentId: tournament._id, windowId, zoneId });
-        if (taken >= (zone.capacity ?? 1)) {
+        // Over capacity is allowed, but only as an explicit dispute: the zone
+        // turns red and a moderator decides who actually drops there.
+        const isDispute = taken >= capacity;
+
+        if (isDispute && taken >= capacity + MAX_DISPUTES_PER_ZONE) {
             return NextResponse.json(
-                { success: false, error: "Otro equipo tomó este spot recién." },
+                { success: false, error: "Este spot ya tiene demasiadas disputas. Elegí otro." },
+                { status: 409 }
+            );
+        }
+        if (isDispute && !wantsDispute) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Otro equipo tomó este spot recién. Podés disputarlo.",
+                    canDispute: true,
+                },
                 { status: 409 }
             );
         }
@@ -109,6 +149,8 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
                 discordName: session.user.name || "",
                 epicName,
                 teammates,
+                disputed: isDispute,
+                disputeNote: isDispute ? disputeNote : "",
             });
         } catch (err) {
             // The unique index is the real guard against two simultaneous claims.
@@ -133,7 +175,10 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     }
 }
 
-/** Release a spot. Players can only release their own; admins can release any. */
+/**
+ * Release a spot. Players can only release their own; admins can release
+ * anyone's - that is how a moderator takes a team off a contested zone.
+ */
 export async function DELETE(request: NextRequest, { params }: { params: { slug: string } }) {
     try {
         const session = await requireSession();
@@ -162,8 +207,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
             return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
         }
 
+        const zone =
+            mongoose.Types.ObjectId.isValid(claim.windowId) && mongoose.Types.ObjectId.isValid(claim.zoneId)
+                ? tournament.windows.id(claim.windowId)?.zones.id(claim.zoneId)
+                : null;
         await claim.deleteOne();
-        return NextResponse.json({ success: true });
+        await settleDisputes(tournament._id, claim.windowId, claim.zoneId, zone?.capacity ?? 1);
+
+        return NextResponse.json({ success: true, removed: toClaimDTO(claim) });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
     }

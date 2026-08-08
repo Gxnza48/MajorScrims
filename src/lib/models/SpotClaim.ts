@@ -8,6 +8,14 @@ export interface ISpotClaim extends Document {
     discordName: string;
     epicName: string;
     teammates: string[];
+    /**
+     * True when this team took a zone that was already at capacity: they are
+     * disputing it. The zone then renders red until a moderator resolves it by
+     * removing one of the teams (see the DELETE handler in the claim route).
+     */
+    disputed: boolean;
+    /** Optional reason the disputing team typed, for the moderator. */
+    disputeNote: string;
     createdAt: Date;
 }
 
@@ -20,6 +28,8 @@ const SpotClaimSchema = new Schema<ISpotClaim>(
         discordName: { type: String, default: "" },
         epicName: { type: String, required: true },
         teammates: { type: [String], default: [] },
+        disputed: { type: Boolean, default: false },
+        disputeNote: { type: String, default: "" },
     },
     { timestamps: true }
 );
