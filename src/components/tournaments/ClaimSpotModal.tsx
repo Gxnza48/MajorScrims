@@ -199,21 +199,6 @@ export default function ClaimSpotModal({
                     </div>
                 )}
 
-                {isDispute && (
-                    <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3">
-                        <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-400" />
-                        <div className="text-xs leading-relaxed text-white/70">
-                            {occupiedBy.length > 0 && (
-                                <p className="mb-1">
-                                    {t.tournaments.disputeTakenBy}{" "}
-                                    <span className="font-bold text-white">{occupiedBy.join(" · ")}</span>
-                                </p>
-                            )}
-                            <p>{t.tournaments.disputeWarning}</p>
-                        </div>
-                    </div>
-                )}
-
                 <div className="mb-4">
                     <label className="mb-2 block text-sm text-white/70">{t.tournaments.epicName}</label>
                     <input

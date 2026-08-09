@@ -9,24 +9,8 @@
  * Only http(s) URLs are turned into links - never `javascript:` and friends.
  */
 
-const LABEL = String.raw`[[{]([^[\]{}<>\n]{1,120})[\]}]`;
-
-/**
- * Undoes the editor's autolink, but **only** right after a `{label}(`.
- *
- * The rich editor turns any URL into an `<a>` while you type, and its linkifier
- * happily swallows the closing parenthesis too, so what gets stored is
- * `{Discord}(<a href="https://x/)">https://x/)</a>` - the URL, the closing
- * paren and sometimes nothing else end up on the wrong side of a tag. Pulling
- * the anchor's text back out puts `{label}(url)` together again as plain text.
- *
- * Anchored to the `{label}(` prefix on purpose: a link the moderator made with
- * the editor's own button, anywhere else in the document, is left alone.
- */
-const AUTOLINKED = new RegExp(`(${LABEL}\\()\\s*<a\\b[^>]*>(.*?)</a>`, "gis");
-
-/** `{label}(url)` or `[label](url)`, once the text is whole again. */
-const PATTERN = new RegExp(`${LABEL}\\(\\s*(https?://[^\\s()<>"']{1,600})\\s*\\)`, "gi");
+/** `{label}(url)` or `[label](url)`, matched against *visible text*. */
+const PATTERN = /[[{]([^[\]{}<>\n]{1,120})[\]}]\(\s*(https?:\/\/[^\s()<>"']{1,600})\s*\)/gi;
 
 const escapeHtml = (text: string) =>
     text
@@ -47,14 +31,80 @@ function anchor(label: string, url: string): string {
 const linkify = (safe: string) =>
     safe.replace(PATTERN, (_m, label: string, url: string) => anchor(label, url));
 
+/** Safety cap; a legal page with this many buttons is already a mistake. */
+const MAX_LINKS = 50;
+
 /**
- * For content that is already HTML (the rich editor's output): put the pattern
- * back together where the editor autolinked it, then turn it into a button.
+ * For content that is already HTML (the rich editor's output).
+ *
+ * Matching against the markup does not work here. The editor colours what you
+ * type and autolinks URLs on the fly, so `{Discord}(https://x)` ends up spread
+ * over five elements:
+ *
+ *   <span>{Discord}(</span><a href="x"><span>x</span></a><span>)</span>
+ *
+ * No regex over that string can reliably find a pattern that only exists in the
+ * *rendered text*. So this walks the text nodes instead, finds the pattern in
+ * the text they spell out together, and swaps that stretch - however many
+ * elements it crosses - for one anchor, using a Range. Whatever inline markup
+ * was inside the match (colours, the editor's own autolink) goes with it, which
+ * is exactly what should happen: the moderator asked for a button.
+ *
+ * Needs a DOM, so it runs in the browser. On the server the text is left as it
+ * is rather than half-transformed.
  */
 export function renderRichLinks(html: string): string {
     if (!html) return "";
-    // `$1` is the `{label}(` prefix, `$3` the anchor's visible text.
-    return linkify(html.replace(AUTOLINKED, "$1$3"));
+    if (typeof document === "undefined") return html;
+
+    const root = document.createElement("div");
+    root.innerHTML = html;
+
+    for (let pass = 0; pass < MAX_LINKS; pass++) {
+        const nodes: Text[] = [];
+        const starts: number[] = [];
+        let text = "";
+
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+            const node = walker.currentNode as Text;
+            starts.push(text.length);
+            nodes.push(node);
+            text += node.data;
+        }
+
+        PATTERN.lastIndex = 0;
+        const match = PATTERN.exec(text);
+        if (!match) break;
+
+        const at = (index: number) => {
+            for (let i = 0; i < nodes.length; i++) {
+                const start = starts[i];
+                const end = start + nodes[i].data.length;
+                if (index >= start && index <= end) return { node: nodes[i], offset: index - start };
+            }
+            return null;
+        };
+
+        const from = at(match.index);
+        const to = at(match.index + match[0].length);
+        if (!from || !to) break;
+
+        const range = document.createRange();
+        range.setStart(from.node, from.offset);
+        range.setEnd(to.node, to.offset);
+        range.deleteContents();
+
+        const link = document.createElement("a");
+        link.className = "rich-link";
+        link.href = match[2];
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = match[1];
+        range.insertNode(link);
+    }
+
+    return root.innerHTML;
 }
 
 /**

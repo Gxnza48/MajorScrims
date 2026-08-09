@@ -25,7 +25,18 @@ export default function LegalPage({ slug }: { slug: "terms" | "privacy" }) {
     useEffect(() => {
         fetch(`/api/site-pages/${slug}`)
             .then(res => res.json())
-            .then(data => (data.success ? setPage(data.page) : setFailed(true)))
+            .then(data => {
+                if (!data.success) return setFailed(true);
+                // Done once, here, because it needs a DOM and there is no point
+                // re-parsing the whole document on every render.
+                setPage({
+                    ...data.page,
+                    content: {
+                        es: renderRichLinks(data.page.content?.es ?? ""),
+                        pt: renderRichLinks(data.page.content?.pt ?? ""),
+                    },
+                });
+            })
             .catch(() => setFailed(true));
     }, [slug]);
 
@@ -66,7 +77,7 @@ export default function LegalPage({ slug }: { slug: "terms" | "privacy" }) {
                         <div
                             className="blog-rich-content leading-relaxed text-white/70"
                             dangerouslySetInnerHTML={{
-                                __html: renderRichLinks(page.content[language] || page.content.es),
+                                __html: page.content[language] || page.content.es,
                             }}
                         />
                     </>

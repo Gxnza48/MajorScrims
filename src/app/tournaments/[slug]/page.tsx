@@ -263,11 +263,11 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     const handleRelease = () => myClaim && removeClaim(myClaim.id);
 
     /**
-     * Clicking a free spot takes it, with no dialog in between - that is what a
-     * player expects and what was asked for. The form only opens when it has
-     * something left to ask: an Epic name we do not know yet, or a partner in a
-     * duos tournament where the moderator did not fix the teams. Disputing a
-     * taken spot keeps its confirmation, because it is not what a misclick means.
+     * Clicking a spot takes it, with no dialog in between - free or already
+     * taken, in which case the click registers the dispute and the zone turns
+     * red. The form only opens when it has something left to ask: an Epic name
+     * we do not know yet, or a partner in a duos tournament where the moderator
+     * did not fix the teams.
      */
     const canClaimInOneClick =
         !!viewer.epicName.trim() && (teammateSlots(tournament?.teamSize ?? "Solo") === 0 || presetTeam.length > 0);
@@ -281,12 +281,22 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
 
         const zoneClaims = windowClaims.filter(c => c.zoneId === zoneId);
         if (zoneClaims.some(isMyTeam)) return; // already ours
-        if (zoneClaims.length >= (zone.capacity ?? 1)) return; // full: that is a dispute
-        if (!canClaimInOneClick) return; // the modal has something to ask
+
+        // Still something to ask - their Epic name, or a partner in a duos
+        // tournament with no fixed teams - so the form opens on the same click.
+        if (!canClaimInOneClick) {
+            setClaimError("");
+            setShowClaim(true);
+            return;
+        }
+
+        // A full zone is not a dead end: taking it is a dispute, and the server
+        // is the one that decides that, so the flag just says we meant it.
+        const isFull = zoneClaims.length >= (zone.capacity ?? 1);
 
         // Moving: the server allows one spot per round, so let go of the old one.
         if (myClaim) await removeClaim(myClaim.id);
-        await claimZone(zoneId, viewer.epicName.trim(), [], false);
+        await claimZone(zoneId, viewer.epicName.trim(), [], isFull);
     };
 
     /** Admins take any team off a spot - that is how a dispute gets resolved. */
@@ -412,7 +422,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 ) : (
                                     <ul className="divide-y divide-white/5">
                                         {windowClaims.map(claim => {
-                                            const zone = activeWindow.zones.find(z => z.id === claim.zoneId);
                                             const mine = isMyTeam(claim);
                                             return (
                                                 <li
@@ -443,11 +452,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                                 </span>
                                                             )}
                                                         </p>
-                                                        {zone && (
-                                                            <p className="mt-0.5 truncate text-[11px] text-white/40">
-                                                                {zone.label}
-                                                            </p>
-                                                        )}
                                                     </button>
 
                                                     <div className="flex shrink-0 items-center gap-1.5">
