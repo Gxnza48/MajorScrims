@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Trash2, ZoomOut } from "lucide-react";
+import { Minus, Plus, Trash2, ZoomOut } from "lucide-react";
 
 export interface MapZone {
     id: string;
@@ -67,9 +67,45 @@ interface Props {
 const MIN_SIZE = 0.02;
 /** How much the map grows when you click a team. Enough to read the tag. */
 const ZOOM = 3;
+const MAX_ZOOM = 6;
+/** Movement, in pixels, past which a click counts as a drag instead. */
+const DRAG_SLOP = 4;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+/**
+ * How the map is framed: a scale and a translation, both in fractions of the
+ * container. With `origin-top-left` a content point p lands at `scale*p + t`,
+ * which is all the arithmetic here needs.
+ */
+interface View {
+    scale: number;
+    tx: number;
+    ty: number;
+}
+
+const IDENTITY: View = { scale: 1, tx: 0, ty: 0 };
+
+/** Keeps the map inside its frame: no panning off into empty background. */
+function clampView(v: View): View {
+    const scale = clamp(v.scale, 1, MAX_ZOOM);
+    return {
+        scale,
+        tx: clamp(v.tx, 1 - scale, 0),
+        ty: clamp(v.ty, 1 - scale, 0),
+    };
+}
+
+/** Rescales around a point of the container, so it stays under the cursor. */
+function zoomAround(v: View, scale: number, cx: number, cy: number): View {
+    const next = clamp(scale, 1, MAX_ZOOM);
+    return clampView({
+        scale: next,
+        tx: cx - ((cx - v.tx) / v.scale) * next,
+        ty: cy - ((cy - v.ty) / v.scale) * next,
+    });
+}
 
 /** Local-only ids for zones the moderator just drew; the server assigns real ones on save. */
 let draftCounter = 0;
@@ -92,20 +128,72 @@ export default function DropMap({
     const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
     const dragStart = useRef<{ x: number; y: number } | null>(null);
 
+    const [view, setView] = useState<View>(IDENTITY);
+    /** Where a pan began, and the view it started from. */
+    const panFrom = useRef<{ x: number; y: number; view: View } | null>(null);
+    /** True once the pointer moved enough that letting go must not claim a spot. */
+    const panned = useRef(false);
+    const [panning, setPanning] = useState(false);
+
+    const interactive = mode !== "edit";
+
     const claimsFor = (zoneId: string) => claims.filter(c => c.zoneId === zoneId);
 
     /**
-     * Centres the zoomed map on one zone. With `origin-top-left`, a point at
-     * fraction p of the container lands at ZOOM*p + t, so putting the zone's
-     * centre in the middle means t = 0.5 - ZOOM*centre. Clamping t to
-     * [1-ZOOM, 0] keeps the edges of the island against the edges of the frame
-     * instead of panning past them into empty background.
+     * Flying to a zone when a team is clicked in the list: put its centre in
+     * the middle of the frame. Clearing `zoomZoneId` frames the whole map again.
      */
-    const zoomZone = mode === "edit" ? null : zones.find(z => z.id === zoomZoneId) ?? null;
-    const transform = zoomZone
-        ? `translate(${clamp(0.5 - ZOOM * (zoomZone.x + zoomZone.w / 2), 1 - ZOOM, 0) * 100}%, ${clamp(0.5 - ZOOM * (zoomZone.y + zoomZone.h / 2), 1 - ZOOM, 0) * 100
-        }%) scale(${ZOOM})`
-        : "none";
+    useEffect(() => {
+        if (!interactive) return;
+        const zone = zones.find(z => z.id === zoomZoneId);
+        if (!zone) {
+            setView(IDENTITY);
+            return;
+        }
+        setView(
+            clampView({
+                scale: ZOOM,
+                tx: 0.5 - ZOOM * (zone.x + zone.w / 2),
+                ty: 0.5 - ZOOM * (zone.y + zone.h / 2),
+            })
+        );
+        // Following `zones` here would re-centre on every poll of the page.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [zoomZoneId, interactive]);
+
+    /**
+     * The wheel zooms towards the cursor. Registered by hand because React's
+     * own wheel listener is passive, and a passive listener cannot stop the
+     * page from scrolling underneath the map.
+     */
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el || !interactive) return;
+
+        const onWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const rect = el.getBoundingClientRect();
+            const cx = (e.clientX - rect.left) / rect.width;
+            const cy = (e.clientY - rect.top) / rect.height;
+            // Exponential so every notch feels the same at any zoom level.
+            setView(v => zoomAround(v, v.scale * Math.exp(-e.deltaY * 0.0015), cx, cy));
+        };
+
+        el.addEventListener("wheel", onWheel, { passive: false });
+        return () => el.removeEventListener("wheel", onWheel);
+    }, [interactive]);
+
+    const zoomBy = (factor: number) => setView(v => zoomAround(v, v.scale * factor, 0.5, 0.5));
+
+    const resetView = () => {
+        setView(IDENTITY);
+        onZoomOut?.();
+    };
+
+    const transform =
+        view.scale === 1 && view.tx === 0 && view.ty === 0
+            ? "none"
+            : `translate(${view.tx * 100}%, ${view.ty * 100}%) scale(${view.scale})`;
 
     const pointToRatio = (clientX: number, clientY: number) => {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -117,7 +205,17 @@ export default function DropMap({
     };
 
     const handlePointerDown = (e: React.PointerEvent) => {
-        if (mode !== "edit") return;
+        if (interactive) {
+            // Cleared for every press, including taps: a stale flag from an
+            // earlier drag would swallow the next click on a spot.
+            panned.current = false;
+            // Panning is mouse only - on a phone a drag has to keep scrolling
+            // the page, which is what the +/- buttons are there for instead.
+            if (e.pointerType !== "mouse" || e.button !== 0) return;
+            panFrom.current = { x: e.clientX, y: e.clientY, view };
+            return;
+        }
+
         // Clicking a zone selects it; only empty space starts a new rectangle.
         if ((e.target as HTMLElement).dataset.zone) return;
 
@@ -130,7 +228,33 @@ export default function DropMap({
     };
 
     const handlePointerMove = (e: React.PointerEvent) => {
-        if (mode !== "edit" || !dragStart.current) return;
+        if (interactive) {
+            const from = panFrom.current;
+            if (!from) return;
+
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const dx = e.clientX - from.x;
+            const dy = e.clientY - from.y;
+            if (!panned.current && Math.hypot(dx, dy) < DRAG_SLOP) return;
+
+            if (!panned.current) {
+                panned.current = true;
+                setPanning(true);
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+            }
+            setView(
+                clampView({
+                    scale: from.view.scale,
+                    tx: from.view.tx + dx / rect.width,
+                    ty: from.view.ty + dy / rect.height,
+                })
+            );
+            return;
+        }
+
+        if (!dragStart.current) return;
         const point = pointToRatio(e.clientX, e.clientY);
         setDraft({
             x: Math.min(dragStart.current.x, point.x),
@@ -141,7 +265,14 @@ export default function DropMap({
     };
 
     const handlePointerUp = () => {
-        if (mode !== "edit" || !dragStart.current) return;
+        if (interactive) {
+            panFrom.current = null;
+            setPanning(false);
+            // `panned` is cleared on the next press, not here: the click event
+            // fires after this one and has to know the pointer was dragged.
+            return;
+        }
+        if (!dragStart.current) return;
         dragStart.current = null;
 
         if (draft && draft.w >= MIN_SIZE && draft.h >= MIN_SIZE) {
@@ -167,12 +298,21 @@ export default function DropMap({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
-            className={`relative aspect-square w-full select-none overflow-hidden rounded-2xl border border-white/10 bg-[#0a2733] ${mode === "edit" ? "cursor-crosshair touch-none" : ""
+            className={`relative aspect-square w-full select-none overflow-hidden rounded-2xl border border-white/10 bg-[#0a2733] ${mode === "edit"
+                ? "cursor-crosshair touch-none"
+                : panning
+                    ? "cursor-grabbing"
+                    : view.scale > 1
+                        ? "cursor-grab"
+                        : ""
                 }`}
         >
-            {/* Image and zones move together, so a zoomed spot stays on its POI. */}
+            {/* Image and zones move together, so a zoomed spot stays on its POI.
+                While dragging the transform must follow the pointer exactly, so
+                the easing only applies to the jumps (buttons, flying to a team). */}
             <div
-                className="absolute inset-0 origin-top-left transition-transform duration-500 ease-out"
+                className={`absolute inset-0 origin-top-left ${panning ? "" : "transition-transform duration-500 ease-out"
+                    }`}
                 style={{ transform }}
             >
                 {/* next/image, not <img>: the source PNG is 2048x2048 / ~2.6MB and every
@@ -214,6 +354,9 @@ export default function DropMap({
                             data-zone="1"
                             onClick={e => {
                                 e.stopPropagation();
+                                // Letting go after dragging the map is not a click
+                                // on whatever happened to be under the pointer.
+                                if (panned.current) return;
                                 onSelectZone?.(zone.id);
                             }}
                             style={{
@@ -273,14 +416,41 @@ export default function DropMap({
                 )}
             </div>
 
-            {zoomZone && (
-                <button
-                    type="button"
-                    onClick={onZoomOut}
-                    className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:border-primary/50 hover:text-primary"
-                >
-                    <ZoomOut size={13} /> {zoomOutLabel}
-                </button>
+            {/* Wheel and drag are not discoverable on their own, and a phone has
+                neither, so the same three moves live here as buttons. */}
+            {interactive && zones.length > 0 && (
+                <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+                    <div className="flex overflow-hidden rounded-lg border border-white/20 bg-black/70">
+                        <button
+                            type="button"
+                            onClick={() => zoomBy(1.6)}
+                            disabled={view.scale >= MAX_ZOOM}
+                            aria-label="Acercar"
+                            className="px-2.5 py-1.5 text-white transition-colors hover:text-primary disabled:opacity-30"
+                        >
+                            <Plus size={14} />
+                        </button>
+                        <span className="w-px bg-white/20" />
+                        <button
+                            type="button"
+                            onClick={() => zoomBy(1 / 1.6)}
+                            disabled={view.scale <= 1}
+                            aria-label="Alejar"
+                            className="px-2.5 py-1.5 text-white transition-colors hover:text-primary disabled:opacity-30"
+                        >
+                            <Minus size={14} />
+                        </button>
+                    </div>
+                    {view.scale > 1 && (
+                        <button
+                            type="button"
+                            onClick={resetView}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:border-primary/50 hover:text-primary"
+                        >
+                            <ZoomOut size={13} /> {zoomOutLabel}
+                        </button>
+                    )}
+                </div>
             )}
 
             {zones.length === 0 && emptyLabel && (
