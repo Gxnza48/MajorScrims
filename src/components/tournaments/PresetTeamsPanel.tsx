@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Info, Plus, Save, Search, Users, X } from "lucide-react";
+import { Check, ChevronDown, Download, Info, Loader2, Plus, Search, Upload, Users, X } from "lucide-react";
 import { teammateSlots } from "@/lib/teamFormat";
 
 export interface PresetTeam {
@@ -21,6 +21,9 @@ export interface RosterMember {
  * instead of snapping shut halfway through typing one.
  */
 const isSnowflake = (v: string) => /^\d{15,25}$/.test(v.trim());
+
+/** Squads is the biggest Fortnite format. */
+const MAX_TEAM_MEMBERS = 4;
 
 /** How a player reads in the panel: Epic name first, that is what mods match. */
 function memberLabel(id: string, roster: RosterMember[]): string {
@@ -198,19 +201,20 @@ function MemberPicker({
  */
 export default function PresetTeamsPanel({
     value,
-    onChange,
+    onSave,
     roster,
     teamSize,
-    onSave,
     saving,
 }: {
     value: PresetTeam[];
-    onChange: (teams: PresetTeam[]) => void;
+    /** Persists straight away: adding or removing a team is the save. */
+    onSave: (teams: PresetTeam[]) => Promise<boolean>;
     roster: RosterMember[];
     teamSize: string;
-    onSave: () => void;
     saving?: boolean;
 }) {
+    const [status, setStatus] = useState("");
+    const fileRef = useRef<HTMLInputElement>(null);
     const size = teammateSlots(teamSize) + 1;
     const [draft, setDraft] = useState<string[]>(() => Array(Math.max(size, 2)).fill(""));
 
@@ -229,10 +233,97 @@ export default function PresetTeamsPanel({
     // Every slot holds a whole Discord id, however it got there.
     const draftReady = draft.every(v => isSnowflake(v)) && new Set(draft.map(v => v.trim())).size === draft.length;
 
-    const addTeam = () => {
+    const commit = async (teams: PresetTeam[], message: string) => {
+        setStatus("");
+        const okSaved = await onSave(teams);
+        if (okSaved) setStatus(message);
+    };
+
+    const addTeam = async () => {
         if (!draftReady) return;
-        onChange([...value, { memberIds: draft.map(v => v.trim()) }]);
+        const next = [...value, { memberIds: draft.map(v => v.trim()) }];
         setDraft(Array(draft.length).fill(""));
+        await commit(next, `Equipo agregado y guardado. Van ${next.length}.`);
+    };
+
+    const removeTeam = (index: number) =>
+        commit(value.filter((_, j) => j !== index), "Equipo borrado y guardado.");
+
+    /** Same shape the importer reads back, with names so a human can check it. */
+    const exportTeams = () => {
+        const payload = {
+            kind: "major-scrims-duos",
+            teams: value.map(t => ({
+                memberIds: t.memberIds,
+                members: t.memberIds.map(id => ({ discordId: id, name: memberLabel(id, roster) })),
+            })),
+        };
+        const url = URL.createObjectURL(
+            new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
+        );
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "duos-major-scrims.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        setStatus(`Exportados ${value.length} equipos.`);
+    };
+
+    /**
+     * Adds the teams from a file to the ones already loaded. A player who is
+     * already in a team here is skipped rather than moved, and the count says so.
+     */
+    const importTeams = async (file: File) => {
+        setStatus("");
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(await file.text());
+        } catch {
+            setStatus("Ese archivo no es un JSON válido.");
+            return;
+        }
+
+        const rows = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray((parsed as { teams?: unknown })?.teams)
+                ? ((parsed as { teams: unknown[] }).teams)
+                : null;
+        if (!rows) {
+            setStatus("No encontré equipos en el archivo.");
+            return;
+        }
+
+        const seen = new Set(value.flatMap(t => t.memberIds));
+        const added: PresetTeam[] = [];
+        let skipped = 0;
+
+        for (const row of rows) {
+            const raw = Array.isArray(row) ? row : (row as { memberIds?: unknown })?.memberIds;
+            const ids = (Array.isArray(raw) ? raw : [])
+                .map(v => String(v ?? "").trim())
+                .filter(isSnowflake);
+            const unique = Array.from(new Set(ids));
+            if (unique.length < 2 || unique.some(id => seen.has(id))) {
+                skipped++;
+                continue;
+            }
+            unique.forEach(id => seen.add(id));
+            added.push({ memberIds: unique.slice(0, MAX_TEAM_MEMBERS) });
+        }
+
+        if (!added.length) {
+            setStatus(
+                skipped > 0
+                    ? `No se agregó ninguno: los ${skipped} equipos del archivo ya estaban o estaban incompletos.`
+                    : "El archivo no trae ningún equipo válido."
+            );
+            return;
+        }
+
+        await commit(
+            [...value, ...added],
+            `${added.length} equipos importados${skipped > 0 ? `, ${skipped} salteados por repetidos` : ""}.`
+        );
     };
 
     if (size < 2) {
@@ -267,10 +358,51 @@ export default function PresetTeamsPanel({
                 </span>
             </div>
 
-            <p className="mb-4 text-xs leading-relaxed text-white/50">
+            <p className="mb-3 text-xs leading-relaxed text-white/50">
                 Armá acá los equipos y después nadie elige compañero al marcar el spot: si ponés a k1ng con
                 fazer, cuando k1ng se marca queda marcado fazer también, y al revés igual. Estar en un equipo
-                ya lo habilita a marcar, aunque no tenga el rol del torneo.
+                ya lo habilita a marcar, aunque no tenga el rol del torneo.{" "}
+                <span className="text-white/70">Se guarda solo al agregar o borrar un equipo.</span>
+            </p>
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+                <button
+                    onClick={() => fileRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                    <Upload size={13} /> Importar equipos
+                </button>
+                <button
+                    onClick={exportTeams}
+                    disabled={value.length === 0}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-40"
+                >
+                    <Download size={13} /> Exportar equipos
+                </button>
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={e => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) void importTeams(file);
+                    }}
+                />
+                {saving && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-white/50">
+                        <Loader2 size={13} className="animate-spin" /> guardando...
+                    </span>
+                )}
+                {!saving && status && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary">
+                        <Check size={13} /> {status}
+                    </span>
+                )}
+            </div>
+            <p className="mb-4 text-[11px] text-white/35">
+                Exportá los equipos de este torneo y importalos en el próximo para no volver a cargarlos.
             </p>
 
             {value.length > 0 && (
@@ -286,7 +418,8 @@ export default function PresetTeamsPanel({
                                 </p>
                             </div>
                             <button
-                                onClick={() => onChange(value.filter((_, j) => j !== i))}
+                                onClick={() => removeTeam(i)}
+                                disabled={saving}
                                 aria-label="Borrar equipo"
                                 className="shrink-0 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-[11px] font-bold text-red-400 transition-colors hover:bg-red-500/15"
                             >
@@ -329,20 +462,13 @@ export default function PresetTeamsPanel({
                 </p>
                 <button
                     onClick={addTeam}
-                    disabled={!draftReady}
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-40"
+                    disabled={!draftReady || saving}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-40"
                 >
-                    <Plus size={14} /> {size === 2 ? "Agregar dúo" : "Agregar equipo"}
+                    <Plus size={15} />{" "}
+                    {saving ? "..." : size === 2 ? "Agregar y guardar dúo" : "Agregar y guardar equipo"}
                 </button>
             </div>
-
-            <button
-                onClick={onSave}
-                disabled={saving}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
-            >
-                <Save size={15} /> {saving ? "..." : size === 2 ? "Guardar dúos" : "Guardar equipos"}
-            </button>
         </div>
     );
 }

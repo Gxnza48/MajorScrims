@@ -376,33 +376,31 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         setSavingParticipants(false);
     };
 
-    const savePresetTeams = async () => {
+    /** The duos panel saves as you edit it, so this both stores and persists. */
+    const savePresetTeams = async (teams: PresetTeam[]): Promise<boolean> => {
         setSavingTeams(true);
         setError("");
-        setNotice("");
+        setPresetTeams(teams);
         try {
             const res = await fetch(`/api/tournaments/${params.slug}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ presetTeams }),
+                body: JSON.stringify({ presetTeams: teams }),
             });
             const data = await res.json();
             if (data.success) {
                 setDetail(data.tournament);
-                const saved: PresetTeam[] = data.tournament.presetTeams ?? [];
-                setPresetTeams(saved);
-                setNotice(
-                    saved.length > 0
-                        ? `${saved.length} ${saved.length === 1 ? "equipo guardado" : "equipos guardados"}. Cuando uno de sus jugadores marca un spot, queda marcado el equipo entero.`
-                        : "No quedó ningún equipo definido: cada jugador va a tener que elegir a su compañero al marcar el spot."
-                );
-            } else {
-                setError(data.error || "No se pudieron guardar los equipos.");
+                // The server drops anything invalid, so its answer is the truth.
+                setPresetTeams(data.tournament.presetTeams ?? []);
+                setSavingTeams(false);
+                return true;
             }
+            setError(data.error || "No se pudieron guardar los equipos.");
         } catch {
             setError("Error de red.");
         }
         setSavingTeams(false);
+        return false;
     };
 
     const toggleQualified = (discordId: string) =>
@@ -701,10 +699,9 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                 {/* Fixed teams: whoever marks a spot marks their whole team */}
                 <PresetTeamsPanel
                     value={presetTeams}
-                    onChange={setPresetTeams}
+                    onSave={savePresetTeams}
                     roster={roster}
                     teamSize={teamSize}
-                    onSave={savePresetTeams}
                     saving={savingTeams}
                 />
 

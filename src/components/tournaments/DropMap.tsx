@@ -26,9 +26,19 @@ export interface MapClaim {
     disputed?: boolean;
 }
 
-/** True when the viewer is in this team, as captain or as a picked teammate. */
-export const claimBelongsTo = (claim: MapClaim, discordId?: string | null) =>
-    !!discordId && (claim.discordId === discordId || (claim.teammateIds ?? []).includes(discordId));
+/**
+ * True when the viewer is in this team: as captain, as a picked teammate, or
+ * because the claim belongs to somebody a moderator made their fixed partner.
+ * `discordId` may be a list - the viewer plus their preset team.
+ */
+export const claimBelongsTo = (claim: MapClaim, discordId?: string | string[] | null) => {
+    const ids = (Array.isArray(discordId) ? discordId : [discordId]).filter(Boolean) as string[];
+    if (!ids.length) return false;
+    return (
+        ids.includes(claim.discordId) ||
+        (claim.teammateIds ?? []).some(id => ids.includes(id))
+    );
+};
 
 /** One team as it reads on the map: "Peterbot + Pollo". */
 export const teamLabel = (claim: MapClaim) =>
@@ -42,7 +52,8 @@ interface Props {
     zones: MapZone[];
     claims: MapClaim[];
     mode?: "view" | "edit";
-    myDiscordId?: string | null;
+    /** The viewer, plus anyone a moderator made their fixed teammate. */
+    myDiscordId?: string | string[] | null;
     selectedZoneId?: string | null;
     onSelectZone?: (zoneId: string | null) => void;
     onZonesChange?: (zones: MapZone[]) => void;

@@ -4,6 +4,7 @@ import { UserProfile, IUserProfile } from "@/lib/models/UserProfile";
 export interface QualifiedSource {
     qualifiedIds?: string[];
     qualifiedRoles?: { roleId: string }[];
+    presetTeams?: { memberIds: string[] }[];
 }
 
 /** Same ceiling the roster uses; a Fortnite round is far smaller than this. */
@@ -20,7 +21,14 @@ const MAX_PLAYERS = 500;
  * user exists once they visit the site.
  */
 export async function qualifiedProfiles(t: QualifiedSource): Promise<IUserProfile[]> {
-    const ids = (t.qualifiedIds ?? []).filter(Boolean);
+    // Preset team members count: an admin naming somebody as a partner is a way
+    // of qualifying them, so they have to resolve here too - otherwise a typed
+    // partner name never turns into a Discord id and the other half of the duo
+    // stays free to take a second spot.
+    const ids = [
+        ...(t.qualifiedIds ?? []),
+        ...(t.presetTeams ?? []).flatMap(team => team.memberIds ?? []),
+    ].filter(Boolean);
     const roleIds = (t.qualifiedRoles ?? []).map(r => r.roleId).filter(Boolean);
     if (!ids.length && !roleIds.length) return [];
 

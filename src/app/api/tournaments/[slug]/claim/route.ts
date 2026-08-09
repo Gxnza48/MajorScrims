@@ -178,10 +178,19 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
 
         // One zone per player per window - including the spot a duo partner
         // already marked them into, otherwise the same player lands twice.
+        // Their preset partners count as well: a claim made before the duo was
+        // written down has no teammateIds pointing here, and without this the
+        // other half of the team could quietly take a second spot.
         const own = await SpotClaim.findOne({
             tournamentId: tournament._id,
             windowId,
-            $or: [{ discordId: session.user.id }, { teammateIds: session.user.id }],
+            $or: [
+                { discordId: session.user.id },
+                { teammateIds: session.user.id },
+                ...(hasPresetTeam
+                    ? [{ discordId: { $in: presetPartners } }, { teammateIds: { $in: presetPartners } }]
+                    : []),
+            ],
         });
         if (own) {
             const markedByPartner = own.discordId !== session.user.id;
@@ -318,9 +327,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { slug:
             return NextResponse.json({ success: false, error: "Ese spot ya está libre." }, { status: 404 });
         }
 
-        // Either member of the team can release it, plus any admin.
+        // Either member of the team can release it, plus any admin. Preset
+        // partners too, so a stale claim can always be undone by the team.
+        const partners = presetPartnersOf(tournament, session.user.id);
         const isOwnTeam =
-            claim.discordId === session.user.id || (claim.teammateIds ?? []).includes(session.user.id);
+            claim.discordId === session.user.id ||
+            (claim.teammateIds ?? []).includes(session.user.id) ||
+            partners.includes(claim.discordId) ||
+            (claim.teammateIds ?? []).some(id => partners.includes(id));
         if (!isOwnTeam && !isAdminId(session.user.id)) {
             return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
         }

@@ -9,17 +9,24 @@
  * Only http(s) URLs are turned into links - never `javascript:` and friends.
  */
 
+const LABEL = String.raw`[[{]([^[\]{}<>\n]{1,120})[\]}]`;
+
 /**
- * `{label}(url)` or `[label](url)`.
+ * Undoes the editor's autolink, but **only** right after a `{label}(`.
  *
- * The URL part tolerates being wrapped in an `<a>`: the rich editor autolinks
- * any URL as you type it, which leaves `{Discord}(<a ...>https://...</a>)` and
- * used to stop the pattern from ever matching - the braces ended up in one text
- * node and the URL in another. Requiring the literal `{...}(` prefix is what
- * keeps this from firing inside a tag's attributes.
+ * The rich editor turns any URL into an `<a>` while you type, and its linkifier
+ * happily swallows the closing parenthesis too, so what gets stored is
+ * `{Discord}(<a href="https://x/)">https://x/)</a>` - the URL, the closing
+ * paren and sometimes nothing else end up on the wrong side of a tag. Pulling
+ * the anchor's text back out puts `{label}(url)` together again as plain text.
+ *
+ * Anchored to the `{label}(` prefix on purpose: a link the moderator made with
+ * the editor's own button, anywhere else in the document, is left alone.
  */
-const PATTERN =
-    /[[{]([^[\]{}<>\n]{1,120})[\]}]\(\s*(?:<a\b[^>]*>)?\s*(https?:\/\/[^\s()<>"']{1,600}?)\s*(?:<\/a>)?\s*\)/gi;
+const AUTOLINKED = new RegExp(`(${LABEL}\\()\\s*<a\\b[^>]*>(.*?)</a>`, "gis");
+
+/** `{label}(url)` or `[label](url)`, once the text is whole again. */
+const PATTERN = new RegExp(`${LABEL}\\(\\s*(https?://[^\\s()<>"']{1,600})\\s*\\)`, "gi");
 
 const escapeHtml = (text: string) =>
     text
@@ -41,15 +48,13 @@ const linkify = (safe: string) =>
     safe.replace(PATTERN, (_m, label: string, url: string) => anchor(label, url));
 
 /**
- * For content that is already HTML (the rich editor's output).
- *
- * Runs over the whole string rather than per text node, because the editor
- * autolinks URLs and splits the pattern across tags. The label can contain no
- * `<` or `>`, so a tag can never be swallowed into one.
+ * For content that is already HTML (the rich editor's output): put the pattern
+ * back together where the editor autolinked it, then turn it into a button.
  */
 export function renderRichLinks(html: string): string {
     if (!html) return "";
-    return linkify(html);
+    // `$1` is the `{label}(` prefix, `$3` the anchor's visible text.
+    return linkify(html.replace(AUTOLINKED, "$1$3"));
 }
 
 /**

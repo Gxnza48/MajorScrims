@@ -12,6 +12,7 @@ import DropMap, {
 } from "@/components/tournaments/DropMap";
 import ClaimSpotModal, { TeammateOption } from "@/components/tournaments/ClaimSpotModal";
 import { renderPlainWithLinks } from "@/lib/richLinks";
+import { teammateSlots } from "@/lib/teamFormat";
 
 const POLL_MS = 10000;
 
@@ -152,7 +153,10 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     );
 
     // A duo shares one claim: the partner sees it as theirs and can release it.
-    const isMyTeam = (c: Claim) => claimBelongsTo(c, myDiscordId);
+    // A spot my fixed partner took is my spot, even on an old claim that never
+    // recorded my id as a teammate.
+    const myTeamIds = [myDiscordId, ...presetTeam.map(o => o.discordId)].filter(Boolean) as string[];
+    const isMyTeam = (c: Claim) => claimBelongsTo(c, myTeamIds);
     const myClaim = windowClaims.find(isMyTeam) ?? null;
     const selectedZone = activeWindow?.zones.find(z => z.id === selectedZoneId) ?? null;
     const selectedZoneClaims = windowClaims.filter(c => c.zoneId === selectedZoneId);
@@ -198,8 +202,13 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             : `${start.toLocaleDateString(locale, opts)} - ${end.toLocaleDateString(locale, { ...opts, year: "numeric" })}`;
     };
 
-    const handleClaim = async (epicName: string, teammates: string[]) => {
-        if (!selectedZone || !activeWindowId) return;
+    const claimZone = async (
+        zoneId: string,
+        epicName: string,
+        teammates: string[],
+        dispute: boolean
+    ) => {
+        if (!activeWindowId) return;
         setSaving(true);
         setClaimError("");
         try {
@@ -208,13 +217,13 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     windowId: activeWindowId,
-                    zoneId: selectedZone.id,
+                    zoneId,
                     epicName,
                     teammates,
                     // The server decides whether this really is a dispute; sending
                     // the flag is how the player confirms they meant to take a
                     // spot somebody else already has.
-                    dispute: selectedZoneIsFull,
+                    dispute,
                 }),
             });
             const data = await res.json();
@@ -233,6 +242,9 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
         setSaving(false);
     };
 
+    const handleClaim = (epicName: string, teammates: string[]) =>
+        selectedZone && claimZone(selectedZone.id, epicName, teammates, selectedZoneIsFull);
+
     const removeClaim = async (claimId: string) => {
         setSaving(true);
         try {
@@ -249,6 +261,33 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     };
 
     const handleRelease = () => myClaim && removeClaim(myClaim.id);
+
+    /**
+     * Clicking a free spot takes it, with no dialog in between - that is what a
+     * player expects and what was asked for. The form only opens when it has
+     * something left to ask: an Epic name we do not know yet, or a partner in a
+     * duos tournament where the moderator did not fix the teams. Disputing a
+     * taken spot keeps its confirmation, because it is not what a misclick means.
+     */
+    const canClaimInOneClick =
+        !!viewer.epicName.trim() && (teammateSlots(tournament?.teamSize ?? "Solo") === 0 || presetTeam.length > 0);
+
+    const handleZoneClick = async (zoneId: string | null) => {
+        setSelectedZoneId(zoneId);
+        if (!zoneId || saving || claimsClosed) return;
+
+        const zone = activeWindow?.zones.find(z => z.id === zoneId);
+        if (!zone) return;
+
+        const zoneClaims = windowClaims.filter(c => c.zoneId === zoneId);
+        if (zoneClaims.some(isMyTeam)) return; // already ours
+        if (zoneClaims.length >= (zone.capacity ?? 1)) return; // full: that is a dispute
+        if (!canClaimInOneClick) return; // the modal has something to ask
+
+        // Moving: the server allows one spot per round, so let go of the old one.
+        if (myClaim) await removeClaim(myClaim.id);
+        await claimZone(zoneId, viewer.epicName.trim(), [], false);
+    };
 
     /** Admins take any team off a spot - that is how a dispute gets resolved. */
     const handleAdminRemove = (claim: Claim) => {
@@ -486,9 +525,9 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                             <DropMap
                                 zones={activeWindow.zones}
                                 claims={windowClaims}
-                                myDiscordId={myDiscordId}
+                                myDiscordId={myTeamIds}
                                 selectedZoneId={selectedZoneId}
-                                onSelectZone={setSelectedZoneId}
+                                onSelectZone={handleZoneClick}
                                 emptyLabel={t.tournaments.noZones}
                                 zoomZoneId={zoomZoneId}
                                 onZoomOut={() => setZoomZoneId(null)}
