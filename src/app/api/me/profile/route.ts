@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDB, requireSession, isAdminId } from "@/lib/db";
 import { UserProfile } from "@/lib/models/UserProfile";
 import { syncProfile } from "@/lib/userProfile";
-import { isProConfigured } from "@/lib/discord";
+import { isProConfigured, canListRoles } from "@/lib/discord";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,10 @@ export async function GET() {
                 epicName: "",
                 isPro: false,
                 proDetectionReady: isProConfigured(),
+                // Same idea: says nothing about any user, only whether the bot
+                // token is configured - which is how the per-tournament role
+                // picker and the live role check are verified from outside.
+                botRolesReady: canListRoles(),
             });
         }
 
@@ -36,6 +40,7 @@ export async function GET() {
             isAdmin: isAdminId(session.user.id),
             // false means nobody can be detected as PRO yet - the env vars are missing
             proDetectionReady: isProConfigured(),
+            botRolesReady: canListRoles(),
             // why the last Discord lookup did or did not resolve
             proCheckReason: profile.proCheckReason || null,
         });
