@@ -9,7 +9,17 @@
  * Only http(s) URLs are turned into links - never `javascript:` and friends.
  */
 
-const PATTERN = /[[{]([^[\]{}<>\n]{1,120})[\]}]\((https?:\/\/[^\s()<>"']{1,600})\)/g;
+/**
+ * `{label}(url)` or `[label](url)`.
+ *
+ * The URL part tolerates being wrapped in an `<a>`: the rich editor autolinks
+ * any URL as you type it, which leaves `{Discord}(<a ...>https://...</a>)` and
+ * used to stop the pattern from ever matching - the braces ended up in one text
+ * node and the URL in another. Requiring the literal `{...}(` prefix is what
+ * keeps this from firing inside a tag's attributes.
+ */
+const PATTERN =
+    /[[{]([^[\]{}<>\n]{1,120})[\]}]\(\s*(?:<a\b[^>]*>)?\s*(https?:\/\/[^\s()<>"']{1,600}?)\s*(?:<\/a>)?\s*\)/gi;
 
 const escapeHtml = (text: string) =>
     text
@@ -20,24 +30,26 @@ const escapeHtml = (text: string) =>
 
 /** The anchor itself. `label` must already be HTML-safe. */
 function anchor(label: string, url: string): string {
-    const href = escapeHtml(url);
+    // The editor stores `&` escaped; unescape before re-escaping the href, or a
+    // URL with query parameters ends up with `&amp;amp;` in it.
+    const href = escapeHtml(url.replace(/&amp;/g, "&"));
     return `<a class="rich-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
 }
 
-/** Applies the pattern to a run of text that is already HTML-escaped. */
-const linkify = (safeText: string) =>
-    safeText.replace(PATTERN, (_m, label: string, url: string) => anchor(label, url));
+/** Applies the pattern to text that is already HTML-escaped, or to full HTML. */
+const linkify = (safe: string) =>
+    safe.replace(PATTERN, (_m, label: string, url: string) => anchor(label, url));
 
 /**
- * For content that is already HTML (the rich editor's output). Tags are left
- * untouched, so the pattern can never be rewritten inside an attribute.
+ * For content that is already HTML (the rich editor's output).
+ *
+ * Runs over the whole string rather than per text node, because the editor
+ * autolinks URLs and splits the pattern across tags. The label can contain no
+ * `<` or `>`, so a tag can never be swallowed into one.
  */
 export function renderRichLinks(html: string): string {
     if (!html) return "";
-    return html
-        .split(/(<[^>]*>)/g)
-        .map(part => (part.startsWith("<") ? part : linkify(part)))
-        .join("");
+    return linkify(html);
 }
 
 /**
