@@ -1,18 +1,29 @@
 /**
- * Reads the signed-in user's roles in the Major Scrims Discord server.
+ * Reads a member's roles in the Major Scrims Discord server.
  *
- * The OAuth scope this needs (`guilds.members.read`) is already requested in
- * src/lib/auth.ts, and /api/discord/member-since already calls the same
- * endpoint - it just keeps `joined_at` and throws the roles away.
+ * There are two ways to ask Discord and we use both:
  *
- * Needs two env vars, both copied from Discord with Developer Mode on:
- *   MAJOR_SCRIMS_GUILD_ID  - right click the server  -> Copy Server ID
- *   DISCORD_PRO_ROLE_ID    - Server Settings > Roles -> right click PRO -> Copy Role ID
+ *  - **the bot token** (`DISCORD_BOT_TOKEN`) can read *anyone's* roles at any
+ *    moment and never expires. This is what makes per-tournament roles usable:
+ *    a moderator hands out the role two minutes before the round and the site
+ *    sees it immediately. It also lists the server's roles by name, which is
+ *    what fills the role picker in the tournament panel. Only needs the bot to
+ *    be in the server - no privileged intent.
+ *  - **the player's own OAuth token** (scope `guilds.members.read`, already
+ *    requested in src/lib/auth.ts) is the fallback while no bot token is set.
+ *    It only works for the person who is signed in and **Discord expires it
+ *    after about a week** - we do not refresh it, so an old session reads as
+ *    `token-rejected` until they sign out and back in.
  *
- * When it cannot tell, `isPro` is `null` (unknown) rather than `false`, so a
- * missing config or a dead token never demotes a real pro. `reason` says which
- * of those happened - it is surfaced to admins for debugging, because a silent
- * "nobody is a pro" is impossible to diagnose otherwise.
+ * Env vars, all copied from Discord with Developer Mode on:
+ *   MAJOR_SCRIMS_GUILD_ID  - right click the server -> Copy Server ID
+ *   DISCORD_PRO_ROLE_ID    - the global PRO role, for the badge and the filter
+ *   DISCORD_BOT_TOKEN      - Developer Portal > Bot > Reset Token (optional)
+ *
+ * When it cannot tell, `roles` is `null` (unknown) rather than an empty array,
+ * so a missing config or a dead token never demotes a real pro to "no roles".
+ * `reason` says which of those happened - it is surfaced to admins, because a
+ * silent "nobody qualifies" is impossible to diagnose otherwise.
  */
 
 export type ProCheckReason =
@@ -24,11 +35,31 @@ export type ProCheckReason =
     | "discord-error"
     | "no-roles-field";
 
-export interface ProCheck {
-    isPro: boolean | null;
+export interface RoleCheck {
+    /** Every role id this member has in the guild, or null when unknown. */
+    roles: string[] | null;
     reason: ProCheckReason;
     /** Present on token-rejected / discord-error, to tell the two apart in logs. */
     status?: number;
+    /** Which credential answered. The bot sees anyone; OAuth only its owner. */
+    via: "bot" | "oauth" | "none";
+}
+
+export interface ProCheck {
+    isPro: boolean | null;
+    reason: ProCheckReason;
+    status?: number;
+}
+
+/** A role of the guild, as offered in the tournament panel's picker. */
+export interface GuildRole {
+    id: string;
+    name: string;
+    /** Discord's decimal colour; 0 means "no colour", render it grey. */
+    color: number;
+    position: number;
+    /** Managed roles belong to bots/integrations - noise in the picker. */
+    managed: boolean;
 }
 
 export interface GuildMember {
@@ -37,45 +68,167 @@ export interface GuildMember {
     nick?: string | null;
 }
 
+const API = "https://discord.com/api";
+const TIMEOUT_MS = 6000;
+
 export function isProConfigured(): boolean {
     return !!process.env.MAJOR_SCRIMS_GUILD_ID && !!process.env.DISCORD_PRO_ROLE_ID;
 }
 
-export async function checkIsPro(accessToken: string | undefined): Promise<ProCheck> {
-    const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
-    const proRoleId = process.env.DISCORD_PRO_ROLE_ID;
+export function hasBotToken(): boolean {
+    return !!process.env.DISCORD_BOT_TOKEN;
+}
 
-    if (!guildId || !proRoleId) return { isPro: null, reason: "not-configured" };
-    if (!accessToken) return { isPro: null, reason: "no-token" };
+/** True when we can offer the role picker (needs the guild *and* the bot). */
+export function canListRoles(): boolean {
+    return !!process.env.MAJOR_SCRIMS_GUILD_ID && hasBotToken();
+}
 
-    let res: Response;
+async function discordGet(path: string, authorization: string): Promise<Response | null> {
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
-        res = await fetch(`https://discord.com/api/users/@me/guilds/${guildId}/member`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
+        const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        const res = await fetch(`${API}${path}`, {
+            headers: { Authorization: authorization },
             signal: controller.signal,
             cache: "no-store",
         });
         clearTimeout(timeout);
+        return res;
     } catch {
-        return { isPro: null, reason: "discord-error" };
+        return null;
     }
+}
 
-    // 401 = the Discord access token expired (they last for a week and we do not
-    // refresh them), 404 = the user is not in that server.
-    if (res.status === 401) return { isPro: null, reason: "token-rejected", status: 401 };
-    if (res.status === 404) return { isPro: false, reason: "not-in-guild", status: 404 };
-    if (!res.ok) return { isPro: null, reason: "discord-error", status: res.status };
+/** Turns a member response into a RoleCheck, sharing the status mapping. */
+async function toRoleCheck(res: Response | null, via: "bot" | "oauth"): Promise<RoleCheck> {
+    if (!res) return { roles: null, reason: "discord-error", via };
+
+    // 401/403 = the credential was rejected (an expired OAuth token, or a bot
+    // token that was reset), 404 = that user is not in the server.
+    if (res.status === 401 || res.status === 403) {
+        return { roles: null, reason: "token-rejected", status: res.status, via };
+    }
+    if (res.status === 404) return { roles: [], reason: "not-in-guild", status: 404, via };
+    if (!res.ok) return { roles: null, reason: "discord-error", status: res.status, via };
 
     let member: GuildMember;
     try {
         member = (await res.json()) as GuildMember;
     } catch {
-        return { isPro: null, reason: "discord-error", status: res.status };
+        return { roles: null, reason: "discord-error", status: res.status, via };
     }
 
-    if (!Array.isArray(member.roles)) return { isPro: null, reason: "no-roles-field" };
+    if (!Array.isArray(member.roles)) return { roles: null, reason: "no-roles-field", via };
+    return { roles: member.roles, reason: "ok", via };
+}
 
-    return { isPro: member.roles.includes(proRoleId), reason: "ok" };
+/** Reads any member's roles with the bot token - no sign-in of theirs needed. */
+export async function fetchMemberRolesViaBot(discordId: string): Promise<RoleCheck> {
+    const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+
+    if (!guildId) return { roles: null, reason: "not-configured", via: "bot" };
+    if (!botToken) return { roles: null, reason: "no-token", via: "bot" };
+    if (!discordId) return { roles: null, reason: "no-token", via: "bot" };
+
+    const res = await discordGet(`/guilds/${guildId}/members/${discordId}`, `Bot ${botToken}`);
+    return toRoleCheck(res, "bot");
+}
+
+/** Reads the signed-in user's own roles with their OAuth token. */
+export async function fetchMemberRolesViaOAuth(accessToken: string | undefined): Promise<RoleCheck> {
+    const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
+
+    if (!guildId) return { roles: null, reason: "not-configured", via: "oauth" };
+    if (!accessToken) return { roles: null, reason: "no-token", via: "oauth" };
+
+    const res = await discordGet(`/users/@me/guilds/${guildId}/member`, `Bearer ${accessToken}`);
+    return toRoleCheck(res, "oauth");
+}
+
+/**
+ * The roles of one member, asking the bot first because its answer is live and
+ * works even for someone whose session is a week old. Falls back to their own
+ * OAuth token when there is no bot token, or when the bot could not answer.
+ */
+export async function fetchMemberRoles(
+    discordId: string | undefined,
+    accessToken?: string
+): Promise<RoleCheck> {
+    if (hasBotToken() && discordId) {
+        const viaBot = await fetchMemberRolesViaBot(discordId);
+        if (viaBot.roles !== null) return viaBot;
+        // The bot exists but could not answer (reset token, guild id wrong).
+        // The user's own token may still work, so it is worth one more try.
+        const viaOAuth = await fetchMemberRolesViaOAuth(accessToken);
+        return viaOAuth.roles !== null ? viaOAuth : viaBot;
+    }
+    return fetchMemberRolesViaOAuth(accessToken);
+}
+
+/** Does this set of roles include the global PRO role? null = cannot tell. */
+export function derivePro(roles: string[] | null): boolean | null {
+    const proRoleId = process.env.DISCORD_PRO_ROLE_ID;
+    if (!proRoleId || roles === null) return null;
+    return roles.includes(proRoleId);
+}
+
+/** Kept for the callers that only care about the PRO badge. */
+export async function checkIsPro(accessToken: string | undefined): Promise<ProCheck> {
+    if (!isProConfigured()) return { isPro: null, reason: "not-configured" };
+    const check = await fetchMemberRolesViaOAuth(accessToken);
+    return { isPro: derivePro(check.roles), reason: check.reason, status: check.status };
+}
+
+export interface GuildRolesResult {
+    roles: GuildRole[];
+    /** null when the list came back fine. */
+    error: ProCheckReason | null;
+    status?: number;
+}
+
+/**
+ * Every role in the server, for the tournament panel's picker. Bot only: an
+ * OAuth token cannot read the role list, just the ids of its own member.
+ *
+ * `@everyone` (whose id is the guild id) and integration-managed roles are
+ * dropped - nobody is going to gate a tournament on those, and they would bury
+ * the handful of real roles a moderator created for it.
+ */
+export async function listGuildRoles(): Promise<GuildRolesResult> {
+    const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+
+    if (!guildId) return { roles: [], error: "not-configured" };
+    if (!botToken) return { roles: [], error: "no-token" };
+
+    const res = await discordGet(`/guilds/${guildId}/roles`, `Bot ${botToken}`);
+    if (!res) return { roles: [], error: "discord-error" };
+    if (res.status === 401 || res.status === 403) {
+        return { roles: [], error: "token-rejected", status: res.status };
+    }
+    if (!res.ok) return { roles: [], error: "discord-error", status: res.status };
+
+    let raw: GuildRole[];
+    try {
+        raw = (await res.json()) as GuildRole[];
+    } catch {
+        return { roles: [], error: "discord-error", status: res.status };
+    }
+    if (!Array.isArray(raw)) return { roles: [], error: "discord-error", status: res.status };
+
+    const roles = raw
+        .filter(r => r && r.id !== guildId && !r.managed)
+        .map(r => ({
+            id: String(r.id),
+            name: String(r.name ?? ""),
+            color: Number(r.color ?? 0),
+            position: Number(r.position ?? 0),
+            managed: !!r.managed,
+        }))
+        // Highest role first, the same order Discord shows them in the server.
+        .sort((a, b) => b.position - a.position);
+
+    return { roles, error: null };
 }

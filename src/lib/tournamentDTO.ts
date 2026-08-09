@@ -57,12 +57,25 @@ export interface TournamentDTO {
     /** Detail only - long text, no reason to ship it with the whole list. */
     description?: string;
     prizes?: PrizeDTO[];
-    /** How many players a moderator marked as qualified. 0 = nobody can claim yet. */
+    /** How many players a moderator ticked or pre-authorised by name. */
     qualifiedCount: number;
+    /**
+     * Names of the Discord roles that qualify, so the page can say which one you
+     * are missing. Public: the role name is not a secret, its id stays admin-only.
+     */
+    requiredRoleNames: string[];
+    /** False = no role and no list, so nobody but an admin can claim yet. */
+    hasAccessList: boolean;
     /** Admin-only: the actual roster selection, for the moderator UI. */
+    qualifiedRoles?: QualifiedRoleDTO[];
     qualifiedIds?: string[];
     participants?: string[];
     windows?: WindowDTO[];
+}
+
+export interface QualifiedRoleDTO {
+    roleId: string;
+    roleName: string;
 }
 
 export function toListDTO(t: ITournament): TournamentDTO {
@@ -81,6 +94,11 @@ export function toListDTO(t: ITournament): TournamentDTO {
         windowCount: t.windows?.length ?? 0,
         prizePool: t.prizePool || "",
         qualifiedCount: (t.qualifiedIds?.length ?? 0) + (t.participants?.length ?? 0),
+        requiredRoleNames: (t.qualifiedRoles ?? []).map(r => r.roleName || r.roleId),
+        hasAccessList:
+            (t.qualifiedRoles?.length ?? 0) > 0 ||
+            (t.qualifiedIds?.length ?? 0) > 0 ||
+            (t.participants?.length ?? 0) > 0,
     };
 }
 
@@ -91,7 +109,14 @@ export function toDetailDTO(t: ITournament, forAdmin = false): TournamentDTO {
         description: t.description || "",
         prizes: (t.prizes ?? []).map(p => ({ place: p.place, prize: p.prize || "" })),
         ...(forAdmin
-            ? { qualifiedIds: t.qualifiedIds ?? [], participants: t.participants ?? [] }
+            ? {
+                qualifiedIds: t.qualifiedIds ?? [],
+                participants: t.participants ?? [],
+                qualifiedRoles: (t.qualifiedRoles ?? []).map(r => ({
+                    roleId: r.roleId,
+                    roleName: r.roleName || "",
+                })),
+            }
             : {}),
         windows: (t.windows ?? []).map(w => ({
             id: String(w._id),

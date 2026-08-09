@@ -25,6 +25,18 @@ export interface IPrize {
     prize: string;
 }
 
+/**
+ * A Discord role whose holders may claim a spot in this tournament. The name is
+ * stored next to the id on purpose: moderators create a role per tournament, and
+ * the pages have to show "necesitás el rol Copa Agosto" without asking Discord
+ * on every render (and still read right if the role is later deleted).
+ */
+export interface IQualifiedRole {
+    _id: Types.ObjectId;
+    roleId: string;
+    roleName: string;
+}
+
 export interface ITournament extends Document {
     slug: string;
     name: string;
@@ -41,8 +53,15 @@ export interface ITournament extends Document {
     prizePool: string;
     prizes: Types.DocumentArray<IPrize & Document>;
     /**
+     * The Discord roles that qualify for this tournament. Moderators create one
+     * role per event (there are pros who do not qualify and non-pros who do), so
+     * this is the fast path: give the role, they can spot.
+     */
+    qualifiedRoles: Types.DocumentArray<IQualifiedRole & Document>;
+    /**
      * Discord ids a moderator ticked from the roster: the players who qualified.
-     * Nobody but an admin can claim a spot until this has at least one entry.
+     * Adds to the roles above rather than replacing them, so one player the role
+     * missed can still be waved through by hand.
      */
     qualifiedIds: string[];
     /**
@@ -74,6 +93,11 @@ const PrizeSchema = new Schema<IPrize>({
     prize: { type: String, default: "" },
 });
 
+const QualifiedRoleSchema = new Schema<IQualifiedRole>({
+    roleId: { type: String, required: true },
+    roleName: { type: String, default: "" },
+});
+
 const TournamentSchema = new Schema<ITournament>(
     {
         slug: { type: String, required: true, unique: true, index: true },
@@ -88,6 +112,7 @@ const TournamentSchema = new Schema<ITournament>(
         description: { type: String, default: "" },
         prizePool: { type: String, default: "" },
         prizes: { type: [PrizeSchema], default: [] },
+        qualifiedRoles: { type: [QualifiedRoleSchema], default: [] },
         qualifiedIds: { type: [String], default: [] },
         participants: { type: [String], default: [] },
         windows: { type: [WindowSchema], default: [] },

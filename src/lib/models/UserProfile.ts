@@ -20,6 +20,13 @@ export interface IUserProfile extends Document {
     /** Outcome of the last Discord lookup, so "nobody is a pro" is diagnosable. */
     proCheckReason?: string;
     proCheckAttemptedAt?: Date;
+    /**
+     * Every Discord role this user has in the server, not just PRO. Tournaments
+     * are gated on a role the moderators create per event, so the whole set has
+     * to be stored - `isPro` is only the one of them we also show as a badge.
+     */
+    discordRoles: string[];
+    rolesCheckedAt?: Date;
     lastSeenAt?: Date;
 }
 
@@ -34,6 +41,9 @@ const UserProfileSchema = new Schema<IUserProfile>(
         proCheckedAt: { type: Date },
         proCheckReason: { type: String },
         proCheckAttemptedAt: { type: Date },
+        // Indexed: finding everyone who holds a tournament's role is a $in on this.
+        discordRoles: { type: [String], default: [], index: true },
+        rolesCheckedAt: { type: Date },
         lastSeenAt: { type: Date },
     },
     { timestamps: true }

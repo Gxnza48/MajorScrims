@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel, teamLabel } from "@/components/tournaments/DropMap";
 import SpotTemplatePanel from "@/components/tournaments/SpotTemplatePanel";
+import QualifiedRolesPanel, { QualifiedRole } from "@/components/tournaments/QualifiedRolesPanel";
 import { teammateSlots } from "@/lib/teamFormat";
 
 const TEAM_SIZES = ["Solo", "Duos", "Trios", "Squads"];
@@ -36,6 +37,7 @@ interface Detail {
     prizePool: string;
     prizes: PrizeRow[];
     qualifiedIds: string[];
+    qualifiedRoles: QualifiedRole[];
     participants: string[];
     windows: WindowRow[];
 }
@@ -46,6 +48,7 @@ interface RosterUser {
     avatarUrl: string;
     epicName: string;
     isPro: boolean;
+    discordRoles: string[];
 }
 
 interface Claim extends MapClaim {
@@ -94,6 +97,8 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [proCount, setProCount] = useState(0);
     const [checkReasons, setCheckReasons] = useState<Record<string, number>>({});
     const [qualifiedIds, setQualifiedIds] = useState<string[]>([]);
+    const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
+    const [liveRoles, setLiveRoles] = useState(false);
     const [rosterQuery, setRosterQuery] = useState("");
     const [onlyPros, setOnlyPros] = useState(true);
     const [participantsText, setParticipantsText] = useState("");
@@ -111,6 +116,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setClaims(data.claims);
             setParticipantsText((data.tournament.participants ?? []).join("\n"));
             setQualifiedIds(data.tournament.qualifiedIds ?? []);
+            setQualifiedRoles(data.tournament.qualifiedRoles ?? []);
             setDescription(data.tournament.description ?? "");
             setPrizePool(data.tournament.prizePool ?? "");
             setPrizes(data.tournament.prizes ?? []);
@@ -149,6 +155,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                 setProDetectionReady(data.proDetectionReady);
                 setProCount(data.proCount ?? 0);
                 setCheckReasons(data.checkReasons ?? {});
+                setLiveRoles(!!data.liveRoles);
                 // Filtering to pros when none are flagged yet renders an empty list
                 // that reads like a bug, so only enable it once there is something.
                 if (!data.proCount) setOnlyPros(false);
@@ -336,19 +343,24 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             const res = await fetch(`/api/tournaments/${params.slug}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ qualifiedIds, participants: list }),
+                body: JSON.stringify({ qualifiedIds, qualifiedRoles, participants: list }),
             });
             const data = await res.json();
             if (data.success) {
                 setDetail(data.tournament);
                 setParticipantsText((data.tournament.participants ?? []).join("\n"));
                 setQualifiedIds(data.tournament.qualifiedIds ?? []);
+                setQualifiedRoles(data.tournament.qualifiedRoles ?? []);
                 const total =
                     (data.tournament.qualifiedIds?.length ?? 0) + (data.tournament.participants?.length ?? 0);
+                const savedRoles: QualifiedRole[] = data.tournament.qualifiedRoles ?? [];
+                const roleNames = savedRoles.map(r => r.roleName || r.roleId).join(", ");
                 setNotice(
-                    total > 0
-                        ? `${total} clasificados guardados. Solo ellos pueden marcar spot.`
-                        : "Lista vacía: por ahora nadie va a poder marcar spot en este torneo."
+                    savedRoles.length > 0
+                        ? `Guardado. Pueden marcar spot: cualquiera con ${roleNames}${total > 0 ? ` y ${total} tildados a mano` : ""}.`
+                        : total > 0
+                            ? `${total} clasificados guardados. Solo ellos pueden marcar spot.`
+                            : "Sin rol ni clasificados: por ahora nadie va a poder marcar spot en este torneo."
                 );
             } else {
                 setError(data.error || "No se pudo guardar la lista.");
@@ -387,12 +399,20 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
     const preAuthorized = participantsText.split("\n").map(n => n.trim()).filter(Boolean);
     const totalQualified = qualifiedIds.length + preAuthorized.length;
+    // A tournament gated on a role is not a dead tournament even with nobody ticked.
+    const nobodyCanClaim = totalQualified === 0 && qualifiedRoles.length === 0;
+
+    const roleIdSet = new Set(qualifiedRoles.map(r => r.roleId));
+    const hasTournamentRole = (u: RosterUser) => u.discordRoles.some(id => roleIdSet.has(id));
+    const roleHolders = roleIdSet.size ? roster.filter(hasTournamentRole).length : 0;
 
     const rosterNeedle = rosterQuery.trim().toLowerCase();
     const visibleRoster = roster.filter(u => {
-        // never hide someone already ticked, or the moderator could not untick them
+        // never hide someone already ticked, or the moderator could not untick
+        // them - nor anyone holding the tournament's role, which is the whole
+        // point of it: there are non-pros who qualify.
         const ticked = qualifiedIds.includes(u.discordId);
-        if (!ticked && onlyPros && !u.isPro) return false;
+        if (!ticked && !hasTournamentRole(u) && onlyPros && !u.isPro) return false;
         if (!rosterNeedle) return true;
         return `${u.discordName} ${u.epicName}`.toLowerCase().includes(rosterNeedle);
     });
@@ -629,35 +649,51 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                     </p>
                 </div>
 
-                {/* Qualified players */}
+                {/* Who may claim, way 1: a Discord role created for this tournament */}
+                <QualifiedRolesPanel
+                    value={qualifiedRoles}
+                    onChange={setQualifiedRoles}
+                    holders={roleHolders}
+                    onSave={saveQualified}
+                    saving={savingParticipants}
+                />
+
+                {/* Who may claim, way 2: ticked one by one from the roster */}
                 <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">
-                            Jugadores clasificados
+                            Jugadores clasificados a mano
                         </h2>
                         <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${totalQualified > 0 ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
+                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${!nobodyCanClaim ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
                                 }`}
                         >
-                            {totalQualified > 0 ? `${totalQualified} clasificados` : "nadie puede marcarse"}
+                            {totalQualified > 0
+                                ? `${totalQualified} tildados`
+                                : qualifiedRoles.length > 0
+                                    ? "va por rol"
+                                    : "nadie puede marcarse"}
                         </span>
                     </div>
 
                     <p className="mb-4 text-xs leading-relaxed text-white/50">
-                        Verificá en la web oficial de Fortnite quiénes clasificaron y tildalos acá. Solo ellos
-                        pueden marcar su spot; el resto entra igual y ve dónde caen los pros, pero no puede
-                        reclamar. Los admins siempre pueden marcarse, para poder probarlo.
+                        {qualifiedRoles.length > 0
+                            ? "Además del rol de arriba, podés tildar a mano a alguien que clasificó y no llegó a recibirlo. Se suman: cualquiera de las dos cosas lo habilita."
+                            : "Verificá en la web oficial de Fortnite quiénes clasificaron y tildalos acá."}{" "}
+                        El resto entra igual y ve dónde caen los pros, pero no puede reclamar. Los admins
+                        siempre pueden marcarse, para poder probarlo.
                     </p>
 
-                    {/* The strict rule Gonza chose makes an empty list a dead tournament,
-                        so it has to be impossible to miss. */}
-                    {totalQualified === 0 && (
+                    {/* The strict rule Gonza chose makes an empty tournament a dead
+                        tournament, so it has to be impossible to miss. */}
+                    {nobodyCanClaim && (
                         <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3">
                             <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-400" />
                             <p className="text-xs leading-relaxed text-white/70">
-                                <span className="font-bold text-red-400">Todavía no tildaste a nadie.</span>{" "}
-                                Mientras la lista esté vacía ningún jugador va a poder marcar su spot en este
-                                torneo.
+                                <span className="font-bold text-red-400">
+                                    No elegiste un rol ni tildaste a nadie.
+                                </span>{" "}
+                                Mientras esté así, ningún jugador va a poder marcar su spot en este torneo.
                             </p>
                         </div>
                     )}
@@ -677,18 +713,21 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                             <Info size={16} className="mt-0.5 shrink-0 text-primary" />
                             <div className="text-xs leading-relaxed text-white/60">
                                 <p>
-                                    El rol PRO se lee de Discord{" "}
-                                    <span className="text-white/80">cuando cada jugador entra a la web</span>, no
-                                    desde el servidor entero. Por eso acá solo aparecen los que ya iniciaron
-                                    sesión al menos una vez: hoy son{" "}
+                                    Acá solo aparecen los jugadores que ya iniciaron sesión en la web al menos
+                                    una vez: hoy son{" "}
                                     <span className="font-bold text-white">{roster.length}</span>, de los cuales{" "}
-                                    <span className="font-bold text-primary">{proCount}</span> tienen el rol PRO.
+                                    <span className="font-bold text-primary">{proCount}</span> tienen el rol PRO.{" "}
+                                    {liveRoles
+                                        ? "Los roles se leen del bot en vivo, así que un rol recién dado se ve al toque."
+                                        : "Los roles se leen cuando cada jugador entra a la web, no desde el servidor entero."}
                                 </p>
-                                {staleTokens > 0 && (
+                                {staleTokens > 0 && !liveRoles && (
                                     <p className="mt-1.5 text-amber-400">
                                         {staleTokens} {staleTokens === 1 ? "usuario tiene" : "usuarios tienen"} el
                                         token de Discord vencido (dura una semana y no lo renovamos). Hasta que
-                                        cierren sesión y vuelvan a entrar no podemos leerles el rol.
+                                        cierren sesión y vuelvan a entrar no podemos leerles el rol. Con{" "}
+                                        <code className="text-amber-400">DISCORD_BOT_TOKEN</code> cargado en Vercel
+                                        esto deja de pasar.
                                     </p>
                                 )}
                                 {Object.keys(checkReasons).length > 0 && (
@@ -789,6 +828,12 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                                                             pro
                                                         </span>
                                                     )}
+                                                    {/* Already covered by the role: ticking them is redundant. */}
+                                                    {hasTournamentRole(u) && (
+                                                        <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-black uppercase text-white/70">
+                                                            tiene el rol
+                                                        </span>
+                                                    )}
                                                 </span>
                                                 <span className="block truncate text-[11px] text-white/40">
                                                     {u.epicName ? `Epic: ${u.epicName}` : "sin nombre de Epic cargado"}
@@ -825,7 +870,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         disabled={savingParticipants}
                         className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
                     >
-                        <Save size={15} /> {savingParticipants ? "..." : "Guardar clasificados"}
+                        <Save size={15} /> {savingParticipants ? "..." : "Guardar clasificados a mano"}
                     </button>
                 </div>
 

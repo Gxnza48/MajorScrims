@@ -5,10 +5,13 @@ import { SpotClaim } from "@/lib/models/SpotClaim";
 import { UserProfile } from "@/lib/models/UserProfile";
 import { toDetailDTO, toClaimDTO } from "@/lib/tournamentDTO";
 import { claimBlockReason } from "@/lib/claimRules";
+import { resolveViewerRoles } from "@/lib/userProfile";
+import { qualifiedProfiles, QualifiedSource } from "@/lib/qualifiedPlayers";
 
 export const dynamic = "force-dynamic";
 
 const MAX_PRIZE_ROWS = 40;
+const MAX_QUALIFIED_ROLES = 10;
 
 export interface TeammateOption {
     discordId: string;
@@ -17,23 +20,25 @@ export interface TeammateOption {
 }
 
 /**
- * The players the claiming team can pick as duo/trio partners: exactly the ones
- * the moderator marked as qualified for this tournament. Only sent to someone
- * who may claim - for everyone else the qualified list stays admin-only.
+ * The players the claiming team can pick as duo/trio partners: the ones who
+ * qualified for this tournament, whether by the Discord role or by being ticked.
+ * Only sent to someone who may claim - for everyone else the list stays
+ * admin-only.
  */
 async function teammateOptionsFor(
-    tournament: { qualifiedIds?: string[]; participants?: string[] },
+    tournament: QualifiedSource & { participants?: string[] },
     selfDiscordId: string,
     selfEpicName: string
 ): Promise<TeammateOption[]> {
-    const ids = (tournament.qualifiedIds ?? []).filter(id => id && id !== selfDiscordId);
-    const profiles = ids.length ? await UserProfile.find({ discordId: { $in: ids } }) : [];
+    const profiles = await qualifiedProfiles(tournament);
 
-    const options: TeammateOption[] = profiles.map(p => ({
-        discordId: p.discordId,
-        discordName: p.discordName || "",
-        epicName: p.epicName || "",
-    }));
+    const options: TeammateOption[] = profiles
+        .filter(p => p.discordId !== selfDiscordId)
+        .map(p => ({
+            discordId: p.discordId,
+            discordName: p.discordName || "",
+            epicName: p.epicName || "",
+        }));
 
     // Pre-authorised players who never signed in only exist as an Epic name.
     for (const name of tournament.participants ?? []) {
@@ -78,6 +83,15 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
             ? await UserProfile.findOne({ discordId: session.user.id })
             : null;
 
+        // Only ask Discord when the tournament is actually gated on a role. The
+        // page polls every 10s, so this is cached for a minute (see
+        // CLAIM_ROLE_TTL_MS); the claim endpoint re-checks live before writing.
+        const qualifiedRoleIds = (tournament.qualifiedRoles ?? []).map(r => r.roleId);
+        const viewerRoleIds =
+            session && qualifiedRoleIds.length
+                ? await resolveViewerRoles(profile, session.accessToken, session.user.id)
+                : null;
+
         const blockedBecause = claimBlockReason({
             isAdmin,
             signedIn: !!session,
@@ -85,6 +99,8 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
             epicName: profile?.epicName,
             start: tournament.start,
             end: tournament.end,
+            qualifiedRoleIds,
+            viewerRoleIds,
             qualifiedIds: tournament.qualifiedIds ?? [],
             participants: tournament.participants ?? [],
         });
@@ -133,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         const body = await request.json();
         const {
             name, poster, mode, teamSize, region, start, end, published, windows, participants,
-            qualifiedIds, description, prizePool, prizes,
+            qualifiedIds, qualifiedRoles, description, prizePool, prizes,
         } = body;
 
         if (name !== undefined) tournament.name = String(name).trim();
@@ -154,6 +170,26 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
                     place: String(p.place).trim().slice(0, 60),
                     prize: String(p.prize ?? "").trim().slice(0, 60),
                 })) as never;
+        }
+        if (Array.isArray(qualifiedRoles)) {
+            // A role id is a Discord snowflake; anything else is a typo in the
+            // manual field and would silently never match anybody.
+            const seenRoles = new Set<string>();
+            tournament.qualifiedRoles = qualifiedRoles
+                .map((r: unknown) => {
+                    const row = (r ?? {}) as { roleId?: unknown; roleName?: unknown };
+                    return {
+                        roleId: String(row.roleId ?? "").trim(),
+                        roleName: String(row.roleName ?? "").trim().slice(0, 100),
+                    };
+                })
+                .filter(r => /^\d{5,25}$/.test(r.roleId))
+                .filter(r => {
+                    if (seenRoles.has(r.roleId)) return false;
+                    seenRoles.add(r.roleId);
+                    return true;
+                })
+                .slice(0, MAX_QUALIFIED_ROLES) as never;
         }
         if (Array.isArray(qualifiedIds)) {
             tournament.qualifiedIds = Array.from(

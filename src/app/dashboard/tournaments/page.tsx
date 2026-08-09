@@ -22,6 +22,9 @@ interface TournamentRow {
     published: boolean;
     windowCount: number;
     qualifiedCount: number;
+    /** A Discord role also counts as "somebody can claim", not just ticked players. */
+    hasAccessList: boolean;
+    requiredRoleNames: string[];
 }
 
 interface Form {
@@ -429,17 +432,20 @@ export default function TournamentsAdminPage() {
                                                         <EyeOff size={10} /> borrador
                                                     </span>
                                                 )}
-                                                {/* An empty qualified list means nobody can claim - flag it loudly */}
+                                                {/* No role and no ticked players means nobody can
+                                                    claim at all - flag it loudly */}
                                                 <span
-                                                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold uppercase ${t.qualifiedCount > 0
+                                                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold uppercase ${t.hasAccessList
                                                         ? "bg-white/10 text-white/50"
                                                         : "bg-red-500/15 text-red-400"
                                                         }`}
                                                 >
                                                     <Users size={10} />
-                                                    {t.qualifiedCount > 0
-                                                        ? `${t.qualifiedCount} clasificados`
-                                                        : "sin clasificados"}
+                                                    {t.requiredRoleNames?.length
+                                                        ? t.requiredRoleNames.join(" / ")
+                                                        : t.qualifiedCount > 0
+                                                            ? `${t.qualifiedCount} clasificados`
+                                                            : "sin clasificados"}
                                                 </span>
                                             </div>
                                             <p className="mt-1 text-xs text-white/50">

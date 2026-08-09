@@ -86,6 +86,9 @@ type Translations = {
         adminOverride: string;
         blockedNoList: string;
         blockedNotQualified: string;
+        /** Carries a {role} placeholder with the tournament's Discord role name. */
+        blockedNotInRole: string;
+        blockedRolesUnknown: string;
         blockedLabel: string;
         proBadge: string;
         epicCardTitle: string;
@@ -338,6 +341,8 @@ const translations: Record<Language, Translations> = {
             adminOverride: 'Você é admin: pode marcar spot mesmo assim, para testar.',
             blockedNoList: 'A lista de classificados deste torneio ainda não foi publicada. Assim que os moderadores marcarem quem passou, você vai poder escolher o seu spot.',
             blockedNotQualified: 'Você não está entre os classificados deste torneio. Se você classificou, avise um moderador e confira que o seu nome da Epic no painel seja o mesmo com que joga.',
+            blockedNotInRole: 'Para marcar um spot neste torneio você precisa do cargo {role} no Discord da Major Scrims. Se você classificou, peça para um moderador.',
+            blockedRolesUnknown: 'Não conseguimos ler os seus cargos do Discord. Saia da conta, entre de novo e tente outra vez.',
             blockedLabel: 'Não disponível',
             proBadge: 'Pro',
             epicCardTitle: 'Seu nome da Epic',
@@ -588,6 +593,8 @@ const translations: Record<Language, Translations> = {
             adminOverride: 'Sos admin: podés marcarte igual, para probarlo.',
             blockedNoList: 'Todavía no está publicada la lista de clasificados de este torneo. Cuando los moderadores marquen quiénes pasaron, vas a poder elegir tu spot.',
             blockedNotQualified: 'No figurás entre los clasificados de este torneo. Si clasificaste, avisale a un moderador y revisá que tu nombre de Epic en el panel sea el mismo con el que jugás.',
+            blockedNotInRole: 'Para marcar spot en este torneo necesitás el rol {role} en el Discord de Major Scrims. Si clasificaste, pedíselo a un moderador.',
+            blockedRolesUnknown: 'No pudimos leer tus roles de Discord. Cerrá sesión, volvé a entrar y probá de nuevo.',
             blockedLabel: 'No disponible',
             proBadge: 'Pro',
             epicCardTitle: 'Tu nombre de Epic',

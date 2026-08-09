@@ -7,6 +7,8 @@ import { UserProfile } from "@/lib/models/UserProfile";
 import { toClaimDTO } from "@/lib/tournamentDTO";
 import { claimBlockReason } from "@/lib/claimRules";
 import { teammateSlots } from "@/lib/teamFormat";
+import { resolveViewerRoles } from "@/lib/userProfile";
+import { qualifiedProfiles, QualifiedSource } from "@/lib/qualifiedPlayers";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +43,13 @@ async function settleDisputes(
  * too; anything else stays a plain name on the claim.
  */
 async function resolveTeammateIds(
-    qualifiedIds: string[],
+    tournament: QualifiedSource,
     teammates: string[],
     selfDiscordId: string
 ): Promise<string[]> {
-    if (!teammates.length || !qualifiedIds.length) return [];
+    if (!teammates.length) return [];
 
-    const profiles = await UserProfile.find({ discordId: { $in: qualifiedIds } });
+    const profiles = await qualifiedProfiles(tournament);
     const key = (v: string) => v.trim().toLowerCase();
     const ids: string[] = [];
 
@@ -110,7 +112,19 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             );
         }
 
-        // Same rule the page rendered, evaluated again here - the UI is only a hint.
+        // Same rule the page rendered, evaluated again here - the UI is only a
+        // hint. Roles are read live (maxAge 0): a moderator may have just given
+        // or just taken away the tournament's role.
+        const qualifiedRoleIds = (tournament.qualifiedRoles ?? []).map(r => r.roleId);
+        const viewerRoleIds = qualifiedRoleIds.length
+            ? await resolveViewerRoles(
+                await UserProfile.findOne({ discordId: session.user.id }),
+                session.accessToken,
+                session.user.id,
+                0
+            )
+            : null;
+
         const blocked = claimBlockReason({
             isAdmin: isAdminId(session.user.id),
             signedIn: true,
@@ -118,14 +132,22 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             epicName,
             start: tournament.start,
             end: tournament.end,
+            qualifiedRoleIds,
+            viewerRoleIds,
             qualifiedIds: tournament.qualifiedIds ?? [],
             participants: tournament.participants ?? [],
         });
 
         if (blocked) {
+            const roleNames = (tournament.qualifiedRoles ?? [])
+                .map(r => r.roleName || r.roleId)
+                .join(" o ");
             const messages: Record<string, string> = {
                 finished: "Este torneo ya terminó, no se pueden marcar spots.",
                 "no-list": "Todavía no está publicada la lista de clasificados de este torneo.",
+                "not-in-role": `Para marcar spot en este torneo necesitás el rol ${roleNames} en el Discord de Major Scrims. Si clasificaste, pedíselo a un moderador.`,
+                "roles-unknown":
+                    "No pudimos leer tus roles de Discord. Cerrá sesión, volvé a entrar y probá de nuevo.",
                 "not-qualified":
                     "No figurás entre los clasificados de este torneo. Si clasificaste, avisale a un moderador y revisá que tu nombre de Epic sea exactamente el que usás para jugar.",
                 "not-signed-in": "Necesitás iniciar sesión.",
@@ -165,11 +187,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             );
         }
 
-        const teammateIds = await resolveTeammateIds(
-            tournament.qualifiedIds ?? [],
-            teammates,
-            session.user.id
-        );
+        const teammateIds = await resolveTeammateIds(tournament, teammates, session.user.id);
 
         // The partner is being marked too, so they must be free as well.
         if (teammateIds.length) {

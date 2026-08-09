@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDB, requireAdminSession } from "@/lib/db";
 import { UserProfile } from "@/lib/models/UserProfile";
-import { isProConfigured } from "@/lib/discord";
+import { isProConfigured, hasBotToken } from "@/lib/discord";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,9 @@ export async function GET() {
         return NextResponse.json({
             success: true,
             proDetectionReady: isProConfigured(),
+            // With the bot token roles are read live and never expire, so the
+            // panel can stop warning about week-old sessions.
+            liveRoles: hasBotToken(),
             proCount: profiles.filter(p => p.isPro).length,
             checkReasons: reasons,
             users: profiles.map(p => ({
@@ -45,6 +48,8 @@ export async function GET() {
                 avatarUrl: p.avatarUrl || "",
                 epicName: p.epicName || "",
                 isPro: p.isPro,
+                // So the panel can show who already holds the tournament's role.
+                discordRoles: p.discordRoles ?? [],
                 proCheckReason: p.proCheckReason || null,
                 lastSeenAt: p.lastSeenAt ? p.lastSeenAt.toISOString() : null,
             })),

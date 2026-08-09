@@ -41,10 +41,19 @@ interface TournamentDetail {
     prizePool: string;
     prizes: PrizeRow[];
     qualifiedCount: number;
+    /** Discord roles that qualify for this tournament, by name. */
+    requiredRoleNames: string[];
     windows: WindowDTO[];
 }
 
-type BlockReason = "not-signed-in" | "finished" | "no-list" | "not-qualified" | null;
+type BlockReason =
+    | "not-signed-in"
+    | "finished"
+    | "no-list"
+    | "not-in-role"
+    | "roles-unknown"
+    | "not-qualified"
+    | null;
 
 interface Viewer {
     signedIn: boolean;
@@ -158,10 +167,14 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     // A full zone is not a dead end any more: whoever may claim can dispute it.
     const canDisputeSelected = selectedZoneIsFull && !claimsClosed && !myZoneIsSelected;
 
+    const requiredRoles = (tournament?.requiredRoleNames ?? []).join(" / ");
+
     const blockMessage: Record<Exclude<BlockReason, null>, string> = {
         "not-signed-in": t.tournaments.loginToClaim,
         finished: t.tournaments.finishedNotice,
         "no-list": t.tournaments.blockedNoList,
+        "not-in-role": t.tournaments.blockedNotInRole.replace("{role}", requiredRoles),
+        "roles-unknown": t.tournaments.blockedRolesUnknown,
         "not-qualified": t.tournaments.blockedNotQualified,
     };
 
