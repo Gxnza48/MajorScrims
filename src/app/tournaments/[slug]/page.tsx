@@ -13,6 +13,7 @@ import DropMap, {
 import ClaimSpotModal, { TeammateOption } from "@/components/tournaments/ClaimSpotModal";
 import { renderPlainWithLinks } from "@/lib/richLinks";
 import { teammateSlots } from "@/lib/teamFormat";
+import { formatTournamentRange, formatWindowStart } from "@/lib/tournamentTime";
 
 const POLL_MS = 10000;
 
@@ -191,16 +192,8 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
         "not-qualified": t.tournaments.blockedNotQualified,
     };
 
-    const formatRange = () => {
-        if (!tournament) return "";
-        const start = new Date(tournament.start);
-        const end = new Date(tournament.end);
-        const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "long" };
-        const sameDay = start.toDateString() === end.toDateString();
-        return sameDay
-            ? `${start.toLocaleDateString(locale, { ...opts, year: "numeric" })}`
-            : `${start.toLocaleDateString(locale, opts)} - ${end.toLocaleDateString(locale, { ...opts, year: "numeric" })}`;
-    };
+    const formatRange = () =>
+        tournament ? formatTournamentRange(tournament.start, tournament.end, locale) : "";
 
     const claimZone = async (
         zoneId: string,
@@ -369,12 +362,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 >
                                     <span className="block text-sm font-bold">{w.label}</span>
                                     <span className="mt-0.5 block text-[11px] text-white/40">
-                                        {new Date(w.startsAt).toLocaleString(locale, {
-                                            day: "numeric",
-                                            month: "short",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
+                                        {formatWindowStart(w.startsAt, locale)}
                                     </span>
                                 </button>
                             ))}

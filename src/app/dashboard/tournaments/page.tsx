@@ -63,6 +63,35 @@ function toInputValue(iso: string): string {
 const inputClass =
     "w-full rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40";
 
+/** This machine's timezone, named the way the moderator would recognise it. */
+function localZoneName(): string {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || "tu zona horaria";
+    } catch {
+        return "tu zona horaria";
+    }
+}
+
+/**
+ * What 21:00 here reads as in Santiago - the concrete example that makes the
+ * whole "everyone sees their own clock" thing land in one glance.
+ */
+function nineInChile(): string {
+    try {
+        const here = new Date();
+        here.setHours(21, 0, 0, 0);
+        return here.toLocaleTimeString("es-CL", {
+            timeZone: "America/Santiago",
+            hour: "2-digit",
+            minute: "2-digit",
+            // es-CL defaults to "08:00 p. m."; the rest of the site is 24h.
+            hour12: false,
+        });
+    } catch {
+        return "su propia hora";
+    }
+}
+
 export default function TournamentsAdminPage() {
     const { status } = useSession();
     const router = useRouter();
@@ -78,6 +107,15 @@ export default function TournamentsAdminPage() {
     const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    // Read after mounting: the server's clock is not the moderator's, and
+    // rendering it during SSR would be a hydration mismatch.
+    const [localZone, setLocalZone] = useState("tu zona horaria");
+    const [chileExample, setChileExample] = useState("su propia hora");
+
+    useEffect(() => {
+        setLocalZone(localZoneName());
+        setChileExample(nineInChile());
+    }, []);
 
     const load = useCallback(async () => {
         try {
@@ -598,6 +636,13 @@ export default function TournamentsAdminPage() {
                                     className={inputClass}
                                 />
                             </div>
+                            {/* The instant is what gets stored, so everyone reads it
+                                on their own clock - worth saying out loud. */}
+                            <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
+                                La hora se guarda en tu horario ({localZone}). Cada jugador la ve en el suyo:
+                                si ponés las 21:00, en Chile van a leer{" "}
+                                <span className="text-white/70">{chileExample}</span>.
+                            </p>
                             <div>
                                 <label className="mb-2 block text-sm text-white/70">Región</label>
                                 <input
