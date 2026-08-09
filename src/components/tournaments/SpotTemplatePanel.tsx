@@ -23,28 +23,140 @@ interface Template {
 
 const isNumber = (n: unknown) => typeof n === "number" && Number.isFinite(n);
 
-/** Accepts either a full export ({name, zones}) or a bare array of zones. */
+const num = (...values: unknown[]): number | null => {
+    for (const v of values) {
+        if (isNumber(v)) return v as number;
+        if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+    }
+    return null;
+};
+
+type Row = Record<string, unknown>;
+
+/** Where the list of spots can live in somebody else's export. */
+function findList(data: unknown): Row[] | null {
+    if (Array.isArray(data)) return data as Row[];
+    const d = (data ?? {}) as Row;
+    for (const key of ["zones", "spots", "points", "pois", "locations", "markers", "data", "items"]) {
+        if (Array.isArray(d[key])) return d[key] as Row[];
+    }
+    // Our own tournament export nests them one level deeper.
+    const windows = d.windows as Row[] | undefined;
+    if (Array.isArray(windows)) {
+        const all = windows.flatMap(w => (Array.isArray(w?.zones) ? (w.zones as Row[]) : []));
+        if (all.length) return all;
+    }
+    return null;
+}
+
+/** Fortnite's world coordinates run about -135k..135k on both axes. */
+const WORLD_HALF = 135000;
+/** A point with no size becomes a small square, in map fractions. */
+const POINT_SIZE = 0.055;
+
+interface RawSpot {
+    label: string;
+    x: number;
+    y: number;
+    w: number | null;
+    h: number | null;
+    capacity: number;
+}
+
+/**
+ * Reads one spot out of whatever the file calls its fields. Covers our own
+ * export, a plain list of rectangles, and a list of POIs that only carry a
+ * point (`location: {x, y}`), which is how the official map data ships them.
+ */
+function readSpot(row: Row, index: number): RawSpot | null {
+    if (!row || typeof row !== "object") return null;
+    const loc = (row.location ?? row.position ?? row.coords ?? row.coordinates ?? {}) as Row;
+
+    const x = num(row.x, row.left, row.cx, loc.x, (row as Row).lng);
+    const y = num(row.y, row.top, row.cy, loc.y, (row as Row).lat);
+    if (x === null || y === null) return null;
+
+    return {
+        label: String(
+            row.label ?? row.name ?? row.title ?? (row as Row).poi ?? `Spot ${index + 1}`
+        ).slice(0, 60),
+        x,
+        y,
+        w: num(row.w, row.width, (row as Row).sizeX),
+        h: num(row.h, row.height, (row as Row).sizeY),
+        capacity: Math.max(1, num(row.capacity, row.slots, row.teams) ?? 1),
+    };
+}
+
+/**
+ * Accepts a template file from us or from somewhere else.
+ *
+ * Coordinates may arrive in three scales and we work out which by looking at
+ * the numbers themselves, because no export says so:
+ *  - already normalised 0..1, which is what the map stores;
+ *  - pixels over the map image (0..2048 or whatever the biggest value is);
+ *  - Fortnite world units, which are the only ones that go negative.
+ * A spot with no width and height becomes a small square on that point.
+ */
 function parseTemplateFile(raw: string): { name: string; zones: TemplateZone[] } {
-    const data = JSON.parse(raw);
-    const list = Array.isArray(data) ? data : data?.zones;
-    if (!Array.isArray(list)) throw new Error("El archivo no tiene una lista de spots.");
+    let data: unknown;
+    try {
+        data = JSON.parse(raw);
+    } catch {
+        throw new Error("Ese archivo no es un JSON válido.");
+    }
 
-    const zones: TemplateZone[] = list
-        .filter(
-            (z: Record<string, unknown>) =>
-                z && isNumber(z.x) && isNumber(z.y) && isNumber(z.w) && isNumber(z.h)
-        )
-        .map((z: Record<string, unknown>, i: number) => ({
-            label: String(z.label || `Spot ${i + 1}`).slice(0, 60),
-            x: z.x as number,
-            y: z.y as number,
-            w: z.w as number,
-            h: z.h as number,
-            capacity: Math.max(1, Number(z.capacity) || 1),
-        }));
+    const list = findList(data);
+    if (!list) {
+        throw new Error(
+            "No encontré la lista de spots. El archivo tiene que ser una lista, o un objeto con «zones» o «spots» adentro."
+        );
+    }
+    if (list.length === 0) throw new Error("El archivo está vacío: no trae ningún spot.");
 
-    if (zones.length === 0) throw new Error("El archivo no tiene ningún spot válido.");
-    return { name: String(data?.name || "").slice(0, 80), zones };
+    const spots = list.map(readSpot).filter((s): s is RawSpot => s !== null);
+    if (spots.length === 0) {
+        throw new Error(
+            "Ningún spot del archivo trae coordenadas. Cada uno necesita x e y (o location con x e y)."
+        );
+    }
+
+    const values = spots.flatMap(s => [s.x, s.y]);
+    const maxAbs = Math.max(...values.map(Math.abs));
+    const negative = values.some(v => v < 0);
+
+    // World units are the only ones that go negative and reach six figures.
+    const world = negative || maxAbs > 4096;
+    // Pixels: anything clearly beyond a fraction but inside an image.
+    const pixelSpan = maxAbs > 1.5 ? Math.max(maxAbs, 1) : 0;
+
+    const toX = (v: number) => (world ? (v + WORLD_HALF) / (WORLD_HALF * 2) : pixelSpan ? v / pixelSpan : v);
+    // In world space the Y axis points north, the opposite of an image.
+    const toY = (v: number) => (world ? (WORLD_HALF - v) / (WORLD_HALF * 2) : pixelSpan ? v / pixelSpan : v);
+    const toSize = (v: number) => (world ? v / (WORLD_HALF * 2) : pixelSpan ? v / pixelSpan : v);
+
+    const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+    const zones: TemplateZone[] = spots.map(s => {
+        const hasSize = s.w !== null && s.h !== null && s.w > 0 && s.h > 0;
+        const w = hasSize ? toSize(s.w as number) : POINT_SIZE;
+        const h = hasSize ? toSize(s.h as number) : POINT_SIZE;
+        // A rectangle is stored by its top-left corner; a bare point is centred.
+        const x = hasSize ? toX(s.x) : toX(s.x) - w / 2;
+        const y = hasSize ? toY(s.y) : toY(s.y) - h / 2;
+
+        return {
+            label: s.label,
+            x: clamp01(x),
+            y: clamp01(y),
+            w: Math.min(Math.max(w, 0.01), 1),
+            h: Math.min(Math.max(h, 0.01), 1),
+            capacity: s.capacity,
+        };
+    });
+
+    const name = String((data as Row)?.name ?? (data as Row)?.title ?? "").slice(0, 80);
+    return { name, zones };
 }
 
 const toDraftZones = (zones: TemplateZone[]): MapZone[] =>

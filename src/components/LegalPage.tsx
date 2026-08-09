@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { renderRichLinks } from "@/lib/richLinks";
 
 interface Page {
     title: { es: string; pt: string };
@@ -65,7 +66,7 @@ export default function LegalPage({ slug }: { slug: "terms" | "privacy" }) {
                         <div
                             className="blog-rich-content leading-relaxed text-white/70"
                             dangerouslySetInnerHTML={{
-                                __html: page.content[language] || page.content.es,
+                                __html: renderRichLinks(page.content[language] || page.content.es),
                             }}
                         />
                     </>

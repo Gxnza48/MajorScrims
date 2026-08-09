@@ -72,7 +72,6 @@ type Translations = {
         disputeWarning: string;
         disputeConfirm: string;
         disputeBadge: string;
-        disputeHint: string;
         removeTeam: string;
         removeTeamConfirm: string;
         adminCanRemove: string;
@@ -327,10 +326,9 @@ const translations: Record<Language, Translations> = {
             cancel: 'Cancelar',
             disputeTitle: 'Disputar este spot',
             disputeTakenBy: 'Este spot já foi marcado por:',
-            disputeWarning: 'Se você disputar, o spot fica marcado em vermelho para todos e um moderador decide quem cai ali.',
+            disputeWarning: 'Se você disputar, o spot fica marcado em vermelho para todos.',
             disputeConfirm: 'Disputar spot',
             disputeBadge: 'Em disputa',
-            disputeHint: 'Este spot já está ocupado. Você pode disputá-lo: ele fica vermelho até um moderador resolver.',
             removeTeam: 'Tirar',
             removeTeamConfirm: 'Tirar este time do spot?',
             adminCanRemove: 'Como admin você pode tirar qualquer time do seu spot com o X.',
@@ -582,10 +580,9 @@ const translations: Record<Language, Translations> = {
             cancel: 'Cancelar',
             disputeTitle: 'Disputar este spot',
             disputeTakenBy: 'Este spot ya lo marcó:',
-            disputeWarning: 'Si lo disputás, el spot queda marcado en rojo para todos y un moderador decide quién cae ahí.',
+            disputeWarning: 'Si lo disputás, el spot queda marcado en rojo para todos.',
             disputeConfirm: 'Disputar spot',
             disputeBadge: 'En disputa',
-            disputeHint: 'Este spot ya está ocupado. Podés disputarlo: queda en rojo hasta que un moderador lo resuelva.',
             removeTeam: 'Sacar',
             removeTeamConfirm: '¿Sacar a este equipo del spot?',
             adminCanRemove: 'Como admin podés sacar a cualquier equipo de su spot con la X.',

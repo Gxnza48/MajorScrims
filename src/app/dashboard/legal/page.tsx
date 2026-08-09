@@ -183,6 +183,13 @@ export default function LegalPagesAdmin() {
                         />
 
                         <label className="mb-1.5 block text-xs text-white/60">Contenido</label>
+                        <p className="mb-2 text-[11px] text-white/40">
+                            Para poner un botón con link escribí{" "}
+                            <code className="text-primary">
+                                {"{Discord}(https://discord.gg/wyVqaAM59J)"}
+                            </code>{" "}
+                            y en la web se ve como un botón azul que lleva a esa dirección.
+                        </p>
                         {/* Remounted per language/page: the editor keeps its own
                             document, so reusing it would show the previous text. */}
                         <RichTextEditor

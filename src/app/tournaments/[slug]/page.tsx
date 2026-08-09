@@ -11,6 +11,7 @@ import DropMap, {
     MapZone, MapClaim, teamLabel, isZoneDisputed, claimBelongsTo,
 } from "@/components/tournaments/DropMap";
 import ClaimSpotModal, { TeammateOption } from "@/components/tournaments/ClaimSpotModal";
+import { renderPlainWithLinks } from "@/lib/richLinks";
 
 const POLL_MS = 10000;
 
@@ -334,16 +335,20 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             )}
 
             <main className="container mx-auto max-w-7xl px-6 py-10">
-                {/* Plain text on purpose: the moderator writes it from the panel and
-                    it is rendered as text, so nothing they paste can inject markup. */}
+                {/* Still plain text: renderPlainWithLinks escapes everything the
+                    moderator wrote before turning {texto}(url) into a link, so
+                    nothing they paste can inject markup. */}
                 {tournament.description && (
                     <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
                         <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/80">
                             <Info size={15} className="text-primary" /> {t.tournaments.infoTitle}
                         </h2>
-                        <p className="whitespace-pre-line text-sm leading-relaxed text-white/70">
-                            {tournament.description}
-                        </p>
+                        <p
+                            className="whitespace-pre-line text-sm leading-relaxed text-white/70"
+                            dangerouslySetInnerHTML={{
+                                __html: renderPlainWithLinks(tournament.description),
+                            }}
+                        />
                     </section>
                 )}
 
@@ -546,13 +551,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                             </button>
                                         )}
                                     </div>
-
-                                    {canDisputeSelected && (
-                                        <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-red-300/80">
-                                            <Swords size={14} className="mt-0.5 shrink-0" />
-                                            {t.tournaments.disputeHint}
-                                        </p>
-                                    )}
 
                                     {/* Resolving a dispute is just removing one of the teams. */}
                                     {viewer.isAdmin && selectedZoneClaims.length > 0 && (

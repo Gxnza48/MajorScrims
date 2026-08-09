@@ -221,13 +221,29 @@ export default function DropMap({
                             >
                                 {index + 1}
                             </span>
+                            {/* One team per line: two duos side by side ran into
+                                each other and read as a single garbled name. */}
                             <span
                                 data-zone="1"
-                                className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:line-clamp-3 sm:block sm:text-[11px]"
+                                className="pointer-events-none hidden max-w-full flex-col items-center gap-0.5 break-words px-1 text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:flex"
                             >
-                                {mode === "edit" || zoneClaims.length === 0
-                                    ? zone.label
-                                    : zoneClaims.map(teamLabel).join(" · ")}
+                                {mode === "edit" || zoneClaims.length === 0 ? (
+                                    <span className="text-[10px] sm:text-[11px]">{zone.label}</span>
+                                ) : (
+                                    zoneClaims.map(claim => (
+                                        <span
+                                            key={claim.id}
+                                            data-zone="1"
+                                            className={
+                                                zoneClaims.length > 1
+                                                    ? "text-[9px] sm:text-[10px]"
+                                                    : "text-[10px] sm:text-[11px]"
+                                            }
+                                        >
+                                            {teamLabel(claim)}
+                                        </span>
+                                    ))
+                                )}
                             </span>
                         </button>
                     );

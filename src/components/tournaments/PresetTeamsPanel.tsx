@@ -15,7 +15,12 @@ export interface RosterMember {
     epicName: string;
 }
 
-const isSnowflake = (v: string) => /^\d{5,25}$/.test(v);
+/**
+ * A Discord id as the panel accepts it. Real snowflakes are 17-19 digits; the
+ * floor is 15 so that a slot only turns into a chip once a whole id is in it,
+ * instead of snapping shut halfway through typing one.
+ */
+const isSnowflake = (v: string) => /^\d{15,25}$/.test(v.trim());
 
 /** How a player reads in the panel: Epic name first, that is what mods match. */
 function memberLabel(id: string, roster: RosterMember[]): string {
@@ -33,6 +38,11 @@ function memberSubLabel(id: string, roster: RosterMember[]): string {
 /**
  * One slot of the duo being built: search the roster by Discord or Epic name,
  * or paste a Discord id for somebody who never signed in.
+ *
+ * The field holds whatever the moderator put in it, and **a pasted id counts on
+ * its own** - there is nothing to click afterwards. Requiring a click on the
+ * dropdown left the "Agregar dúo" button disabled after pasting two ids, which
+ * read as "the duos do not save".
  */
 function MemberPicker({
     value,
@@ -41,14 +51,14 @@ function MemberPicker({
     taken,
     placeholder,
 }: {
+    /** The raw text of this slot; a complete Discord id means it is filled. */
     value: string;
-    onChange: (discordId: string) => void;
+    onChange: (next: string) => void;
     roster: RosterMember[];
     /** Ids already used in another team or in another slot of this one. */
     taken: Set<string>;
     placeholder: string;
 }) {
-    const [query, setQuery] = useState("");
     const [open, setOpen] = useState(false);
     const boxRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +71,7 @@ function MemberPicker({
         return () => document.removeEventListener("mousedown", onDown);
     }, [open]);
 
-    const needle = query.trim().toLowerCase();
+    const needle = value.trim().toLowerCase();
     const matches = useMemo(
         () =>
             roster
@@ -75,22 +85,20 @@ function MemberPicker({
         [roster, taken, needle]
     );
 
-    if (value) {
+    // A complete id - pasted or picked - is a filled slot, shown as a chip.
+    if (isSnowflake(value)) {
         return (
             <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.08] px-3 py-2">
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold text-white">
-                        {memberLabel(value, roster)}
+                        {memberLabel(value.trim(), roster)}
                     </span>
                     <span className="block truncate text-[11px] text-white/40">
-                        {memberSubLabel(value, roster)}
+                        {memberSubLabel(value.trim(), roster)}
                     </span>
                 </span>
                 <button
-                    onClick={() => {
-                        onChange("");
-                        setQuery("");
-                    }}
+                    onClick={() => onChange("")}
                     aria-label="Quitar jugador"
                     className="shrink-0 rounded p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
                 >
@@ -100,15 +108,16 @@ function MemberPicker({
         );
     }
 
-    const typedId = query.trim();
+    const typed = value.trim();
+    const looksLikePartialId = /^\d+$/.test(typed) && typed.length > 0 && typed.length < 15;
 
     return (
         <div ref={boxRef} className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
             <input
-                value={query}
+                value={value}
                 onChange={e => {
-                    setQuery(e.target.value);
+                    onChange(e.target.value);
                     setOpen(true);
                 }}
                 onFocus={() => setOpen(true)}
@@ -125,24 +134,19 @@ function MemberPicker({
                 <ChevronDown size={15} className={open ? "rotate-180" : ""} />
             </button>
 
+            {looksLikePartialId && (
+                <p className="mt-1 text-[11px] text-amber-400">
+                    Un ID de Discord tiene 17 o 18 dígitos: te faltan pegar algunos.
+                </p>
+            )}
+            {taken.has(typed) && (
+                <p className="mt-1 text-[11px] text-red-400">
+                    Ese jugador ya está en otro equipo de este torneo.
+                </p>
+            )}
+
             {open && (
                 <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-white/10 bg-[#0B1F14] shadow-2xl">
-                    {/* Somebody who never signed in is not in the roster, so the raw
-                        id has to be accepted - that is the whole point of ids here. */}
-                    {isSnowflake(typedId) && !taken.has(typedId) && (
-                        <button
-                            onClick={() => {
-                                onChange(typedId);
-                                setOpen(false);
-                            }}
-                            className="flex w-full items-center gap-2 border-b border-white/10 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                        >
-                            <Plus size={13} className="shrink-0 text-primary" />
-                            <span className="truncate text-sm text-white">
-                                Usar el ID <span className="font-mono text-primary">{typedId}</span>
-                            </span>
-                        </button>
-                    )}
                     {matches.length === 0 ? (
                         <p className="px-3 py-3 text-[11px] leading-relaxed text-white/40">
                             {taken.size > 0
@@ -222,11 +226,12 @@ export default function PresetTeamsPanel({
         [value]
     );
 
-    const draftReady = draft.filter(Boolean).length === draft.length;
+    // Every slot holds a whole Discord id, however it got there.
+    const draftReady = draft.every(v => isSnowflake(v)) && new Set(draft.map(v => v.trim())).size === draft.length;
 
     const addTeam = () => {
         if (!draftReady) return;
-        onChange([...value, { memberIds: [...draft] }]);
+        onChange([...value, { memberIds: draft.map(v => v.trim()) }]);
         setDraft(Array(draft.length).fill(""));
     };
 
@@ -307,13 +312,21 @@ export default function PresetTeamsPanel({
                             roster={roster}
                             taken={
                                 new Set(
-                                    Array.from(usedIds).concat(draft.filter((v, j) => !!v && j !== i))
+                                    Array.from(usedIds).concat(
+                                        draft
+                                            .filter((v, j) => j !== i && isSnowflake(v))
+                                            .map(v => v.trim())
+                                    )
                                 )
                             }
                             placeholder={`Jugador ${i + 1} — nombre o ID de Discord`}
                         />
                     ))}
                 </div>
+                <p className="mt-2 text-[11px] text-white/40">
+                    Podés pegar el ID de Discord directamente, o buscar por nombre si el jugador ya entró
+                    a la web alguna vez.
+                </p>
                 <button
                     onClick={addTeam}
                     disabled={!draftReady}

@@ -545,6 +545,11 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         placeholder={"Formato, horarios, reglas, cómo se juega la final...\nLos saltos de línea se respetan."}
                         className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm leading-relaxed text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
                     />
+                    <p className="mt-1.5 text-[11px] text-white/40">
+                        Para poner un botón con link escribí{" "}
+                        <code className="text-primary">{"{Discord}(https://discord.gg/wyVqaAM59J)"}</code> y se
+                        muestra como un botón azul que lleva a esa dirección.
+                    </p>
 
                     <div className="mt-5 flex flex-wrap items-end gap-3">
                         <div className="w-full sm:w-64">

@@ -71,14 +71,14 @@ export default function LoginPage() {
                         <p className="px-2 text-center text-xs leading-relaxed text-white/40">
                             {t.login.agree}{" "}
                             <a
-                                href="#"
+                                href="/terms"
                                 className="text-white/60 transition-colors hover:text-primary"
                             >
                                 {t.login.terms}
                             </a>{" "}
                             {t.login.and}{" "}
                             <a
-                                href="#"
+                                href="/privacy"
                                 className="text-white/60 transition-colors hover:text-primary"
                             >
                                 {t.login.privacy}
