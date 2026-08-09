@@ -37,6 +37,16 @@ export interface IQualifiedRole {
     roleName: string;
 }
 
+/**
+ * A team a moderator wrote down before the tournament: "k1ng juega con fazer".
+ * Whoever of them marks a spot first drags the rest of the team into it, so a
+ * duo never has to pick each other from a dropdown.
+ */
+export interface IPresetTeam {
+    _id: Types.ObjectId;
+    memberIds: string[];
+}
+
 export interface ITournament extends Document {
     slug: string;
     name: string;
@@ -70,6 +80,8 @@ export interface ITournament extends Document {
      * claim goes through when they finally do sign in.
      */
     participants: string[];
+    /** Duos/trios written down by a moderator, by Discord id. */
+    presetTeams: Types.DocumentArray<IPresetTeam & Document>;
     windows: Types.DocumentArray<IWindow & Document>;
 }
 
@@ -98,6 +110,10 @@ const QualifiedRoleSchema = new Schema<IQualifiedRole>({
     roleName: { type: String, default: "" },
 });
 
+const PresetTeamSchema = new Schema<IPresetTeam>({
+    memberIds: { type: [String], default: [] },
+});
+
 const TournamentSchema = new Schema<ITournament>(
     {
         slug: { type: String, required: true, unique: true, index: true },
@@ -115,6 +131,7 @@ const TournamentSchema = new Schema<ITournament>(
         qualifiedRoles: { type: [QualifiedRoleSchema], default: [] },
         qualifiedIds: { type: [String], default: [] },
         participants: { type: [String], default: [] },
+        presetTeams: { type: [PresetTeamSchema], default: [] },
         windows: { type: [WindowSchema], default: [] },
     },
     { timestamps: true }

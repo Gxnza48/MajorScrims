@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, MapPin, ChevronDown, AlertTriangle, Swords } from "lucide-react";
+import { X, MapPin, ChevronDown, AlertTriangle, Swords, Users } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { teammateSlots } from "@/lib/teamFormat";
 
@@ -125,6 +125,7 @@ export default function ClaimSpotModal({
     teamSize,
     defaultEpicName,
     teammateOptions,
+    presetTeam,
     isDispute,
     occupiedBy,
     saving,
@@ -136,6 +137,8 @@ export default function ClaimSpotModal({
     teamSize: string;
     defaultEpicName: string;
     teammateOptions: TeammateOption[];
+    /** Partners a moderator fixed for this tournament: nothing to pick. */
+    presetTeam: TeammateOption[];
     /** The zone is already full: confirming registers a dispute instead. */
     isDispute: boolean;
     occupiedBy: string[];
@@ -150,9 +153,14 @@ export default function ClaimSpotModal({
     const [epicName, setEpicName] = useState(defaultEpicName);
     const [teammates, setTeammates] = useState<string[]>(() => Array(slots).fill(""));
 
+    const hasPreset = presetTeam.length > 0;
+
     // In a duos/trios tournament the team takes the spot, so the partner is
     // required: confirming with half a team is what has to be impossible.
-    const missingTeammates = teammates.slice(0, slots).filter(n => !n.trim()).length;
+    // Unless the moderator already fixed the team - then there is nothing to fill.
+    const missingTeammates = hasPreset
+        ? 0
+        : teammates.slice(0, slots).filter(n => !n.trim()).length;
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -219,7 +227,24 @@ export default function ClaimSpotModal({
                     <p className="mt-1 text-[11px] text-white/40">{t.tournaments.epicNameHelp}</p>
                 </div>
 
-                {slots > 0 && (
+                {hasPreset ? (
+                    <div className="mb-2">
+                        <label className="mb-2 block text-sm text-white/70">
+                            {presetTeam.length === 1 ? t.tournaments.duo : t.tournaments.teammates}
+                        </label>
+                        <div className="flex flex-wrap gap-2 rounded-lg border border-primary/25 bg-primary/[0.07] px-4 py-3">
+                            <Users size={16} className="mt-0.5 shrink-0 text-primary" />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-white">
+                                    {presetTeam.map(o => optionLabel(o) || o.discordId).join(" · ")}
+                                </p>
+                                <p className="mt-1 text-[11px] leading-relaxed text-white/50">
+                                    {t.tournaments.presetTeamHelp}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ) : slots > 0 && (
                     <div className="mb-2">
                         <label className="mb-2 block text-sm text-white/70">
                             {slots === 1 ? t.tournaments.duo : t.tournaments.teammates}

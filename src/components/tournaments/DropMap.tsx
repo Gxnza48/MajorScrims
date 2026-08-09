@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
+import { Trash2, ZoomOut } from "lucide-react";
 
 export interface MapZone {
     id: string;
@@ -47,11 +47,18 @@ interface Props {
     onSelectZone?: (zoneId: string | null) => void;
     onZonesChange?: (zones: MapZone[]) => void;
     emptyLabel?: string;
+    /** Zone to fly to and enlarge - set by clicking a team in the list. */
+    zoomZoneId?: string | null;
+    onZoomOut?: () => void;
+    zoomOutLabel?: string;
 }
 
 const MIN_SIZE = 0.02;
+/** How much the map grows when you click a team. Enough to read the tag. */
+const ZOOM = 3;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 /** Local-only ids for zones the moderator just drew; the server assigns real ones on save. */
 let draftCounter = 0;
@@ -66,12 +73,28 @@ export default function DropMap({
     onSelectZone,
     onZonesChange,
     emptyLabel,
+    zoomZoneId,
+    onZoomOut,
+    zoomOutLabel = "Salir del zoom",
 }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
     const dragStart = useRef<{ x: number; y: number } | null>(null);
 
     const claimsFor = (zoneId: string) => claims.filter(c => c.zoneId === zoneId);
+
+    /**
+     * Centres the zoomed map on one zone. With `origin-top-left`, a point at
+     * fraction p of the container lands at ZOOM*p + t, so putting the zone's
+     * centre in the middle means t = 0.5 - ZOOM*centre. Clamping t to
+     * [1-ZOOM, 0] keeps the edges of the island against the edges of the frame
+     * instead of panning past them into empty background.
+     */
+    const zoomZone = mode === "edit" ? null : zones.find(z => z.id === zoomZoneId) ?? null;
+    const transform = zoomZone
+        ? `translate(${clamp(0.5 - ZOOM * (zoomZone.x + zoomZone.w / 2), 1 - ZOOM, 0) * 100}%, ${clamp(0.5 - ZOOM * (zoomZone.y + zoomZone.h / 2), 1 - ZOOM, 0) * 100
+        }%) scale(${ZOOM})`
+        : "none";
 
     const pointToRatio = (clientX: number, clientY: number) => {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -136,94 +159,101 @@ export default function DropMap({
             className={`relative aspect-square w-full select-none overflow-hidden rounded-2xl border border-white/10 bg-[#0a2733] ${mode === "edit" ? "cursor-crosshair touch-none" : ""
                 }`}
         >
-            {/* next/image, not <img>: the source PNG is 2048x2048 / ~2.6MB and every
+            {/* Image and zones move together, so a zoomed spot stays on its POI. */}
+            <div
+                className="absolute inset-0 origin-top-left transition-transform duration-500 ease-out"
+                style={{ transform }}
+            >
+                {/* next/image, not <img>: the source PNG is 2048x2048 / ~2.6MB and every
                 visitor of a tournament page would download it raw otherwise. */}
-            <Image
-                src="/images/fortnite-map.png"
-                alt="Mapa de Fortnite"
-                fill
-                sizes="(max-width: 768px) 100vw, 60vw"
-                draggable={false}
-                className="pointer-events-none select-none object-cover"
-                priority
-            />
+                <Image
+                    src="/images/fortnite-map.png"
+                    alt="Mapa de Fortnite"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 60vw"
+                    draggable={false}
+                    className="pointer-events-none select-none object-cover"
+                    priority
+                />
 
-            {zones.map((zone, index) => {
-                const zoneClaims = claimsFor(zone.id);
-                const capacity = zone.capacity ?? 1;
-                const isMine = zoneClaims.some(c => claimBelongsTo(c, myDiscordId));
-                const isTaken = zoneClaims.length > 0;
-                const isDisputed = isZoneDisputed(zoneClaims, capacity);
-                const isSelected = selectedZoneId === zone.id;
+                {zones.map((zone, index) => {
+                    const zoneClaims = claimsFor(zone.id);
+                    const capacity = zone.capacity ?? 1;
+                    const isMine = zoneClaims.some(c => claimBelongsTo(c, myDiscordId));
+                    const isTaken = zoneClaims.length > 0;
+                    const isDisputed = isZoneDisputed(zoneClaims, capacity);
+                    const isSelected = selectedZoneId === zone.id;
 
-                // Green means you can drop there (or that it is your team's spot),
-                // dark means somebody else took it, red means it is contested.
-                // All fills stay translucent so the map reads underneath.
-                const tone = isDisputed
-                    ? "border-red-500 bg-red-500/35"
-                    : isMine
-                        ? "border-primary bg-primary/45"
-                        : isTaken
-                            ? "border-white/25 bg-black/70"
-                            : "border-primary/60 bg-primary/25 hover:border-primary hover:bg-primary/35";
+                    // Green means you can drop there (or that it is your team's
+                    // spot), dark means somebody else took it, red means it is
+                    // contested - red alone says it, with no label on top.
+                    // All fills stay translucent so the map reads underneath.
+                    const tone = isDisputed
+                        ? "border-red-500 bg-red-500/35"
+                        : isMine
+                            ? "border-primary bg-primary/45"
+                            : isTaken
+                                ? "border-white/25 bg-black/70"
+                                : "border-primary/60 bg-primary/25 hover:border-primary hover:bg-primary/35";
 
-                return (
-                    <button
-                        key={zone.id}
-                        type="button"
-                        data-zone="1"
-                        onClick={e => {
-                            e.stopPropagation();
-                            onSelectZone?.(zone.id);
-                        }}
-                        style={{
-                            left: `${zone.x * 100}%`,
-                            top: `${zone.y * 100}%`,
-                            width: `${zone.w * 100}%`,
-                            height: `${zone.h * 100}%`,
-                        }}
-                        className={`absolute flex items-center justify-center border-2 transition-colors ${tone} ${isSelected ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent" : ""
-                            } ${isDisputed ? "ring-1 ring-red-500/50" : ""}`}
-                    >
-                        {/* The number stays legible at any size; on phones the text below
-                            has no room, so the numbered list under the map is the key. */}
-                        <span
+                    return (
+                        <button
+                            key={zone.id}
+                            type="button"
                             data-zone="1"
-                            className={`pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white ring-1 ${isDisputed ? "bg-red-600 ring-red-300/60" : "bg-black/85 ring-white/40"
-                                }`}
+                            onClick={e => {
+                                e.stopPropagation();
+                                onSelectZone?.(zone.id);
+                            }}
+                            style={{
+                                left: `${zone.x * 100}%`,
+                                top: `${zone.y * 100}%`,
+                                width: `${zone.w * 100}%`,
+                                height: `${zone.h * 100}%`,
+                            }}
+                            className={`absolute flex items-center justify-center border-2 transition-colors ${tone} ${isSelected ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent" : ""
+                                } ${isDisputed ? "ring-1 ring-red-500/50" : ""}`}
                         >
-                            {index + 1}
-                        </span>
-                        <span
-                            data-zone="1"
-                            className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:line-clamp-3 sm:block sm:text-[11px]"
-                        >
-                            {mode === "edit" || zoneClaims.length === 0
-                                ? zone.label
-                                : zoneClaims.map(teamLabel).join(" · ")}
-                        </span>
-                        {isDisputed && mode !== "edit" && (
                             <span
                                 data-zone="1"
-                                className="pointer-events-none absolute -bottom-1.5 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-red-600 px-1.5 py-[1px] text-[8px] font-black uppercase tracking-wide text-white sm:block"
+                                className={`pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white ring-1 ${isDisputed ? "bg-red-600 ring-red-300/60" : "bg-black/85 ring-white/40"
+                                    }`}
                             >
-                                en disputa
+                                {index + 1}
                             </span>
-                        )}
-                    </button>
-                );
-            })}
+                            <span
+                                data-zone="1"
+                                className="pointer-events-none hidden max-w-full break-words px-1 text-center text-[10px] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:line-clamp-3 sm:block sm:text-[11px]"
+                            >
+                                {mode === "edit" || zoneClaims.length === 0
+                                    ? zone.label
+                                    : zoneClaims.map(teamLabel).join(" · ")}
+                            </span>
+                        </button>
+                    );
+                })}
 
-            {draft && draft.w > 0 && draft.h > 0 && (
-                <div
-                    style={{
-                        left: `${draft.x * 100}%`,
-                        top: `${draft.y * 100}%`,
-                        width: `${draft.w * 100}%`,
-                        height: `${draft.h * 100}%`,
-                    }}
-                    className="pointer-events-none absolute border-2 border-dashed border-primary bg-primary/10"
-                />
+                {draft && draft.w > 0 && draft.h > 0 && (
+                    <div
+                        style={{
+                            left: `${draft.x * 100}%`,
+                            top: `${draft.y * 100}%`,
+                            width: `${draft.w * 100}%`,
+                            height: `${draft.h * 100}%`,
+                        }}
+                        className="pointer-events-none absolute border-2 border-dashed border-primary bg-primary/10"
+                    />
+                )}
+            </div>
+
+            {zoomZone && (
+                <button
+                    type="button"
+                    onClick={onZoomOut}
+                    className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:border-primary/50 hover:text-primary"
+                >
+                    <ZoomOut size={13} /> {zoomOutLabel}
+                </button>
             )}
 
             {zones.length === 0 && emptyLabel && (

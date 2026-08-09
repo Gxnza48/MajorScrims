@@ -11,6 +11,7 @@ import {
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel, teamLabel } from "@/components/tournaments/DropMap";
 import SpotTemplatePanel from "@/components/tournaments/SpotTemplatePanel";
 import QualifiedRolesPanel, { QualifiedRole } from "@/components/tournaments/QualifiedRolesPanel";
+import PresetTeamsPanel, { PresetTeam } from "@/components/tournaments/PresetTeamsPanel";
 import { teammateSlots } from "@/lib/teamFormat";
 
 const TEAM_SIZES = ["Solo", "Duos", "Trios", "Squads"];
@@ -38,6 +39,7 @@ interface Detail {
     prizes: PrizeRow[];
     qualifiedIds: string[];
     qualifiedRoles: QualifiedRole[];
+    presetTeams: PresetTeam[];
     participants: string[];
     windows: WindowRow[];
 }
@@ -98,6 +100,8 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [checkReasons, setCheckReasons] = useState<Record<string, number>>({});
     const [qualifiedIds, setQualifiedIds] = useState<string[]>([]);
     const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
+    const [presetTeams, setPresetTeams] = useState<PresetTeam[]>([]);
+    const [savingTeams, setSavingTeams] = useState(false);
     const [liveRoles, setLiveRoles] = useState(false);
     const [rosterQuery, setRosterQuery] = useState("");
     const [onlyPros, setOnlyPros] = useState(true);
@@ -117,6 +121,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             setParticipantsText((data.tournament.participants ?? []).join("\n"));
             setQualifiedIds(data.tournament.qualifiedIds ?? []);
             setQualifiedRoles(data.tournament.qualifiedRoles ?? []);
+            setPresetTeams(data.tournament.presetTeams ?? []);
             setDescription(data.tournament.description ?? "");
             setPrizePool(data.tournament.prizePool ?? "");
             setPrizes(data.tournament.prizes ?? []);
@@ -371,6 +376,35 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         setSavingParticipants(false);
     };
 
+    const savePresetTeams = async () => {
+        setSavingTeams(true);
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch(`/api/tournaments/${params.slug}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ presetTeams }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetail(data.tournament);
+                const saved: PresetTeam[] = data.tournament.presetTeams ?? [];
+                setPresetTeams(saved);
+                setNotice(
+                    saved.length > 0
+                        ? `${saved.length} ${saved.length === 1 ? "equipo guardado" : "equipos guardados"}. Cuando uno de sus jugadores marca un spot, queda marcado el equipo entero.`
+                        : "No quedó ningún equipo definido: cada jugador va a tener que elegir a su compañero al marcar el spot."
+                );
+            } else {
+                setError(data.error || "No se pudieron guardar los equipos.");
+            }
+        } catch {
+            setError("Error de red.");
+        }
+        setSavingTeams(false);
+    };
+
     const toggleQualified = (discordId: string) =>
         setQualifiedIds(prev =>
             prev.includes(discordId) ? prev.filter(id => id !== discordId) : [...prev, discordId]
@@ -399,8 +433,9 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
     const preAuthorized = participantsText.split("\n").map(n => n.trim()).filter(Boolean);
     const totalQualified = qualifiedIds.length + preAuthorized.length;
-    // A tournament gated on a role is not a dead tournament even with nobody ticked.
-    const nobodyCanClaim = totalQualified === 0 && qualifiedRoles.length === 0;
+    // A role or a preset team is enough: only all three empty is a dead tournament.
+    const nobodyCanClaim =
+        totalQualified === 0 && qualifiedRoles.length === 0 && presetTeams.length === 0;
 
     const roleIdSet = new Set(qualifiedRoles.map(r => r.roleId));
     const hasTournamentRole = (u: RosterUser) => u.discordRoles.some(id => roleIdSet.has(id));
@@ -656,6 +691,16 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                     holders={roleHolders}
                     onSave={saveQualified}
                     saving={savingParticipants}
+                />
+
+                {/* Fixed teams: whoever marks a spot marks their whole team */}
+                <PresetTeamsPanel
+                    value={presetTeams}
+                    onChange={setPresetTeams}
+                    roster={roster}
+                    teamSize={teamSize}
+                    onSave={savePresetTeams}
+                    saving={savingTeams}
                 />
 
                 {/* Who may claim, way 2: ticked one by one from the roster */}

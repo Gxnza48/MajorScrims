@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useI18n } from "../i18n";
 import { Twitter, Instagram } from "lucide-react";
 
@@ -130,7 +131,7 @@ export function Footer() {
                             <TikTokIcon className="h-4 w-4" />
                         </a>
                         <a
-                            href="https://discord.com/invite/majorscrims"
+                            href="https://discord.gg/wyVqaAM59J"
                             target="_blank"
                             rel="noopener"
                             aria-label="Discord"
@@ -141,7 +142,17 @@ export function Footer() {
                     </div>
                 </div>
 
-                <p className="mt-6 text-center text-xs text-white/30">
+                {/* Discord requires these two to be reachable public URLs. */}
+                <div className="mt-6 flex justify-center gap-5 text-xs text-white/30">
+                    <Link href="/terms" className="transition-colors hover:text-white">
+                        Términos del servicio
+                    </Link>
+                    <Link href="/privacy" className="transition-colors hover:text-white">
+                        Política de privacidad
+                    </Link>
+                </div>
+
+                <p className="mt-4 text-center text-xs text-white/30">
                     Developed by{" "}
                     <a
                         href="https://github.com/gxnza48"

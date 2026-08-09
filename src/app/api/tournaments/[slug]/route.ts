@@ -7,6 +7,7 @@ import { toDetailDTO, toClaimDTO } from "@/lib/tournamentDTO";
 import { claimBlockReason } from "@/lib/claimRules";
 import { resolveViewerRoles } from "@/lib/userProfile";
 import { qualifiedProfiles, QualifiedSource } from "@/lib/qualifiedPlayers";
+import { presetPartnersOf, presetTeamCount, normalisePresetTeams } from "@/lib/presetTeams";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,31 @@ export interface TeammateOption {
     discordId: string;
     discordName: string;
     epicName: string;
+}
+
+/**
+ * The fixed partners a moderator gave this viewer for this tournament, with a
+ * name to show. When this is non-empty the claim modal stops asking who your
+ * duo is: marking the spot marks the whole team.
+ */
+async function presetTeamFor(
+    tournament: { presetTeams?: { memberIds: string[] }[] },
+    discordId: string
+): Promise<TeammateOption[]> {
+    const partners = presetPartnersOf(tournament, discordId);
+    if (!partners.length) return [];
+
+    const profiles = await UserProfile.find({ discordId: { $in: partners } });
+    return partners.map(id => {
+        const p = profiles.find(x => x.discordId === id);
+        return {
+            discordId: id,
+            discordName: p?.discordName || "",
+            // Somebody who never signed in has no name yet; the id is at least
+            // something the moderator can recognise instead of a blank.
+            epicName: p?.epicName || "",
+        };
+    });
 }
 
 /**
@@ -103,10 +129,15 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
             viewerRoleIds,
             qualifiedIds: tournament.qualifiedIds ?? [],
             participants: tournament.participants ?? [],
+            presetTeamCount: presetTeamCount(tournament),
+            inPresetTeam: !!session && presetPartnersOf(tournament, session.user.id).length > 0,
         });
 
+        const presetTeam = session ? await presetTeamFor(tournament, session.user.id) : [];
+
+        // A fixed team makes the partner dropdown pointless, so it is not sent.
         const teammateOptions =
-            session && blockedBecause === null
+            session && blockedBecause === null && presetTeam.length === 0
                 ? await teammateOptionsFor(tournament, session.user.id, profile?.epicName ?? "")
                 : [];
 
@@ -123,6 +154,7 @@ export async function GET(_request: NextRequest, { params }: { params: { slug: s
                 blockedBecause,
             },
             teammateOptions,
+            presetTeam,
         });
     } catch (error) {
         return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
@@ -149,7 +181,7 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
         const body = await request.json();
         const {
             name, poster, mode, teamSize, region, start, end, published, windows, participants,
-            qualifiedIds, qualifiedRoles, description, prizePool, prizes,
+            qualifiedIds, qualifiedRoles, presetTeams, description, prizePool, prizes,
         } = body;
 
         if (name !== undefined) tournament.name = String(name).trim();
@@ -190,6 +222,9 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
                     return true;
                 })
                 .slice(0, MAX_QUALIFIED_ROLES) as never;
+        }
+        if (Array.isArray(presetTeams)) {
+            tournament.presetTeams = normalisePresetTeams(presetTeams) as never;
         }
         if (Array.isArray(qualifiedIds)) {
             tournament.qualifiedIds = Array.from(

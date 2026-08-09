@@ -89,6 +89,9 @@ type Translations = {
         /** Carries a {role} placeholder with the tournament's Discord role name. */
         blockedNotInRole: string;
         blockedRolesUnknown: string;
+        presetTeamHelp: string;
+        zoomToTeam: string;
+        zoomOut: string;
         blockedLabel: string;
         proBadge: string;
         epicCardTitle: string;
@@ -343,6 +346,9 @@ const translations: Record<Language, Translations> = {
             blockedNotQualified: 'Você não está entre os classificados deste torneio. Se você classificou, avise um moderador e confira que o seu nome da Epic no painel seja o mesmo com que joga.',
             blockedNotInRole: 'Para marcar um spot neste torneio você precisa do cargo {role} no Discord da Major Scrims. Se você classificou, peça para um moderador.',
             blockedRolesUnknown: 'Não conseguimos ler os seus cargos do Discord. Saia da conta, entre de novo e tente outra vez.',
+            presetTeamHelp: 'Os moderadores já definiram o seu time neste torneio. Ao marcar o spot, ele fica marcado para os dois.',
+            zoomToTeam: 'Ver o spot deste time no mapa',
+            zoomOut: 'Ver o mapa inteiro',
             blockedLabel: 'Não disponível',
             proBadge: 'Pro',
             epicCardTitle: 'Seu nome da Epic',
@@ -595,6 +601,9 @@ const translations: Record<Language, Translations> = {
             blockedNotQualified: 'No figurás entre los clasificados de este torneo. Si clasificaste, avisale a un moderador y revisá que tu nombre de Epic en el panel sea el mismo con el que jugás.',
             blockedNotInRole: 'Para marcar spot en este torneo necesitás el rol {role} en el Discord de Major Scrims. Si clasificaste, pedíselo a un moderador.',
             blockedRolesUnknown: 'No pudimos leer tus roles de Discord. Cerrá sesión, volvé a entrar y probá de nuevo.',
+            presetTeamHelp: 'Los moderadores ya definieron tu equipo en este torneo. Al marcar el spot queda marcado para los dos.',
+            zoomToTeam: 'Ver el spot de este equipo en el mapa',
+            zoomOut: 'Ver el mapa entero',
             blockedLabel: 'No disponible',
             proBadge: 'Pro',
             epicCardTitle: 'Tu nombre de Epic',

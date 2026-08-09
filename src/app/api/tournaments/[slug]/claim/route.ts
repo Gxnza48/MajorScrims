@@ -9,6 +9,7 @@ import { claimBlockReason } from "@/lib/claimRules";
 import { teammateSlots } from "@/lib/teamFormat";
 import { resolveViewerRoles } from "@/lib/userProfile";
 import { qualifiedProfiles, QualifiedSource } from "@/lib/qualifiedPlayers";
+import { presetPartnersOf, presetTeamCount } from "@/lib/presetTeams";
 
 export const dynamic = "force-dynamic";
 
@@ -83,9 +84,15 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
         const windowId = String(body.windowId || "");
         const zoneId = String(body.zoneId || "");
         const epicName = String(body.epicName || "").trim();
-        const teammates: string[] = Array.isArray(body.teammates)
+        const typedTeammates: string[] = Array.isArray(body.teammates)
             ? body.teammates.map((n: unknown) => String(n).trim()).filter(Boolean).slice(0, MAX_TEAMMATES)
             : [];
+
+        // A duo a moderator wrote down for this tournament wins over anything the
+        // client sent: the team is the admin's decision, not the claimer's.
+        const presetPartners = presetPartnersOf(tournament, session.user.id);
+        const hasPresetTeam = presetPartners.length > 0;
+        const teammates = hasPresetTeam ? [] : typedTeammates;
         // The player pressed "disputar" knowing the zone was already taken.
         const wantsDispute = body.dispute === true;
 
@@ -98,8 +105,9 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
 
         // In a duos/trios/squads tournament the team is what takes the spot, so
         // the partner is not optional: without it we would mark half a team.
+        // Nothing to ask when the moderator already fixed the team.
         const slots = teammateSlots(tournament.teamSize);
-        if (teammates.length < slots) {
+        if (!hasPresetTeam && teammates.length < slots) {
             return NextResponse.json(
                 {
                     success: false,
@@ -136,6 +144,8 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             viewerRoleIds,
             qualifiedIds: tournament.qualifiedIds ?? [],
             participants: tournament.participants ?? [],
+            presetTeamCount: presetTeamCount(tournament),
+            inPresetTeam: hasPresetTeam,
         });
 
         if (blocked) {
@@ -187,7 +197,21 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
             );
         }
 
-        const teammateIds = await resolveTeammateIds(tournament, teammates, session.user.id);
+        // With a preset team the ids are already known, so the names are looked
+        // up rather than matched: no spelling to get wrong.
+        let teammateIds: string[];
+        let teammateNames: string[];
+        if (hasPresetTeam) {
+            const partners = await UserProfile.find({ discordId: { $in: presetPartners } });
+            teammateIds = presetPartners;
+            teammateNames = presetPartners.map(id => {
+                const p = partners.find(x => x.discordId === id);
+                return p?.epicName || p?.discordName || id;
+            });
+        } else {
+            teammateIds = await resolveTeammateIds(tournament, teammates, session.user.id);
+            teammateNames = teammates;
+        }
 
         // The partner is being marked too, so they must be free as well.
         if (teammateIds.length) {
@@ -239,7 +263,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
                 discordId: session.user.id,
                 discordName: session.user.name || "",
                 epicName,
-                teammates,
+                teammates: teammateNames,
                 teammateIds,
                 disputed: isDispute,
             });

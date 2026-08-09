@@ -65,7 +65,7 @@ export function Community() {
                             </p>
 
                             <motion.a
-                                href="https://discord.com/invite/majorscrims"
+                                href="https://discord.gg/wyVqaAM59J"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 whileHover={{ scale: 1.05 }}

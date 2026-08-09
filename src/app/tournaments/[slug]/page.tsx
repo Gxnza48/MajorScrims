@@ -78,6 +78,8 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     const [tournament, setTournament] = useState<TournamentDetail | null>(null);
     const [claims, setClaims] = useState<Claim[]>([]);
     const [teammateOptions, setTeammateOptions] = useState<TeammateOption[]>([]);
+    /** Fixed partners a moderator set for this tournament: nothing to pick. */
+    const [presetTeam, setPresetTeam] = useState<TeammateOption[]>([]);
     const [viewer, setViewer] = useState<Viewer>({
         signedIn: false,
         isAdmin: false,
@@ -89,6 +91,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     const [notFound, setNotFound] = useState(false);
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
     const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+    const [zoomZoneId, setZoomZoneId] = useState<string | null>(null);
     const [showClaim, setShowClaim] = useState(false);
     const [saving, setSaving] = useState(false);
     const [claimError, setClaimError] = useState("");
@@ -108,6 +111,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             setTournament(data.tournament);
             setClaims(data.claims);
             setTeammateOptions(data.teammateOptions ?? []);
+            setPresetTeam(data.presetTeam ?? []);
             if (data.viewer) setViewer(data.viewer);
             setActiveWindowId(prev => prev ?? data.tournament.windows[0]?.id ?? null);
         } catch {
@@ -154,7 +158,11 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     const selectedZoneIsFull =
         !!selectedZone && selectedZoneClaims.length >= (selectedZone.capacity ?? 1);
 
-    const disputedCount = windowClaims.filter(c => c.disputed).length;
+    /** Clicking a team zooms the map to their spot; clicking it again zooms out. */
+    const focusTeam = (zoneId: string) => {
+        setSelectedZoneId(zoneId);
+        setZoomZoneId(prev => (prev === zoneId ? null : zoneId));
+    };
 
     // The server already decided whether this viewer may claim and why not; the
     // page only renders that answer so button and API can never disagree.
@@ -372,7 +380,13 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                             : ""
                                                         }`}
                                                 >
-                                                    <div className="min-w-0">
+                                                    {/* Clicking a team flies the map to their spot: that is
+                                                        how you find a duo on a 32-zone map. */}
+                                                    <button
+                                                        onClick={() => focusTeam(claim.zoneId)}
+                                                        className="min-w-0 flex-1 text-left"
+                                                        title={t.tournaments.zoomToTeam}
+                                                    >
                                                         <p
                                                             className={`truncate text-sm font-bold ${claim.disputed ? "text-red-400" : "text-primary"
                                                                 }`}
@@ -385,15 +399,12 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                                 </span>
                                                             )}
                                                         </p>
-                                                        <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-white/40">
-                                                            {zone && <span className="truncate">{zone.label}</span>}
-                                                            {claim.disputed && (
-                                                                <span className="shrink-0 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-black uppercase text-red-400">
-                                                                    {t.tournaments.disputeBadge}
-                                                                </span>
-                                                            )}
-                                                        </p>
-                                                    </div>
+                                                        {zone && (
+                                                            <p className="mt-0.5 truncate text-[11px] text-white/40">
+                                                                {zone.label}
+                                                            </p>
+                                                        )}
+                                                    </button>
 
                                                     <div className="flex shrink-0 items-center gap-1.5">
                                                         {mine && (
@@ -433,19 +444,11 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                     <MapPin size={15} className="text-primary" /> {t.tournaments.mapTitle}
                                 </h2>
                                 {activeWindow.zones.length > 0 && (
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {/* Teams, not spots: a duo is one team on one spot. */}
-                                        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70">
-                                            <Users size={12} className="text-primary" />
-                                            {windowClaims.length} {t.tournaments.teamsMarked}
-                                        </span>
-                                        {disputedCount > 0 && (
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400">
-                                                <Swords size={12} />
-                                                {disputedCount} {t.tournaments.disputeBadge.toLowerCase()}
-                                            </span>
-                                        )}
-                                    </div>
+                                    /* Teams, not spots: a duo is one team on one spot. */
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70">
+                                        <Users size={12} className="text-primary" />
+                                        {windowClaims.length} {t.tournaments.teamsMarked}
+                                    </span>
                                 )}
                             </div>
 
@@ -482,65 +485,10 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 selectedZoneId={selectedZoneId}
                                 onSelectZone={setSelectedZoneId}
                                 emptyLabel={t.tournaments.noZones}
+                                zoomZoneId={zoomZoneId}
+                                onZoomOut={() => setZoomZoneId(null)}
+                                zoomOutLabel={t.tournaments.zoomOut}
                             />
-
-                            {/* Numbered legend - on phones the labels do not fit inside the
-                                rectangles, so this list is how a player reads and picks a spot. */}
-                            {activeWindow.zones.length > 0 && (
-                                <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                                    {activeWindow.zones.map((zone, index) => {
-                                        const zoneClaims = windowClaims.filter(c => c.zoneId === zone.id);
-                                        const mine = zoneClaims.some(isMyTeam);
-                                        const taken = zoneClaims.length > 0;
-                                        const contested = isZoneDisputed(zoneClaims, zone.capacity ?? 1);
-                                        return (
-                                            <button
-                                                key={zone.id}
-                                                onClick={() => setSelectedZoneId(zone.id)}
-                                                className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${contested
-                                                    ? "border-red-500/50 bg-red-500/[0.07]"
-                                                    : selectedZoneId === zone.id
-                                                        ? "border-primary bg-primary/10"
-                                                        : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                                                    }`}
-                                            >
-                                                <span
-                                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${contested
-                                                        ? "bg-red-500 text-white"
-                                                        : mine
-                                                            ? "bg-primary text-[#04130A]"
-                                                            : taken
-                                                                ? "bg-white/20 text-white/80"
-                                                                : "bg-white/10 text-white/70"
-                                                        }`}
-                                                >
-                                                    {index + 1}
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <span className="min-w-0 truncate text-sm font-bold text-white">
-                                                            {zone.label}
-                                                        </span>
-                                                        {contested && (
-                                                            <span className="shrink-0 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-black uppercase text-red-400">
-                                                                {t.tournaments.disputeBadge}
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                    <span
-                                                        className={`block truncate text-[11px] ${zoneClaims.length ? "text-white/60" : "text-primary"
-                                                            }`}
-                                                    >
-                                                        {zoneClaims.length
-                                                            ? zoneClaims.map(teamLabel).join(" · ")
-                                                            : t.tournaments.free}
-                                                    </span>
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
 
                             {/* Selected zone actions */}
                             {selectedZone && (
@@ -691,6 +639,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                         ""
                     }
                     teammateOptions={teammateOptions}
+                    presetTeam={presetTeam}
                     isDispute={selectedZoneIsFull}
                     occupiedBy={selectedZoneClaims.map(teamLabel)}
                     saving={saving}

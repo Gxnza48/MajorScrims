@@ -66,10 +66,14 @@ export interface TournamentDTO {
     requiredRoleNames: string[];
     /** False = no role and no list, so nobody but an admin can claim yet. */
     hasAccessList: boolean;
+    /** How many duos a moderator wrote down. Public: the page says so. */
+    presetTeamCount: number;
     /** Admin-only: the actual roster selection, for the moderator UI. */
     qualifiedRoles?: QualifiedRoleDTO[];
     qualifiedIds?: string[];
     participants?: string[];
+    /** Admin-only: the duos, by Discord id (the panel puts names on them). */
+    presetTeams?: { memberIds: string[] }[];
     windows?: WindowDTO[];
 }
 
@@ -95,10 +99,12 @@ export function toListDTO(t: ITournament): TournamentDTO {
         prizePool: t.prizePool || "",
         qualifiedCount: (t.qualifiedIds?.length ?? 0) + (t.participants?.length ?? 0),
         requiredRoleNames: (t.qualifiedRoles ?? []).map(r => r.roleName || r.roleId),
+        presetTeamCount: t.presetTeams?.length ?? 0,
         hasAccessList:
             (t.qualifiedRoles?.length ?? 0) > 0 ||
             (t.qualifiedIds?.length ?? 0) > 0 ||
-            (t.participants?.length ?? 0) > 0,
+            (t.participants?.length ?? 0) > 0 ||
+            (t.presetTeams?.length ?? 0) > 0,
     };
 }
 
@@ -116,6 +122,7 @@ export function toDetailDTO(t: ITournament, forAdmin = false): TournamentDTO {
                     roleId: r.roleId,
                     roleName: r.roleName || "",
                 })),
+                presetTeams: (t.presetTeams ?? []).map(x => ({ memberIds: [...(x.memberIds ?? [])] })),
             }
             : {}),
         windows: (t.windows ?? []).map(w => ({

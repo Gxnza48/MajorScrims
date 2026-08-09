@@ -53,7 +53,7 @@ const BRAND_LOGOS = [
     },
 ];
 
-const DISCORD_URL = "https://discord.com/invite/majorscrims";
+const DISCORD_URL = "https://discord.gg/wyVqaAM59J";
 
 const glowBtn = { boxShadow: "var(--glow-btn)" } as React.CSSProperties;
 

@@ -24,6 +24,10 @@ export interface ClaimContext {
     viewerRoleIds: string[] | null;
     qualifiedIds: string[];
     participants: string[];
+    /** How many duos a moderator wrote down for this tournament. */
+    presetTeamCount: number;
+    /** This viewer is a member of one of them. */
+    inPresetTeam: boolean;
 }
 
 const norm = (v: string) => v.trim().toLowerCase();
@@ -36,14 +40,18 @@ const norm = (v: string) => v.trim().toLowerCase();
  *  - admins always may, so a moderator can test a tournament end to end;
  *  - you must be signed in;
  *  - a finished tournament takes no more spots;
- *  - a moderator must have set who qualifies - a Discord role, a ticked list or
- *    both. While all three are empty nobody can claim (the strict behaviour
- *    Gonza asked for);
+ *  - a moderator must have set who qualifies - a Discord role, a ticked list,
+ *    a preset duo, any of them. While all are empty nobody can claim (the
+ *    strict behaviour Gonza asked for);
  *  - then any one of them lets you in: you hold one of the tournament's roles,
- *    or you were ticked from the roster, or your Epic name was pre-authorised.
+ *    or a moderator put you in a duo for it, or you were ticked from the roster,
+ *    or your Epic name was pre-authorised.
  *
- * The three ways add up rather than override each other, so a moderator can
- * still wave through one player the Discord role missed.
+ * They add up rather than override each other, so a moderator can still wave
+ * through one player the Discord role missed. Being written into a duo counts
+ * as qualifying on purpose: an admin naming you as somebody's partner *is* a
+ * statement that you are in, and otherwise whichever half of the duo lacked the
+ * role could not claim while their partner could.
  */
 export function claimBlockReason(ctx: ClaimContext): ClaimBlock {
     if (ctx.isAdmin) return null;
@@ -52,9 +60,12 @@ export function claimBlockReason(ctx: ClaimContext): ClaimBlock {
 
     const roleGated = ctx.qualifiedRoleIds.length > 0;
     const listGated = ctx.qualifiedIds.length > 0 || ctx.participants.length > 0;
-    if (!roleGated && !listGated) return "no-list";
+    const teamGated = ctx.presetTeamCount > 0;
+    if (!roleGated && !listGated && !teamGated) return "no-list";
 
     if (roleGated && ctx.viewerRoleIds?.some(id => ctx.qualifiedRoleIds.includes(id))) return null;
+
+    if (ctx.inPresetTeam) return null;
 
     if (ctx.qualifiedIds.includes(ctx.discordId)) return null;
 
@@ -66,5 +77,8 @@ export function claimBlockReason(ctx: ClaimContext): ClaimBlock {
     // or set the bot token), so it gets its own message.
     if (roleGated && ctx.viewerRoleIds === null) return "roles-unknown";
 
+    // Only the ticked list changes the message: if the tournament runs on a role,
+    // naming that role is the useful thing to say, and having written down some
+    // duos does not make "no figurás entre los clasificados" any truer.
     return roleGated && !listGated ? "not-in-role" : "not-qualified";
 }

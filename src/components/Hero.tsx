@@ -92,7 +92,7 @@ export function Hero() {
 
                         {/* Secondary Button: Discord */}
                         <a
-                            href="https://discord.com/invite/majorscrims"
+                            href="https://discord.gg/wyVqaAM59J"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group relative inline-flex items-center justify-center w-full sm:w-auto"
