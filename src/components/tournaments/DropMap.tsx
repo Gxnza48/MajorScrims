@@ -373,18 +373,28 @@ export default function DropMap({
                             className={`absolute flex items-center justify-center border-2 transition-colors ${tone} ${isSelected ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent" : ""
                                 } ${isDisputed ? "ring-1 ring-red-500/50" : ""}`}
                         >
-                            <span
-                                data-zone="1"
-                                className={`pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white ring-1 ${isDisputed ? "bg-red-600 ring-red-300/60" : "bg-black/85 ring-white/40"
-                                    }`}
-                            >
-                                {index + 1}
-                            </span>
+                            {/* Only while drawing: the number used to key into a
+                                numbered list under the map, which is gone, and on a
+                                phone-sized zone it sat on top of the first letter
+                                of the team's name. */}
+                            {mode === "edit" && (
+                                <span
+                                    data-zone="1"
+                                    className="pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/85 text-[9px] font-black text-white ring-1 ring-white/40"
+                                >
+                                    {index + 1}
+                                </span>
+                            )}
                             {/* One team per line: two duos side by side ran into
                                 each other and read as a single garbled name. */}
+                            {/* Shown on phones too. It used to be desktop-only,
+                                leaning on the numbered list under the map to say
+                                who was where - and that list is gone. At 1x on a
+                                phone it is small, but the label scales with the
+                                map, so zooming in is what makes it readable. */}
                             <span
                                 data-zone="1"
-                                className="pointer-events-none hidden max-w-full flex-col items-center gap-0.5 break-words px-1 text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)] sm:flex"
+                                className="pointer-events-none flex max-w-full flex-col items-center gap-0.5 break-words px-1 text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
                             >
                                 {mode === "edit" || zoneClaims.length === 0 ? (
                                     <span className="text-[10px] sm:text-[11px]">{zone.label}</span>
