@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-    ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Search, Info,
+    ArrowLeft, Plus, Save, Trash2, MapPin, ExternalLink, Loader2, CalendarX, AlertTriangle, Info,
     Trophy, X, Users,
 } from "lucide-react";
 import DropMap, { MapZone, MapClaim, ZoneEditorPanel, teamLabel } from "@/components/tournaments/DropMap";
@@ -92,21 +92,13 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const [prizes, setPrizes] = useState<PrizeRow[]>([]);
     const [savingInfo, setSavingInfo] = useState(false);
 
-    // Who qualified: ticked from the roster, plus an Epic-name escape hatch for
-    // players who qualified but have never signed in (so they are not listed yet).
+    // Who may claim: a Discord role, and the teams written down by hand. The
+    // roster is only the list the team pickers search through.
     const [roster, setRoster] = useState<RosterUser[]>([]);
-    const [proDetectionReady, setProDetectionReady] = useState(true);
-    const [proCount, setProCount] = useState(0);
-    const [checkReasons, setCheckReasons] = useState<Record<string, number>>({});
-    const [qualifiedIds, setQualifiedIds] = useState<string[]>([]);
     const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
+    const [savingRoles, setSavingRoles] = useState(false);
     const [presetTeams, setPresetTeams] = useState<PresetTeam[]>([]);
     const [savingTeams, setSavingTeams] = useState(false);
-    const [liveRoles, setLiveRoles] = useState(false);
-    const [rosterQuery, setRosterQuery] = useState("");
-    const [onlyPros, setOnlyPros] = useState(true);
-    const [participantsText, setParticipantsText] = useState("");
-    const [savingParticipants, setSavingParticipants] = useState(false);
 
     const load = useCallback(async () => {
         try {
@@ -118,8 +110,6 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
             }
             setDetail(data.tournament);
             setClaims(data.claims);
-            setParticipantsText((data.tournament.participants ?? []).join("\n"));
-            setQualifiedIds(data.tournament.qualifiedIds ?? []);
             setQualifiedRoles(data.tournament.qualifiedRoles ?? []);
             setPresetTeams(data.tournament.presetTeams ?? []);
             setDescription(data.tournament.description ?? "");
@@ -154,17 +144,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         if (status !== "authenticated") return;
         fetch("/api/roster")
             .then(res => res.json())
-            .then(data => {
-                if (!data.success) return;
-                setRoster(data.users);
-                setProDetectionReady(data.proDetectionReady);
-                setProCount(data.proCount ?? 0);
-                setCheckReasons(data.checkReasons ?? {});
-                setLiveRoles(!!data.liveRoles);
-                // Filtering to pros when none are flagged yet renders an empty list
-                // that reads like a bug, so only enable it once there is something.
-                if (!data.proCount) setOnlyPros(false);
-            })
+            .then(data => data.success && setRoster(data.users))
             .catch(() => { });
     }, [status]);
 
@@ -336,44 +316,33 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         setSavingWindows(false);
     };
 
-    const saveQualified = async () => {
-        setSavingParticipants(true);
+    const saveQualifiedRoles = async () => {
+        setSavingRoles(true);
         setError("");
         setNotice("");
         try {
-            const list = participantsText
-                .split("\n")
-                .map(n => n.trim())
-                .filter(Boolean);
             const res = await fetch(`/api/tournaments/${params.slug}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ qualifiedIds, qualifiedRoles, participants: list }),
+                body: JSON.stringify({ qualifiedRoles }),
             });
             const data = await res.json();
             if (data.success) {
                 setDetail(data.tournament);
-                setParticipantsText((data.tournament.participants ?? []).join("\n"));
-                setQualifiedIds(data.tournament.qualifiedIds ?? []);
-                setQualifiedRoles(data.tournament.qualifiedRoles ?? []);
-                const total =
-                    (data.tournament.qualifiedIds?.length ?? 0) + (data.tournament.participants?.length ?? 0);
-                const savedRoles: QualifiedRole[] = data.tournament.qualifiedRoles ?? [];
-                const roleNames = savedRoles.map(r => r.roleName || r.roleId).join(", ");
+                const saved: QualifiedRole[] = data.tournament.qualifiedRoles ?? [];
+                setQualifiedRoles(saved);
                 setNotice(
-                    savedRoles.length > 0
-                        ? `Guardado. Pueden marcar spot: cualquiera con ${roleNames}${total > 0 ? ` y ${total} tildados a mano` : ""}.`
-                        : total > 0
-                            ? `${total} clasificados guardados. Solo ellos pueden marcar spot.`
-                            : "Sin rol ni clasificados: por ahora nadie va a poder marcar spot en este torneo."
+                    saved.length > 0
+                        ? `Guardado. Puede marcar spot cualquiera con ${saved.map(r => r.roleName || r.roleId).join(", ")}.`
+                        : "Sin rol: solo van a poder marcar los jugadores que estén en un equipo."
                 );
             } else {
-                setError(data.error || "No se pudo guardar la lista.");
+                setError(data.error || "No se pudieron guardar los roles.");
             }
         } catch {
             setError("Error de red.");
         }
-        setSavingParticipants(false);
+        setSavingRoles(false);
     };
 
     /** The duos panel saves as you edit it, so this both stores and persists. */
@@ -403,11 +372,6 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
         return false;
     };
 
-    const toggleQualified = (discordId: string) =>
-        setQualifiedIds(prev =>
-            prev.includes(discordId) ? prev.filter(id => id !== discordId) : [...prev, discordId]
-        );
-
     if (status === "loading" || !detail) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -423,32 +387,15 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
     const selectedZone = zones.find(z => z.id === selectedZoneId) ?? null;
     const windowClaims = claims.filter(c => c.windowId === activeWindowId);
 
-    // Discord access tokens last a week and we do not refresh them, so a long-lived
-    // session cannot be used to read roles until the user signs in again.
-    const staleTokens = Object.entries(checkReasons)
-        .filter(([reason]) => reason.startsWith("token-rejected") || reason === "no-token")
-        .reduce((sum, [, n]) => sum + n, 0);
-
-    const preAuthorized = participantsText.split("\n").map(n => n.trim()).filter(Boolean);
-    const totalQualified = qualifiedIds.length + preAuthorized.length;
-    // A role or a preset team is enough: only all three empty is a dead tournament.
-    const nobodyCanClaim =
-        totalQualified === 0 && qualifiedRoles.length === 0 && presetTeams.length === 0;
-
     const roleIdSet = new Set(qualifiedRoles.map(r => r.roleId));
-    const hasTournamentRole = (u: RosterUser) => u.discordRoles.some(id => roleIdSet.has(id));
-    const roleHolders = roleIdSet.size ? roster.filter(hasTournamentRole).length : 0;
+    const roleHolders = roleIdSet.size
+        ? roster.filter(u => u.discordRoles.some(id => roleIdSet.has(id))).length
+        : 0;
 
-    const rosterNeedle = rosterQuery.trim().toLowerCase();
-    const visibleRoster = roster.filter(u => {
-        // never hide someone already ticked, or the moderator could not untick
-        // them - nor anyone holding the tournament's role, which is the whole
-        // point of it: there are non-pros who qualify.
-        const ticked = qualifiedIds.includes(u.discordId);
-        if (!ticked && !hasTournamentRole(u) && onlyPros && !u.isPro) return false;
-        if (!rosterNeedle) return true;
-        return `${u.discordName} ${u.epicName}`.toLowerCase().includes(rosterNeedle);
-    });
+    // Neither way in is set up, which makes this a tournament nobody can play.
+    // It used to be impossible to miss inside the qualified-players card; that
+    // card is gone, so the warning goes at the top of the page.
+    const nobodyCanClaim = qualifiedRoles.length === 0 && presetTeams.length === 0;
 
     return (
         <div className="min-h-screen text-white">
@@ -474,6 +421,19 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
 
                 {/* The imported templates carry the snapshot's old dates, so they land
                     already finished - which silently blocks every player from claiming. */}
+                {nobodyCanClaim && (
+                    <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3">
+                        <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-400" />
+                        <p className="text-sm leading-relaxed text-white/70">
+                            <span className="font-bold text-red-400">
+                                Nadie puede marcar spot en este torneo todavía.
+                            </span>{" "}
+                            Elegí abajo el rol de Discord que habilita, o cargá los equipos a mano. Con
+                            cualquiera de las dos alcanza.
+                        </p>
+                    </div>
+                )}
+
                 {detail.status === "Completed" && (
                     <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
                         <CalendarX size={16} className="mt-0.5 shrink-0 text-amber-400" />
@@ -692,8 +652,8 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                     value={qualifiedRoles}
                     onChange={setQualifiedRoles}
                     holders={roleHolders}
-                    onSave={saveQualified}
-                    saving={savingParticipants}
+                    onSave={saveQualifiedRoles}
+                    saving={savingRoles}
                 />
 
                 {/* Fixed teams: whoever marks a spot marks their whole team */}
@@ -704,222 +664,6 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                     teamSize={teamSize}
                     saving={savingTeams}
                 />
-
-                {/* Who may claim, way 2: ticked one by one from the roster */}
-                <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">
-                            Jugadores clasificados a mano
-                        </h2>
-                        <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${!nobodyCanClaim ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
-                                }`}
-                        >
-                            {totalQualified > 0
-                                ? `${totalQualified} tildados`
-                                : qualifiedRoles.length > 0
-                                    ? "va por rol"
-                                    : "nadie puede marcarse"}
-                        </span>
-                    </div>
-
-                    <p className="mb-4 text-xs leading-relaxed text-white/50">
-                        {qualifiedRoles.length > 0
-                            ? "Además del rol de arriba, podés tildar a mano a alguien que clasificó y no llegó a recibirlo. Se suman: cualquiera de las dos cosas lo habilita."
-                            : "Verificá en la web oficial de Fortnite quiénes clasificaron y tildalos acá."}{" "}
-                        El resto entra igual y ve dónde caen los pros, pero no puede reclamar. Los admins
-                        siempre pueden marcarse, para poder probarlo.
-                    </p>
-
-                    {/* The strict rule Gonza chose makes an empty tournament a dead
-                        tournament, so it has to be impossible to miss. */}
-                    {nobodyCanClaim && (
-                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3">
-                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-400" />
-                            <p className="text-xs leading-relaxed text-white/70">
-                                <span className="font-bold text-red-400">
-                                    No elegiste un rol ni tildaste a nadie.
-                                </span>{" "}
-                                Mientras esté así, ningún jugador va a poder marcar su spot en este torneo.
-                            </p>
-                        </div>
-                    )}
-
-                    {!proDetectionReady ? (
-                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] px-4 py-3">
-                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
-                            <p className="text-xs leading-relaxed text-white/70">
-                                Falta configurar <code className="text-amber-400">MAJOR_SCRIMS_GUILD_ID</code> y{" "}
-                                <code className="text-amber-400">DISCORD_PRO_ROLE_ID</code> en Vercel, así que
-                                todavía no se puede saber quién tiene el rol PRO en Discord. Mientras tanto la
-                                lista muestra a todos los usuarios que entraron a la web.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                            <Info size={16} className="mt-0.5 shrink-0 text-primary" />
-                            <div className="text-xs leading-relaxed text-white/60">
-                                <p>
-                                    Acá solo aparecen los jugadores que ya iniciaron sesión en la web al menos
-                                    una vez: hoy son{" "}
-                                    <span className="font-bold text-white">{roster.length}</span>, de los cuales{" "}
-                                    <span className="font-bold text-primary">{proCount}</span> tienen el rol PRO.{" "}
-                                    {liveRoles
-                                        ? "Los roles se leen del bot en vivo, así que un rol recién dado se ve al toque."
-                                        : "Los roles se leen cuando cada jugador entra a la web, no desde el servidor entero."}
-                                </p>
-                                {staleTokens > 0 && !liveRoles && (
-                                    <p className="mt-1.5 text-amber-400">
-                                        {staleTokens} {staleTokens === 1 ? "usuario tiene" : "usuarios tienen"} el
-                                        token de Discord vencido (dura una semana y no lo renovamos). Hasta que
-                                        cierren sesión y vuelvan a entrar no podemos leerles el rol. Con{" "}
-                                        <code className="text-amber-400">DISCORD_BOT_TOKEN</code> cargado en Vercel
-                                        esto deja de pasar.
-                                    </p>
-                                )}
-                                {Object.keys(checkReasons).length > 0 && (
-                                    <p className="mt-1.5 text-white/35">
-                                        Diagnóstico:{" "}
-                                        {Object.entries(checkReasons)
-                                            .map(([r, n]) => `${r}=${n}`)
-                                            .join(" · ")}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Roster picker */}
-                    <div className="mb-3 flex flex-wrap items-center gap-3">
-                        <div className="relative min-w-[200px] flex-1">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
-                            <input
-                                type="search"
-                                value={rosterQuery}
-                                onChange={e => setRosterQuery(e.target.value)}
-                                placeholder="Buscar por nombre de Discord o de Epic..."
-                                className="w-full rounded-lg border border-white/10 bg-white/[0.03] py-2 pl-9 pr-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-primary/40"
-                            />
-                        </div>
-                        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-white/60">
-                            <input
-                                type="checkbox"
-                                checked={onlyPros}
-                                onChange={e => setOnlyPros(e.target.checked)}
-                                className="h-4 w-4 accent-[#22D962]"
-                            />
-                            Solo con rol PRO
-                        </label>
-                    </div>
-
-                    <div className="max-h-80 overflow-y-auto rounded-xl border border-white/10">
-                        {visibleRoster.length === 0 ? (
-                            <div className="px-4 py-8 text-center">
-                                {roster.length === 0 ? (
-                                    <p className="text-sm text-white/50">
-                                        Todavía no entró nadie a la web. Apenas un pro inicie sesión una vez,
-                                        aparece acá.
-                                    </p>
-                                ) : onlyPros ? (
-                                    <>
-                                        <p className="mb-3 text-sm text-white/50">
-                                            Ninguno de los {roster.length} usuarios que entraron figura con el rol
-                                            PRO todavía.
-                                        </p>
-                                        <button
-                                            onClick={() => setOnlyPros(false)}
-                                            className="rounded-lg border border-white/15 px-4 py-2 text-xs font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
-                                        >
-                                            Mostrar a todos igual
-                                        </button>
-                                    </>
-                                ) : (
-                                    <p className="text-sm text-white/50">
-                                        Ningún usuario coincide con la búsqueda.
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <ul className="divide-y divide-white/5">
-                                {visibleRoster.map(u => (
-                                    <li key={u.discordId}>
-                                        <label
-                                            className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${qualifiedIds.includes(u.discordId)
-                                                ? "bg-primary/[0.08]"
-                                                : "hover:bg-white/[0.03]"
-                                                }`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={qualifiedIds.includes(u.discordId)}
-                                                onChange={() => toggleQualified(u.discordId)}
-                                                aria-label={`Clasificar a ${u.discordName}`}
-                                                className="h-4 w-4 shrink-0 accent-[#22D962]"
-                                            />
-                                            {u.avatarUrl ? (
-                                                <img
-                                                    src={u.avatarUrl}
-                                                    alt=""
-                                                    className="h-7 w-7 shrink-0 rounded-full border border-white/10"
-                                                />
-                                            ) : (
-                                                <div className="h-7 w-7 shrink-0 rounded-full bg-white/10" />
-                                            )}
-                                            <span className="min-w-0 flex-1">
-                                                <span className="flex items-center gap-2">
-                                                    <span className="truncate text-sm font-medium text-white">
-                                                        {u.discordName}
-                                                    </span>
-                                                    {u.isPro && (
-                                                        <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-black uppercase text-primary">
-                                                            pro
-                                                        </span>
-                                                    )}
-                                                    {/* Already covered by the role: ticking them is redundant. */}
-                                                    {hasTournamentRole(u) && (
-                                                        <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-black uppercase text-white/70">
-                                                            tiene el rol
-                                                        </span>
-                                                    )}
-                                                </span>
-                                                <span className="block truncate text-[11px] text-white/40">
-                                                    {u.epicName ? `Epic: ${u.epicName}` : "sin nombre de Epic cargado"}
-                                                </span>
-                                            </span>
-                                        </label>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-
-                    {/* Escape hatch */}
-                    <details className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
-                        <summary className="cursor-pointer text-xs font-bold text-white/70">
-                            ¿Clasificó alguien que nunca entró a la web? Autorizalo por nombre de Epic
-                        </summary>
-                        <p className="mb-3 mt-3 text-xs leading-relaxed text-white/50">
-                            Un nombre de Epic por línea. Cuando esa persona entre por primera vez y ponga ese
-                            mismo nombre al marcar su spot, la va a dejar pasar.
-                        </p>
-                        <textarea
-                            value={participantsText}
-                            onChange={e => setParticipantsText(e.target.value)}
-                            rows={5}
-                            spellCheck={false}
-                            placeholder={"Peterbot\nPollo"}
-                            className="w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-primary/40"
-                        />
-                    </details>
-
-                    <button
-                        onClick={saveQualified}
-                        disabled={savingParticipants}
-                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-50"
-                    >
-                        <Save size={15} /> {savingParticipants ? "..." : "Guardar clasificados a mano"}
-                    </button>
-                </div>
 
                 {/* Zones */}
                 {detail.windows.length === 0 ? (

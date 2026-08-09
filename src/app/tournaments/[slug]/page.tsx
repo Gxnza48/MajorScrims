@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
-    ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck, Swords, Info,
+    ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck, Info,
 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import DropMap, {
-    MapZone, MapClaim, teamLabel, isZoneDisputed, claimBelongsTo,
+    MapZone, MapClaim, teamLabel, claimBelongsTo,
 } from "@/components/tournaments/DropMap";
 import ClaimSpotModal, { TeammateOption } from "@/components/tournaments/ClaimSpotModal";
 import { renderPlainWithLinks } from "@/lib/richLinks";
@@ -174,12 +174,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
     // page only renders that answer so button and API can never disagree.
     const blocked = viewer.blockedBecause;
     const claimsClosed = !viewer.canClaim;
-
-    const selectedZoneContested =
-        !!selectedZone && isZoneDisputed(selectedZoneClaims, selectedZone.capacity ?? 1);
-    const myZoneIsSelected = !!selectedZone && myClaim?.zoneId === selectedZone.id;
-    // A full zone is not a dead end any more: whoever may claim can dispute it.
-    const canDisputeSelected = selectedZoneIsFull && !claimsClosed && !myZoneIsSelected;
 
     const requiredRoles = (tournament?.requiredRoleNames ?? []).join(" / ");
 
@@ -525,84 +519,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                 onZoomOut={() => setZoomZoneId(null)}
                                 zoomOutLabel={t.tournaments.zoomOut}
                             />
-
-                            {/* Selected zone actions */}
-                            {selectedZone && (
-                                <div
-                                    className={`mt-4 rounded-2xl border p-4 ${selectedZoneContested
-                                        ? "border-red-500/40 bg-red-500/[0.05]"
-                                        : "border-white/10 bg-white/[0.03]"
-                                        }`}
-                                >
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="min-w-0">
-                                            <p className="truncate font-bold text-white">{selectedZone.label}</p>
-                                            <p className="mt-0.5 text-xs text-white/50">
-                                                {selectedZoneClaims.length > 0
-                                                    ? selectedZoneClaims.map(teamLabel).join(" · ")
-                                                    : t.tournaments.free}
-                                            </p>
-                                        </div>
-
-                                        {blocked === "not-signed-in" ? (
-                                            <Link
-                                                href="/login"
-                                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:border-primary/40 hover:text-primary"
-                                            >
-                                                <LogIn size={15} /> {t.tournaments.loginToClaim}
-                                            </Link>
-                                        ) : myZoneIsSelected ? (
-                                            <button
-                                                onClick={handleRelease}
-                                                disabled={saving}
-                                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-red-500/10 px-5 py-2.5 text-sm font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
-                                            >
-                                                <X size={15} /> {t.tournaments.release}
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => {
-                                                    setClaimError("");
-                                                    setShowClaim(true);
-                                                }}
-                                                disabled={claimsClosed || (selectedZoneIsFull && !canDisputeSelected)}
-                                                className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${canDisputeSelected
-                                                    ? "bg-red-500 text-white hover:bg-red-600"
-                                                    : "bg-primary text-[#04130A] hover:bg-[#43E97B]"
-                                                    }`}
-                                            >
-                                                {canDisputeSelected ? <Swords size={15} /> : <MapPin size={15} />}
-                                                {blocked === "finished"
-                                                    ? t.tournaments.finished
-                                                    : claimsClosed
-                                                        ? t.tournaments.blockedLabel
-                                                        : selectedZoneIsFull
-                                                            ? t.tournaments.disputeConfirm
-                                                            : t.tournaments.claim}
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Resolving a dispute is just removing one of the teams. */}
-                                    {viewer.isAdmin && selectedZoneClaims.length > 0 && (
-                                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-                                            <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">
-                                                {t.tournaments.removeTeam}:
-                                            </span>
-                                            {selectedZoneClaims.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    onClick={() => handleAdminRemove(c)}
-                                                    disabled={saving}
-                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-[11px] font-bold text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
-                                                >
-                                                    <X size={12} /> {teamLabel(c)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
                         </div>
                     </div>

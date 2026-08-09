@@ -294,6 +294,11 @@ export default function DropMap({
     return (
         <div
             ref={containerRef}
+            /* The site runs Lenis for smooth scrolling, and Lenis takes the wheel
+               at the window level: our own preventDefault never reaches it, so
+               zooming the map scrolled the page underneath. This is the attribute
+               Lenis honours to keep its hands off a subtree. */
+            data-lenis-prevent={interactive ? "" : undefined}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -426,9 +431,9 @@ export default function DropMap({
                             onClick={() => zoomBy(1.6)}
                             disabled={view.scale >= MAX_ZOOM}
                             aria-label="Acercar"
-                            className="px-2.5 py-1.5 text-white transition-colors hover:text-primary disabled:opacity-30"
+                            className="flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-primary disabled:opacity-30 sm:h-9 sm:w-10"
                         >
-                            <Plus size={14} />
+                            <Plus size={16} />
                         </button>
                         <span className="w-px bg-white/20" />
                         <button
@@ -436,16 +441,16 @@ export default function DropMap({
                             onClick={() => zoomBy(1 / 1.6)}
                             disabled={view.scale <= 1}
                             aria-label="Alejar"
-                            className="px-2.5 py-1.5 text-white transition-colors hover:text-primary disabled:opacity-30"
+                            className="flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-primary disabled:opacity-30 sm:h-9 sm:w-10"
                         >
-                            <Minus size={14} />
+                            <Minus size={16} />
                         </button>
                     </div>
                     {view.scale > 1 && (
                         <button
                             type="button"
                             onClick={resetView}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:border-primary/50 hover:text-primary"
+                            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:border-primary/50 hover:text-primary sm:min-h-0 sm:py-1.5"
                         >
                             <ZoomOut size={13} /> {zoomOutLabel}
                         </button>
