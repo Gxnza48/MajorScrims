@@ -82,37 +82,57 @@ export interface MemberName {
     avatarUrl: string;
 }
 
+const avatarUrl = (id: string, hash?: string | null) =>
+    hash ? `https://cdn.discordapp.com/avatars/${id}/${hash}.png?size=64` : "";
+
+/**
+ * A GET that waits out a rate limit instead of giving up on it. Resolving a
+ * whole tournament's worth of ids is dozens of calls in a row, and Discord will
+ * ask for a pause partway through.
+ */
+async function discordGetPatient(path: string, auth: string, tries = 3): Promise<Response | null> {
+    for (let attempt = 0; attempt < tries; attempt++) {
+        const res = await discordGet(path, auth);
+        if (!res || res.status !== 429) return res;
+        const body = await res.json().catch(() => ({}) as { retry_after?: number });
+        const wait = Math.min(5000, Math.max(300, ((body as { retry_after?: number }).retry_after ?? 1) * 1000));
+        await new Promise(done => setTimeout(done, wait));
+    }
+    return null;
+}
+
 /**
  * Looks up who an id belongs to, using the bot. Needed for players a moderator
  * wrote into a duo by id who have never signed in here - without this they read
  * as a row of digits in the panel.
+ *
+ * Tries the server first, because a nickname there is what everybody calls
+ * them. Somebody who left the server, or never joined, still has a Discord
+ * account, so their global name is the fallback rather than nothing at all.
  */
 export async function fetchMemberName(discordId: string): Promise<MemberName | null> {
     const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
     const botToken = process.env.DISCORD_BOT_TOKEN;
-    if (!guildId || !botToken || !/^\d{5,25}$/.test(discordId)) return null;
+    if (!botToken || !/^\d{5,25}$/.test(discordId)) return null;
+    const auth = `Bot ${botToken}`;
 
-    const res = await discordGet(`/guilds/${guildId}/members/${discordId}`, `Bot ${botToken}`);
-    if (!res || !res.ok) return null;
-
-    let member: GuildMember;
-    try {
-        member = (await res.json()) as GuildMember;
-    } catch {
-        return null;
+    if (guildId) {
+        const res = await discordGetPatient(`/guilds/${guildId}/members/${discordId}`, auth);
+        if (res?.ok) {
+            const member = (await res.json().catch(() => null)) as GuildMember | null;
+            const user = member?.user ?? {};
+            const name = member?.nick || user.global_name || user.username || "";
+            if (name) return { discordId, name, avatarUrl: avatarUrl(discordId, user.avatar) };
+        }
     }
 
-    const user = member.user ?? {};
-    const name = member.nick || user.global_name || user.username || "";
-    if (!name) return null;
-
-    return {
-        discordId,
-        name,
-        avatarUrl: user.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordId}/${user.avatar}.png?size=64`
-            : "",
-    };
+    const res = await discordGetPatient(`/users/${discordId}`, auth);
+    if (!res?.ok) return null;
+    const user = (await res.json().catch(() => null)) as
+        | { global_name?: string | null; username?: string; avatar?: string | null }
+        | null;
+    const name = user?.global_name || user?.username || "";
+    return name ? { discordId, name, avatarUrl: avatarUrl(discordId, user?.avatar) } : null;
 }
 
 const API = "https://discord.com/api";

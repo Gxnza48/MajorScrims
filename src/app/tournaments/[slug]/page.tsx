@@ -383,7 +383,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                 </div>
             )}
 
-            <main className="container mx-auto max-w-7xl px-6 py-10">
+            <main className="container mx-auto max-w-[1600px] px-6 py-10">
 
                 {!activeWindow ? (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-20 text-center">
@@ -391,7 +391,9 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                         <p className="text-sm text-white/60">{t.tournaments.noWindows}</p>
                     </div>
                 ) : (
-                    <div className="grid gap-8 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+                    /* The map is the page: it gets the room, and the team list
+                       beside it is wide enough to read a duo at a glance. */
+                    <div className="grid gap-6 lg:grid-cols-[minmax(300px,30%)_minmax(0,1fr)]">
                         {/* Teams */}
                         <div>
                             <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/80">
@@ -410,7 +412,7 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                             return (
                                                 <li
                                                     key={claim.id}
-                                                    className={`flex items-center justify-between gap-3 px-4 py-3 ${claim.disputed
+                                                    className={`flex items-center justify-between gap-3 px-4 py-3.5 ${claim.disputed
                                                         ? "bg-red-500/[0.07]"
                                                         : mine
                                                             ? "bg-primary/[0.07]"
@@ -421,21 +423,30 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                                         how you find a duo on a 32-zone map. */}
                                                     <button
                                                         onClick={() => focusTeam(claim.zoneId)}
-                                                        className="min-w-0 flex-1 text-left"
+                                                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
                                                         title={t.tournaments.zoomToTeam}
                                                     >
-                                                        <p
-                                                            className={`truncate text-sm font-bold ${claim.disputed ? "text-red-400" : "text-primary"
+                                                        <span
+                                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${claim.disputed
+                                                                ? "bg-red-500/15 text-red-400"
+                                                                : "bg-primary/15 text-primary"
                                                                 }`}
                                                         >
-                                                            {claim.epicName}
+                                                            <Users size={15} />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span
+                                                                className={`block truncate font-bold ${claim.disputed ? "text-red-400" : "text-primary"
+                                                                    }`}
+                                                            >
+                                                                {claim.epicName}
+                                                            </span>
                                                             {claim.teammates.length > 0 && (
-                                                                <span className="font-medium text-white/70">
-                                                                    {" + "}
-                                                                    {claim.teammates.join(" + ")}
+                                                                <span className="block truncate text-sm text-white/70">
+                                                                    + {claim.teammates.join(" + ")}
                                                                 </span>
                                                             )}
-                                                        </p>
+                                                        </span>
                                                     </button>
 
                                                     <div className="flex shrink-0 items-center gap-1.5">
@@ -479,7 +490,8 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                                     /* Teams, not spots: a duo is one team on one spot. */
                                     <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70">
                                         <Users size={12} className="text-primary" />
-                                        {windowClaims.length} {t.tournaments.teamsMarked}
+                                        {windowClaims.length} / {activeWindow.zones.length}{" "}
+                                        {t.tournaments.teamsMarked}
                                     </span>
                                 )}
                             </div>

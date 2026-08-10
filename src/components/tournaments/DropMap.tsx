@@ -418,14 +418,19 @@ export default function DropMap({
                 {zones.map((zone, index) => {
                     const zoneClaims = claimsFor(zone.id);
                     const centre = zoneCentre(zone);
+                    // Boxed to the zone's own width so a long duo cannot spill
+                    // over its borders and onto the neighbours; the vertical
+                    // anchor is the centroid, which keeps the text inside
+                    // oddly shaped zones.
                     return (
                         <div
                             key={zone.id}
-                            className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 break-words text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
+                            className="pointer-events-none absolute flex -translate-y-1/2 flex-col items-center justify-center gap-0.5 overflow-hidden break-words px-0.5 text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
                             style={{
-                                left: `${centre.x * 100}%`,
+                                left: `${zone.x * 100}%`,
                                 top: `${centre.y * 100}%`,
-                                maxWidth: `${zone.w * 100}%`,
+                                width: `${zone.w * 100}%`,
+                                maxHeight: `${zone.h * 100}%`,
                             }}
                         >
                             {/* Only while drawing: the number keys into nothing

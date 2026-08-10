@@ -9,6 +9,22 @@ export const dynamic = "force-dynamic";
 const MAX_IDS = 120;
 
 /**
+ * How many lookups run at once. Sequential took ~0.4s each, which puts a
+ * tournament's worth of players past the time a serverless function is given;
+ * four at a time keeps it well inside without making Discord rate-limit us
+ * (and `fetchMemberName` waits out a 429 anyway).
+ */
+const CONCURRENCY = 4;
+
+async function inBatches<T, R>(items: T[], size: number, run: (item: T) => Promise<R>) {
+    const out: R[] = [];
+    for (let i = 0; i < items.length; i += size) {
+        out.push(...(await Promise.all(items.slice(i, i + size).map(run))));
+    }
+    return out;
+}
+
+/**
  * Puts names on Discord ids.
  *
  * A moderator can write a player into a duo by pasting their id, and somebody
@@ -50,15 +66,13 @@ export async function POST(request: NextRequest) {
         }
 
         if (missing.length && hasBotToken()) {
-            // Sequential on purpose: this runs once per panel load for a handful
-            // of ids, and Discord would rather not take them all at once.
-            for (const id of missing) {
-                const found = await fetchMemberName(id);
-                if (!found) continue;
-                members.push(found);
+            const found = await inBatches(missing, CONCURRENCY, id => fetchMemberName(id));
+            for (const m of found) {
+                if (!m) continue;
+                members.push(m);
                 await UserProfile.findOneAndUpdate(
-                    { discordId: id },
-                    { discordId: id, discordName: found.name, avatarUrl: found.avatarUrl },
+                    { discordId: m.discordId },
+                    { discordId: m.discordId, discordName: m.name, avatarUrl: m.avatarUrl },
                     { upsert: true }
                 );
             }
