@@ -21,6 +21,14 @@ interface Template {
     zones: TemplateZone[];
 }
 
+/** One entry of /plantillas/index.json - a template that ships with the site. */
+interface BundledTemplate {
+    file: string;
+    name: string;
+    spots: number;
+    note?: string;
+}
+
 const isNumber = (n: unknown) => typeof n === "number" && Number.isFinite(n);
 
 const num = (...values: unknown[]): number | null => {
@@ -181,6 +189,8 @@ export default function SpotTemplatePanel({
     busy: boolean;
 }) {
     const [templates, setTemplates] = useState<Template[]>([]);
+    /** Templates shipped with the site, read from /plantillas. */
+    const [bundled, setBundled] = useState<BundledTemplate[]>([]);
     const [selectedId, setSelectedId] = useState("");
     const [name, setName] = useState("");
     const [applyToAll, setApplyToAll] = useState(false);
@@ -202,6 +212,15 @@ export default function SpotTemplatePanel({
     useEffect(() => {
         load();
     }, [load]);
+
+    // Static files, not the database: they come with the site and are there
+    // for every tournament without anybody having to save them first.
+    useEffect(() => {
+        fetch("/plantillas/index.json")
+            .then(res => res.json())
+            .then(list => Array.isArray(list) && setBundled(list))
+            .catch(() => { });
+    }, []);
 
     const selected = templates.find(t => t.id === selectedId) ?? null;
 
@@ -346,6 +365,19 @@ export default function SpotTemplatePanel({
         URL.revokeObjectURL(url);
     };
 
+    /** Reads a template that ships with the site and drops it on the round. */
+    const applyBundled = async (b: BundledTemplate) => {
+        setError("");
+        setNotice("");
+        try {
+            const res = await fetch(`/plantillas/${b.file}`);
+            const parsed = parseTemplateFile(await res.text());
+            await applyZones(parsed.zones, parsed.name || b.name);
+        } catch (e) {
+            setError((e as Error).message || "No se pudo leer la plantilla incluida.");
+        }
+    };
+
     const disabled = busy || working;
 
     return (
@@ -366,6 +398,45 @@ export default function SpotTemplatePanel({
                         }`}
                 >
                     {error || notice}
+                </div>
+            )}
+
+            {/* Templates that come with the site: nothing to save first. */}
+            {bundled.length > 0 && (
+                <div className="mb-4 rounded-xl border border-primary/20 bg-primary/[0.06] p-3">
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-primary">
+                        Plantillas incluidas
+                    </p>
+                    <ul className="space-y-2">
+                        {bundled.map(b => (
+                            <li key={b.file} className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-bold text-white">
+                                        {b.name}
+                                    </span>
+                                    {b.note && (
+                                        <span className="block truncate text-[11px] text-white/45">{b.note}</span>
+                                    )}
+                                </span>
+                                <span className="flex shrink-0 gap-2">
+                                    <button
+                                        onClick={() => applyBundled(b)}
+                                        disabled={disabled}
+                                        className="rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-[#04130A] transition-colors hover:bg-[#43E97B] disabled:opacity-40"
+                                    >
+                                        Aplicar
+                                    </button>
+                                    <a
+                                        href={`/plantillas/${b.file}`}
+                                        download
+                                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-white/70 transition-colors hover:border-primary/40 hover:text-primary"
+                                    >
+                                        Descargar
+                                    </a>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
 
