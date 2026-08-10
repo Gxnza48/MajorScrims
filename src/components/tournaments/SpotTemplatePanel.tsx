@@ -11,6 +11,8 @@ interface TemplateZone {
     w: number;
     h: number;
     capacity: number;
+    /** Outline for a zone that is not a rectangle; x/y/w/h is its box. */
+    points?: { x: number; y: number }[];
 }
 
 interface Template {
@@ -69,6 +71,22 @@ interface RawSpot {
     w: number | null;
     h: number | null;
     capacity: number;
+    /** An outline given directly by the file, already in 0..1. */
+    points?: { x: number; y: number }[];
+}
+
+/** `points` as either [{x,y}] or [[x,y]], which is how exports differ. */
+function readPoints(raw: unknown): { x: number; y: number }[] | undefined {
+    if (!Array.isArray(raw) || raw.length < 3) return undefined;
+    const pts = raw
+        .map(p => {
+            const pair = Array.isArray(p) ? { x: p[0], y: p[1] } : (p as { x?: unknown; y?: unknown });
+            const x = num(pair?.x);
+            const y = num(pair?.y);
+            return x === null || y === null ? null : { x, y };
+        })
+        .filter((p): p is { x: number; y: number } => p !== null);
+    return pts.length >= 3 ? pts : undefined;
 }
 
 /**
@@ -80,8 +98,14 @@ function readSpot(row: Row, index: number): RawSpot | null {
     if (!row || typeof row !== "object") return null;
     const loc = (row.location ?? row.position ?? row.coords ?? row.coordinates ?? {}) as Row;
 
-    const x = num(row.x, row.left, row.cx, loc.x, (row as Row).lng);
-    const y = num(row.y, row.top, row.cy, loc.y, (row as Row).lat);
+    const points = readPoints(row.points ?? row.polygon ?? row.shape);
+    // With an outline the box is derived from it, so the two always agree.
+    const x = points
+        ? Math.min(...points.map(p => p.x))
+        : num(row.x, row.left, row.cx, loc.x, (row as Row).lng);
+    const y = points
+        ? Math.min(...points.map(p => p.y))
+        : num(row.y, row.top, row.cy, loc.y, (row as Row).lat);
     if (x === null || y === null) return null;
 
     return {
@@ -90,9 +114,14 @@ function readSpot(row: Row, index: number): RawSpot | null {
         ).slice(0, 60),
         x,
         y,
-        w: num(row.w, row.width, (row as Row).sizeX),
-        h: num(row.h, row.height, (row as Row).sizeY),
+        w: points
+            ? Math.max(...points.map(p => p.x)) - x
+            : num(row.w, row.width, (row as Row).sizeX),
+        h: points
+            ? Math.max(...points.map(p => p.y)) - y
+            : num(row.h, row.height, (row as Row).sizeY),
         capacity: Math.max(1, num(row.capacity, row.slots, row.teams) ?? 1),
+        ...(points ? { points } : {}),
     };
 }
 
@@ -160,6 +189,8 @@ function parseTemplateFile(raw: string): { name: string; zones: TemplateZone[] }
             w: Math.min(Math.max(w, 0.01), 1),
             h: Math.min(Math.max(h, 0.01), 1),
             capacity: s.capacity,
+            // Outlines only make sense already normalised, which ours are.
+            ...(s.points && !world && !pixelSpan ? { points: s.points } : {}),
         };
     });
 
@@ -342,13 +373,14 @@ export default function SpotTemplatePanel({
                 JSON.stringify(
                     {
                         name: name.trim() || "spots",
-                        zones: zones.map(({ label, x, y, w, h, capacity }) => ({
+                        zones: zones.map(({ label, x, y, w, h, capacity, points }) => ({
                             label,
                             x,
                             y,
                             w,
                             h,
                             capacity,
+                            ...(points?.length ? { points } : {}),
                         })),
                     },
                     null,

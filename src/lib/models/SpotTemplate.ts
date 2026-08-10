@@ -13,6 +13,8 @@ export interface ITemplateZone {
     w: number;
     h: number;
     capacity: number;
+    /** Outline for a zone that is not a rectangle; x/y/w/h is its box. */
+    points?: { x: number; y: number }[];
 }
 
 export interface ISpotTemplate extends Document {
@@ -24,6 +26,12 @@ export interface ISpotTemplate extends Document {
     updatedAt: Date;
 }
 
+/** Same story as the tournament's zones: an inline point array gets dropped. */
+const PointSchema = new Schema<{ x: number; y: number }>(
+    { x: { type: Number, required: true }, y: { type: Number, required: true } },
+    { _id: false }
+);
+
 const TemplateZoneSchema = new Schema<ITemplateZone>({
     label: { type: String, required: true },
     x: { type: Number, required: true },
@@ -31,6 +39,7 @@ const TemplateZoneSchema = new Schema<ITemplateZone>({
     w: { type: Number, required: true },
     h: { type: Number, required: true },
     capacity: { type: Number, required: true, default: 1, min: 1 },
+    points: { type: [PointSchema], default: undefined },
 });
 
 const SpotTemplateSchema = new Schema<ISpotTemplate>(

@@ -12,6 +12,31 @@ export interface MapZone {
     w: number;
     h: number;
     capacity: number;
+    /** Outline for a zone that is not a rectangle; x/y/w/h is its box. */
+    points?: { x: number; y: number }[];
+}
+
+/** The zone's corners, four of them when it is a plain rectangle. */
+export const zoneOutline = (z: MapZone) =>
+    z.points && z.points.length >= 3
+        ? z.points
+        : [
+            { x: z.x, y: z.y },
+            { x: z.x + z.w, y: z.y },
+            { x: z.x + z.w, y: z.y + z.h },
+            { x: z.x, y: z.y + z.h },
+        ];
+
+/**
+ * Where the zone's name goes: the average of its corners rather than the middle
+ * of its box, so a slanted or L-shaped zone gets its label inside itself.
+ */
+export function zoneCentre(z: MapZone) {
+    const pts = zoneOutline(z);
+    return {
+        x: pts.reduce((s, p) => s + p.x, 0) / pts.length,
+        y: pts.reduce((s, p) => s + p.y, 0) / pts.length,
+    };
 }
 
 export interface MapClaim {
@@ -332,89 +357,102 @@ export default function DropMap({
                     priority
                 />
 
+                {/* One SVG for every zone. Zones are not all rectangles - an
+                    official map division has slanted and L-shaped areas - and a
+                    div can only be a box. Drawing the real outline also makes
+                    the click land on the shape instead of on its bounding box,
+                    which matters where two zones sit corner to corner. */}
+                <svg
+                    viewBox="0 0 1000 1000"
+                    preserveAspectRatio="none"
+                    className="absolute inset-0 h-full w-full overflow-visible"
+                >
+                    {zones.map(zone => {
+                        const zoneClaims = claimsFor(zone.id);
+                        const isMine = zoneClaims.some(c => claimBelongsTo(c, myDiscordId));
+                        const isTaken = zoneClaims.length > 0;
+                        const isDisputed = isZoneDisputed(zoneClaims, zone.capacity ?? 1);
+                        const isSelected = selectedZoneId === zone.id;
+
+                        // Green means you can drop there (or that it is your
+                        // team's spot), dark means somebody else took it, red
+                        // means contested - red alone says it, no label on top.
+                        // Fills stay translucent so the map reads underneath.
+                        const tone = isDisputed
+                            ? { stroke: "#ef4444", fill: "rgba(239,68,68,0.35)" }
+                            : isMine
+                                ? { stroke: "#22D962", fill: "rgba(34,217,98,0.45)" }
+                                : isTaken
+                                    ? { stroke: "rgba(255,255,255,0.25)", fill: "rgba(0,0,0,0.7)" }
+                                    : { stroke: "rgba(34,217,98,0.6)", fill: "rgba(34,217,98,0.25)" };
+
+                        return (
+                            <polygon
+                                key={zone.id}
+                                data-zone="1"
+                                points={zoneOutline(zone)
+                                    .map(p => `${p.x * 1000},${p.y * 1000}`)
+                                    .join(" ")}
+                                fill={tone.fill}
+                                stroke={isSelected ? "#22D962" : tone.stroke}
+                                strokeWidth={isSelected ? 5 : 2.5}
+                                className={
+                                    interactive
+                                        ? "cursor-pointer transition-colors"
+                                        : "transition-colors"
+                                }
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    // Letting go after dragging the map is not a
+                                    // click on whatever was under the pointer.
+                                    if (panned.current) return;
+                                    onSelectZone?.(zone.id);
+                                }}
+                            />
+                        );
+                    })}
+                </svg>
+
+                {/* Labels stay HTML: names wrap onto their own lines and scale
+                    with the breakpoints, neither of which SVG text does. */}
                 {zones.map((zone, index) => {
                     const zoneClaims = claimsFor(zone.id);
-                    const capacity = zone.capacity ?? 1;
-                    const isMine = zoneClaims.some(c => claimBelongsTo(c, myDiscordId));
-                    const isTaken = zoneClaims.length > 0;
-                    const isDisputed = isZoneDisputed(zoneClaims, capacity);
-                    const isSelected = selectedZoneId === zone.id;
-
-                    // Green means you can drop there (or that it is your team's
-                    // spot), dark means somebody else took it, red means it is
-                    // contested - red alone says it, with no label on top.
-                    // All fills stay translucent so the map reads underneath.
-                    const tone = isDisputed
-                        ? "border-red-500 bg-red-500/35"
-                        : isMine
-                            ? "border-primary bg-primary/45"
-                            : isTaken
-                                ? "border-white/25 bg-black/70"
-                                : "border-primary/60 bg-primary/25 hover:border-primary hover:bg-primary/35";
-
+                    const centre = zoneCentre(zone);
                     return (
-                        <button
+                        <div
                             key={zone.id}
-                            type="button"
-                            data-zone="1"
-                            onClick={e => {
-                                e.stopPropagation();
-                                // Letting go after dragging the map is not a click
-                                // on whatever happened to be under the pointer.
-                                if (panned.current) return;
-                                onSelectZone?.(zone.id);
-                            }}
+                            className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 break-words text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
                             style={{
-                                left: `${zone.x * 100}%`,
-                                top: `${zone.y * 100}%`,
-                                width: `${zone.w * 100}%`,
-                                height: `${zone.h * 100}%`,
+                                left: `${centre.x * 100}%`,
+                                top: `${centre.y * 100}%`,
+                                maxWidth: `${zone.w * 100}%`,
                             }}
-                            className={`absolute flex items-center justify-center border-2 transition-colors ${tone} ${isSelected ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent" : ""
-                                } ${isDisputed ? "ring-1 ring-red-500/50" : ""}`}
                         >
-                            {/* Only while drawing: the number used to key into a
-                                numbered list under the map, which is gone, and on a
-                                phone-sized zone it sat on top of the first letter
-                                of the team's name. */}
+                            {/* Only while drawing: the number keys into nothing
+                                on the public page and sat on the first letter of
+                                a team's name on a phone-sized zone. */}
                             {mode === "edit" && (
-                                <span
-                                    data-zone="1"
-                                    className="pointer-events-none absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/85 text-[9px] font-black text-white ring-1 ring-white/40"
-                                >
+                                <span className="rounded-full bg-black/85 px-1.5 text-[9px] font-black ring-1 ring-white/40">
                                     {index + 1}
                                 </span>
                             )}
-                            {/* One team per line: two duos side by side ran into
-                                each other and read as a single garbled name. */}
-                            {/* Shown on phones too. It used to be desktop-only,
-                                leaning on the numbered list under the map to say
-                                who was where - and that list is gone. At 1x on a
-                                phone it is small, but the label scales with the
-                                map, so zooming in is what makes it readable. */}
-                            <span
-                                data-zone="1"
-                                className="pointer-events-none flex max-w-full flex-col items-center gap-0.5 break-words px-1 text-center font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
-                            >
-                                {mode === "edit" || zoneClaims.length === 0 ? (
-                                    <span className="text-[10px] sm:text-[11px]">{zone.label}</span>
-                                ) : (
-                                    zoneClaims.map(claim => (
-                                        <span
-                                            key={claim.id}
-                                            data-zone="1"
-                                            className={
-                                                zoneClaims.length > 1
-                                                    ? "text-[9px] sm:text-[10px]"
-                                                    : "text-[10px] sm:text-[11px]"
-                                            }
-                                        >
-                                            {teamLabel(claim)}
-                                        </span>
-                                    ))
-                                )}
-                            </span>
-                        </button>
+                            {mode === "edit" || zoneClaims.length === 0 ? (
+                                <span className="text-[10px] sm:text-[11px]">{zone.label}</span>
+                            ) : (
+                                zoneClaims.map(claim => (
+                                    <span
+                                        key={claim.id}
+                                        className={
+                                            zoneClaims.length > 1
+                                                ? "text-[9px] sm:text-[10px]"
+                                                : "text-[10px] sm:text-[11px]"
+                                        }
+                                    >
+                                        {teamLabel(claim)}
+                                    </span>
+                                ))
+                            )}
+                        </div>
                     );
                 })}
 

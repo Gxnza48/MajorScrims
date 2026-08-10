@@ -66,6 +66,53 @@ export interface GuildMember {
     roles?: string[];
     joined_at?: string;
     nick?: string | null;
+    user?: {
+        id?: string;
+        username?: string;
+        global_name?: string | null;
+        avatar?: string | null;
+    };
+}
+
+/** How somebody is called in the server, in the order Discord shows it. */
+export interface MemberName {
+    discordId: string;
+    /** Server nickname if they have one, otherwise their Discord name. */
+    name: string;
+    avatarUrl: string;
+}
+
+/**
+ * Looks up who an id belongs to, using the bot. Needed for players a moderator
+ * wrote into a duo by id who have never signed in here - without this they read
+ * as a row of digits in the panel.
+ */
+export async function fetchMemberName(discordId: string): Promise<MemberName | null> {
+    const guildId = process.env.MAJOR_SCRIMS_GUILD_ID;
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+    if (!guildId || !botToken || !/^\d{5,25}$/.test(discordId)) return null;
+
+    const res = await discordGet(`/guilds/${guildId}/members/${discordId}`, `Bot ${botToken}`);
+    if (!res || !res.ok) return null;
+
+    let member: GuildMember;
+    try {
+        member = (await res.json()) as GuildMember;
+    } catch {
+        return null;
+    }
+
+    const user = member.user ?? {};
+    const name = member.nick || user.global_name || user.username || "";
+    if (!name) return null;
+
+    return {
+        discordId,
+        name,
+        avatarUrl: user.avatar
+            ? `https://cdn.discordapp.com/avatars/${discordId}/${user.avatar}.png?size=64`
+            : "",
+    };
 }
 
 const API = "https://discord.com/api";

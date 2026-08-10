@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
-    ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck, Info,
+    ArrowLeft, Loader2, Trophy, Users, MapPin, LogIn, X, CalendarX, ShieldCheck,
 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import DropMap, {
@@ -335,6 +335,24 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
                     <p className="mt-2 text-sm text-white/60">
                         {formatRange()} · {tournament.mode} · {tournament.teamSize} · {tournament.region}
                     </p>
+
+                    {/* Right under the title, where somebody landing on the page
+                        reads it before anything else. Escaped first, so a link
+                        written as {texto}(url) is the only markup that survives. */}
+                    {tournament.description && (
+                        <p
+                            className="mt-4 max-w-3xl whitespace-pre-line text-sm leading-relaxed text-white/70"
+                            dangerouslySetInnerHTML={{
+                                __html: renderPlainWithLinks(tournament.description),
+                            }}
+                        />
+                    )}
+
+                    {tournament.prizePool && (
+                        <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-bold text-primary">
+                            <Trophy size={14} /> {tournament.prizePool}
+                        </p>
+                    )}
                 </div>
             </section>
 
@@ -366,22 +384,6 @@ export default function TournamentDetailPage({ params }: { params: { slug: strin
             )}
 
             <main className="container mx-auto max-w-7xl px-6 py-10">
-                {/* Still plain text: renderPlainWithLinks escapes everything the
-                    moderator wrote before turning {texto}(url) into a link, so
-                    nothing they paste can inject markup. */}
-                {tournament.description && (
-                    <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
-                        <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-white/80">
-                            <Info size={15} className="text-primary" /> {t.tournaments.infoTitle}
-                        </h2>
-                        <p
-                            className="whitespace-pre-line text-sm leading-relaxed text-white/70"
-                            dangerouslySetInnerHTML={{
-                                __html: renderPlainWithLinks(tournament.description),
-                            }}
-                        />
-                    </section>
-                )}
 
                 {!activeWindow ? (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] py-20 text-center">

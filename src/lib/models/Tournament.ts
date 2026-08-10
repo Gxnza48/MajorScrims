@@ -9,6 +9,12 @@ export interface IZone {
     w: number;
     h: number;
     capacity: number;
+    /**
+     * The outline, for zones that are not rectangles - an official map division
+     * has slanted and L-shaped areas. Same 0..1 space. `x/y/w/h` are its
+     * bounding box, so code that only wants a position keeps working.
+     */
+    points?: { x: number; y: number }[];
 }
 
 export interface IWindow {
@@ -85,6 +91,16 @@ export interface ITournament extends Document {
     windows: Types.DocumentArray<IWindow & Document>;
 }
 
+/**
+ * A corner of a zone's outline. Declared as its own schema with `_id: false`:
+ * an inline `[{ x: Number, y: Number }]` reads `_id` as a field rather than an
+ * option and Mongoose then drops the whole array on save.
+ */
+const PointSchema = new Schema<{ x: number; y: number }>(
+    { x: { type: Number, required: true }, y: { type: Number, required: true } },
+    { _id: false }
+);
+
 const ZoneSchema = new Schema<IZone>({
     label: { type: String, required: true },
     x: { type: Number, required: true },
@@ -92,6 +108,7 @@ const ZoneSchema = new Schema<IZone>({
     w: { type: Number, required: true },
     h: { type: Number, required: true },
     capacity: { type: Number, required: true, default: 1, min: 1 },
+    points: { type: [PointSchema], default: undefined },
 });
 
 const WindowSchema = new Schema<IWindow>({

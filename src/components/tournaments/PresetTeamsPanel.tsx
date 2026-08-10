@@ -25,17 +25,20 @@ const isSnowflake = (v: string) => /^\d{15,25}$/.test(v.trim());
 /** Squads is the biggest Fortnite format. */
 const MAX_TEAM_MEMBERS = 4;
 
-/** How a player reads in the panel: Epic name first, that is what mods match. */
-function memberLabel(id: string, roster: RosterMember[]): string {
+/**
+ * How a player reads in the panel: their Epic name if we know it, otherwise
+ * what they are called in the Discord server. Only somebody the bot cannot see
+ * at all is left as a row of digits.
+ */
+function memberLabel(id: string, roster: RosterMember[], names: Record<string, string>): string {
     const p = roster.find(u => u.discordId === id);
-    if (!p) return id;
-    return p.epicName || p.discordName || id;
+    return p?.epicName || p?.discordName || names[id] || id;
 }
 
-function memberSubLabel(id: string, roster: RosterMember[]): string {
+function memberSubLabel(id: string, roster: RosterMember[], names: Record<string, string>): string {
     const p = roster.find(u => u.discordId === id);
-    if (!p) return "nunca entró a la web";
-    return p.epicName && p.discordName ? p.discordName : id;
+    if (p) return p.epicName && p.discordName ? p.discordName : id;
+    return names[id] ? id : "no está en el servidor de Discord";
 }
 
 /**
@@ -51,6 +54,7 @@ function MemberPicker({
     value,
     onChange,
     roster,
+    names,
     taken,
     placeholder,
 }: {
@@ -58,6 +62,8 @@ function MemberPicker({
     value: string;
     onChange: (next: string) => void;
     roster: RosterMember[];
+    /** Discord ids the bot named, for players with no profile here. */
+    names: Record<string, string>;
     /** Ids already used in another team or in another slot of this one. */
     taken: Set<string>;
     placeholder: string;
@@ -94,10 +100,10 @@ function MemberPicker({
             <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.08] px-3 py-2">
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold text-white">
-                        {memberLabel(value.trim(), roster)}
+                        {memberLabel(value.trim(), roster, names)}
                     </span>
                     <span className="block truncate text-[11px] text-white/40">
-                        {memberSubLabel(value.trim(), roster)}
+                        {memberSubLabel(value.trim(), roster, names)}
                     </span>
                 </span>
                 <button
@@ -214,6 +220,8 @@ export default function PresetTeamsPanel({
     saving?: boolean;
 }) {
     const [status, setStatus] = useState("");
+    /** id -> what they are called in Discord, for players with no profile. */
+    const [names, setNames] = useState<Record<string, string>>({});
     const fileRef = useRef<HTMLInputElement>(null);
     const size = teammateSlots(teamSize) + 1;
     const [draft, setDraft] = useState<string[]>(() => Array(Math.max(size, 2)).fill(""));
@@ -229,6 +237,33 @@ export default function PresetTeamsPanel({
         () => new Set(value.flatMap(t => t.memberIds)),
         [value]
     );
+
+    // Teams loaded by id show as digits until somebody puts a name to them.
+    // The bot can name anyone in the server, so ask it for the ones missing
+    // here; the answer is stored on their profile and used everywhere after.
+    useEffect(() => {
+        const unknown = Array.from(usedIds).filter(
+            id => !roster.some(u => u.discordId === id) && names[id] === undefined
+        );
+        if (!unknown.length) return;
+        fetch("/api/discord/members", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: unknown }),
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                setNames(prev => {
+                    const next = { ...prev };
+                    for (const m of data.members ?? []) next[m.discordId] = m.name;
+                    // remember the failures too, so they are not asked again
+                    for (const id of data.unresolved ?? []) next[id] = next[id] ?? "";
+                    return next;
+                });
+            })
+            .catch(() => { });
+    }, [usedIds, roster, names]);
 
     // Every slot holds a whole Discord id, however it got there.
     const draftReady = draft.every(v => isSnowflake(v)) && new Set(draft.map(v => v.trim())).size === draft.length;
@@ -255,7 +290,7 @@ export default function PresetTeamsPanel({
             kind: "major-scrims-duos",
             teams: value.map(t => ({
                 memberIds: t.memberIds,
-                members: t.memberIds.map(id => ({ discordId: id, name: memberLabel(id, roster) })),
+                members: t.memberIds.map(id => ({ discordId: id, name: memberLabel(id, roster, names) })),
             })),
         };
         const url = URL.createObjectURL(
@@ -411,7 +446,7 @@ export default function PresetTeamsPanel({
                         <li key={i} className="flex items-center justify-between gap-3 px-4 py-2.5">
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-bold text-white">
-                                    {team.memberIds.map(id => memberLabel(id, roster)).join("  +  ")}
+                                    {team.memberIds.map(id => memberLabel(id, roster, names)).join("  +  ")}
                                 </p>
                                 <p className="truncate font-mono text-[10px] text-white/30">
                                     {team.memberIds.join(" · ")}
@@ -443,6 +478,7 @@ export default function PresetTeamsPanel({
                                 setDraft(prev => prev.map((v, j) => (j === i ? next : v)))
                             }
                             roster={roster}
+                            names={names}
                             taken={
                                 new Set(
                                     Array.from(usedIds).concat(

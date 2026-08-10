@@ -10,6 +10,8 @@ export interface ZoneDTO {
     w: number;
     h: number;
     capacity: number;
+    /** Present when the zone is not a rectangle; x/y/w/h is its bounding box. */
+    points?: { x: number; y: number }[];
 }
 
 export interface WindowDTO {
@@ -137,6 +139,7 @@ export function toDetailDTO(t: ITournament, forAdmin = false): TournamentDTO {
                 w: z.w,
                 h: z.h,
                 capacity: z.capacity ?? 1,
+                ...(z.points?.length ? { points: z.points.map(p => ({ x: p.x, y: p.y })) } : {}),
             })),
         })),
     };

@@ -10,7 +10,15 @@ const MAX_TEMPLATES = 60;
 const toDTO = (t: {
     _id: unknown;
     name: string;
-    zones: { label: string; x: number; y: number; w: number; h: number; capacity: number }[];
+    zones: {
+        label: string;
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        capacity: number;
+        points?: { x: number; y: number }[];
+    }[];
     createdByName?: string;
     updatedAt?: Date;
 }) => ({
@@ -25,6 +33,7 @@ const toDTO = (t: {
         w: z.w,
         h: z.h,
         capacity: z.capacity ?? 1,
+        ...(z.points?.length ? { points: z.points.map(p => ({ x: p.x, y: p.y })) } : {}),
     })),
 });
 

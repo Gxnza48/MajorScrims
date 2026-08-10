@@ -187,6 +187,9 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                         w: z.w,
                         h: z.h,
                         capacity: z.capacity,
+                        // Zones that are not rectangles keep their outline;
+                        // leaving it out here would flatten them on every save.
+                        ...(z.points?.length ? { points: z.points } : {}),
                     })),
                 }),
             });
@@ -519,7 +522,7 @@ export default function TournamentZonesAdminPage({ params }: { params: { slug: s
                                 value={prizePool}
                                 onChange={e => setPrizePool(e.target.value)}
                                 className={inputClass}
-                                placeholder="R$ 10.000"
+                                placeholder="USD 5.000"
                             />
                         </div>
                         <p className="flex items-center gap-1.5 pb-2 text-[11px] text-white/40">
